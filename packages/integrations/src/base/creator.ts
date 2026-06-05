@@ -44,6 +44,7 @@ import { QuayIntegration } from "../quay/quay-integration";
 import { SearchChIntegration } from "../search-ch/search-ch-integration";
 import { SeerrIntegration } from "../seerr/seerr-integration";
 import { SpeedtestTrackerIntegration } from "../speedtest-tracker/speedtest-tracker-integration";
+import { TdayIntegration } from "../tday/tday-integration";
 import { TracearrIntegration } from "../tracearr/tracearr-integration";
 import { TrueNasIntegration } from "../truenas/truenas-integration";
 import { UmamiIntegration } from "../umami/umami-integration";
@@ -123,6 +124,7 @@ export const integrationCreators = {
   immich: ImmichIntegration,
   speedtestTracker: SpeedtestTrackerIntegration,
   umami: UmamiIntegration,
+  tday: TdayIntegration,
 } satisfies Record<IntegrationKind, IntegrationInstance | [(input: IntegrationInput) => Promise<Integration>]>;
 
 type IntegrationInstanceOfKind<TKind extends keyof typeof integrationCreators> = {

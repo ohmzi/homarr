@@ -378,6 +378,13 @@ export const integrationDefs = {
     defaultUrl: "https://api.umami.is/v1",
     documentationUrl: createDocumentationLink("/docs/integrations/umami"),
   },
+  tday: {
+    name: "Tday",
+    secretKinds: [["apiKey"]],
+    iconUrl: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons@master/svg/homarr.svg",
+    category: ["tasks"],
+    documentationUrl: null,
+  },
   // This integration only returns mock data, it is used during development (but can also be used in production by directly going to the create page)
   mock: {
     name: "Mock",
@@ -470,6 +477,7 @@ export const integrationCategories = [
   "mediaMonitoring",
   "speedtest",
   "analytics",
+  "tasks",
 ] as const;
 
 export type IntegrationCategory = (typeof integrationCategories)[number];

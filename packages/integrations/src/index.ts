@@ -34,6 +34,7 @@ export { ImmichIntegration } from "./immich/immich-integration";
 export { TracearrIntegration } from "./tracearr/tracearr-integration";
 export { SpeedtestTrackerIntegration } from "./speedtest-tracker/speedtest-tracker-integration";
 export { UmamiIntegration } from "./umami/umami-integration";
+export { TdayIntegration } from "./tday/tday-integration";
 
 // Types
 export type { IntegrationInput } from "./base/integration";
@@ -70,11 +71,23 @@ export type {
 export type { TracearrDashboardData } from "./tracearr/tracearr-types";
 export type { SpeedtestTrackerDashboardData } from "./speedtest-tracker/speedtest-tracker-types";
 export type { UmamiVisitorStats } from "./umami/umami-types";
+export type { TdayTask, TdayTaskKind, TdayTaskView, TdayList, TdayPriority } from "./tday/tday-types";
 
 // Schemas
 export { anchorNotesListInputSchema } from "./anchor/anchor-types";
 export { anchorNoteUpdateInputSchema } from "./anchor/anchor-types";
 export { downloadClientItemSchema } from "./interfaces/downloads/download-client-items";
+export {
+  tdayTasksInputSchema,
+  tdayListsInputSchema,
+  tdayCompleteInputSchema,
+  tdayUncompleteInputSchema,
+  tdayDeleteInputSchema,
+  tdayUpdateInputSchema,
+  tdayQuickAddInputSchema,
+  tdayTaskViewSchema,
+  tdayPrioritySchema,
+} from "./tday/tday-types";
 
 // Helpers
 export { createIntegrationAsync } from "./base/creator";

@@ -70,6 +70,7 @@
     "@tiptap/starter-kit": "catalog:",
     "clsx": "catalog:",
     "dayjs": "catalog:",
+    "lucide-react": "catalog:",
     "mantine-react-table": "catalog:",
     "next": "catalog:",
     "react": "catalog:",

@@ -1327,6 +1327,75 @@
     }
   },
   "widget": {
+    "tdayTasks": {
+      "name": "Tday Tasks",
+      "description": "Displays your Tday tasks for a chosen view and lets you complete or add tasks.",
+      "option": {
+        "view": {
+          "label": "View",
+          "option": {
+            "today": {
+              "label": "Today's tasks",
+              "title": "Today"
+            },
+            "scheduled": {
+              "label": "Scheduled tasks",
+              "title": "Scheduled"
+            },
+            "overdue": {
+              "label": "Overdue tasks",
+              "title": "Overdue"
+            },
+            "floater": {
+              "label": "Floater tasks",
+              "title": "Floater"
+            }
+          }
+        },
+        "sort": {
+          "label": "Sort by",
+          "option": {
+            "default": {
+              "label": "Default"
+            },
+            "due": {
+              "label": "Due date"
+            },
+            "priority": {
+              "label": "Priority"
+            }
+          }
+        },
+        "showCompleteButton": {
+          "label": "Show complete button"
+        },
+        "showQuickAdd": {
+          "label": "Show quick-add input"
+        }
+      },
+      "empty": "No tasks to show",
+      "complete": "Mark complete",
+      "quickAdd": "Add task",
+      "newTask": "New task",
+      "editTask": "Edit task",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "confirmDelete": "Confirm?",
+      "completedToast": "Task completed",
+      "undo": "Undo",
+      "quickAddPlaceholder": "Add tasks — one per line",
+      "addPartialFailed": "Failed to add {count} task(s)",
+      "priority": "Priority",
+      "priorityNormal": "Normal",
+      "priorityImportant": "Important",
+      "priorityUrgent": "Urgent",
+      "list": "List",
+      "listNone": "No list",
+      "listLoading": "Loading…",
+      "due": "Due date",
+      "dueNone": "No due date"
+    },
     "app": {
       "name": "App",
       "description": "Embeds an app into the board.",
