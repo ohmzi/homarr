@@ -1,9 +1,9 @@
 {
   "extends": "@homarr/tsconfig/base.json",
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
       "~/*": ["./src/*"],
+      "@static-data/*": ["../../static-data/*"],
       "@homarr/node-unifi": ["../../node_modules/@types/node-unifi"]
     },
     "plugins": [

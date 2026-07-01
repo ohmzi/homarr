@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 
+import "@gfazioli/mantine-onboarding-tour/styles.css";
 import "@homarr/notifications/styles.css";
 import "@homarr/spotlight/styles.css";
 import "@homarr/ui/styles.css";
+import "mantine-datatable/styles.css";
 import "~/styles/color-scheme.scss";
 import "~/styles/scroll-area.scss";
 
@@ -25,6 +27,7 @@ import { isLocaleRTL, isLocaleSupported } from "@homarr/translation";
 
 import { Analytics } from "~/components/layout/analytics";
 import { CrowdinLiveTranslation } from "~/components/layout/crowdin-live-translation";
+
 import { SearchEngineOptimization } from "~/components/layout/search-engine-optimization";
 import { ServiceWorkerRegistration } from "~/components/layout/service-worker-registration";
 import { getCurrentColorSchemeAsync } from "~/theme/color-scheme";
@@ -136,11 +139,11 @@ export default async function Layout(props: {
       suppressHydrationWarning
     >
       <head>
-        <Analytics />
         <SearchEngineOptimization />
         <CrowdinLiveTranslation locale={locale} />
       </head>
       <body className={["font-sans", fontSans.variable].join(" ")}>
+        <Analytics enabled={serverSettings.analytics.enableGeneral} />
         <StackedProvider>
           <Notifications pauseResetOnHover="notification" />
           <ServiceWorkerRegistration />

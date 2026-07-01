@@ -11,7 +11,7 @@ import type { RouterOutputs } from "@homarr/api";
 import { clientApi } from "@homarr/api/client";
 import { humanFileSize, useTimeAgo } from "@homarr/common";
 import type { ContainerState } from "@homarr/docker";
-import { containerStateColorMap } from "@homarr/docker/shared";
+import { containerStateColorMap, cpuUsageColor, memoryUsageColor, safeValue } from "@homarr/docker/shared";
 import { showErrorNotification, showSuccessNotification } from "@homarr/notifications";
 import { useScopedI18n } from "@homarr/translation/client";
 import { useTranslatedMantineReactTable } from "@homarr/ui/hooks";
@@ -27,25 +27,6 @@ const ContainerStateBadge = ({ state }: { state: ContainerState }) => {
     </Badge>
   );
 };
-
-const memoryUsageColor = (number: number, state: string) => {
-  const mbUsage = number / 1024 / 1024;
-  if (mbUsage === 0 && state !== "running") return "red";
-  if (mbUsage < 128) return "green";
-  if (mbUsage < 256) return "yellow";
-  if (mbUsage < 512) return "orange";
-  return "red";
-};
-
-const cpuUsageColor = (number: number, state: string) => {
-  if (number === 0 && state !== "running") return "red";
-  if (number < 40) return "green";
-  if (number < 60) return "yellow";
-  if (number < 90) return "orange";
-  return "red";
-};
-
-const safeValue = (value?: number, fallback = 0) => (value !== undefined && !isNaN(value) ? value : fallback);
 
 const actionIconIconStyle: IconProps["style"] = {
   height: "var(--ai-icon-size)",
@@ -204,7 +185,11 @@ export default function DockerWidget({ options, width, isEditMode }: WidgetCompo
   const isTiny = width <= 256;
 
   const utils = clientApi.useUtils();
-  const [{ containers, timestamp }] = clientApi.docker.getContainers.useSuspenseQuery();
+  const { data } = clientApi.docker.getContainers.useQuery(undefined, {
+    staleTime: 20 * 1000,
+  });
+  const containers = data?.containers ?? [];
+  const timestamp = useMemo(() => data?.timestamp ?? new Date(), [data?.timestamp]);
   const relativeTime = useTimeAgo(timestamp);
 
   clientApi.docker.subscribeContainers.useSubscription(undefined, {
@@ -214,6 +199,17 @@ export default function DockerWidget({ options, width, isEditMode }: WidgetCompo
   });
 
   const totalContainers = containers.length;
+
+  const totals = useMemo(() => {
+    return containers.reduce(
+      (acc, container) => {
+        acc.cpu += safeValue(container.cpuUsage);
+        acc.memory += safeValue(container.memoryUsage);
+        return acc;
+      },
+      { cpu: 0, memory: 0 },
+    );
+  }, [containers]);
 
   const columns = useMemo(() => createColumns(t), [t]);
 
@@ -276,12 +272,26 @@ export default function DockerWidget({ options, width, isEditMode }: WidgetCompo
           }}
           p={4}
         >
-          <Group gap={4}>
-            <IconBrandDocker size={20} />
-            <Text size="sm">{t("table.footer", { count: totalContainers.toString() })}</Text>
+          <Group gap={4} wrap="nowrap">
+            <IconBrandDocker size={20} style={{ flexShrink: 0 }} />
+            <Text size="sm" truncate="end">
+              {t("table.footer", { count: totalContainers.toString() })}
+            </Text>
           </Group>
 
-          <Text size="sm">{t("table.updated", { when: relativeTime })}</Text>
+          <Group gap="sm" wrap="wrap" justify="flex-end" style={{ flex: 1, minWidth: 0 }}>
+            <Text size="sm" style={{ whiteSpace: "nowrap" }}>
+              {t("table.totalCpu", { cpu: totals.cpu.toFixed(2) })}
+            </Text>
+
+            <Text size="sm" style={{ whiteSpace: "nowrap" }}>
+              {t("table.totalMemory", { memory: humanFileSize(totals.memory) })}
+            </Text>
+
+            <Text size="sm" style={{ whiteSpace: "nowrap" }}>
+              {t("table.updated", { when: relativeTime })}
+            </Text>
+          </Group>
         </Group>
       )}
     </Stack>

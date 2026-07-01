@@ -112,9 +112,13 @@ export const createGetSetChannel = <TData>(name: string) => {
     /**
      * Set data in the channel
      * @param data data to be stored in the channel
+     * @param options optional TTL in seconds
      */
-    setAsync: async (data: TData) => {
+    setAsync: async (data: TData, options?: { ttlSeconds?: number }) => {
       await getSetClient.set(name, superjson.stringify(data));
+      if (options?.ttlSeconds) {
+        await getSetClient.expire(name, options.ttlSeconds);
+      }
     },
     /**
      * Remove data from the channel
@@ -123,6 +127,49 @@ export const createGetSetChannel = <TData>(name: string) => {
       await getSetClient.del(name);
     },
   };
+};
+
+interface QueryCacheChannelOptions {
+  userId: string;
+  boardId: string;
+  key: string;
+  ttlMs: number;
+  maxValueBytes: number;
+}
+
+const queryCacheHashKey = (userId: string, boardId: string) => `qc:${userId}:${boardId}`;
+
+export const createQueryCacheChannel = ({ userId, boardId, key, ttlMs, maxValueBytes }: QueryCacheChannelOptions) => {
+  const hkey = queryCacheHashKey(userId, boardId);
+
+  return {
+    name: `${hkey}:${key}`,
+    getAsync: async () => {
+      return await getSetClient.hget(hkey, key);
+    },
+    setAsync: async (value: string) => {
+      if (Buffer.byteLength(value, "utf8") > maxValueBytes) {
+        logger.warn("Query cache value exceeded maximum size", {
+          channel: hkey,
+          valueBytes: Buffer.byteLength(value, "utf8"),
+          maxValueBytes,
+        });
+        return false;
+      }
+
+      await getSetClient.hset(hkey, key, value);
+      await getSetClient.pexpire(hkey, ttlMs);
+      return true;
+    },
+    removeAsync: async () => {
+      await getSetClient.hdel(hkey, key);
+    },
+  };
+};
+
+export const getAllQueryCacheAsync = async (userId: string, boardId: string): Promise<Record<string, string>> => {
+  const hkey = queryCacheHashKey(userId, boardId);
+  return await getSetClient.hgetall(hkey);
 };
 
 /**
@@ -212,6 +259,36 @@ export const createIntegrationOptionsChannel = <TData>(
   const optionsKey = hashObjectBase64(options);
   const channelName = `integration:${integrationId}:${queryKey}:options:${optionsKey}`;
   return createChannelWithLatestAndEvents<TData>(channelName);
+};
+
+/**
+ * Invalidates all cached data for a given integration by deleting every Redis key
+ * that starts with `integration:${integrationId}:` as well as the integration's
+ * session store entry. This ensures that stale data from a misconfigured or
+ * updated integration is never served from cache.
+ */
+export const invalidateIntegrationCacheAsync = async (integrationId: string): Promise<void> => {
+  const client = getSetClient as typeof getSetClient | null;
+  if (!client) {
+    return;
+  }
+
+  const patterns = [`integration:${integrationId}:*`, `session-store:${integrationId}`];
+  let deletedCount = 0;
+  for (const pattern of patterns) {
+    let cursor = "0";
+    do {
+      const [nextCursor, keys] = await client.scan(cursor, "MATCH", pattern, "COUNT", 200);
+      cursor = nextCursor;
+      if (keys.length > 0) {
+        await client.del(...keys);
+        deletedCount += keys.length;
+      }
+    } while (cursor !== "0");
+  }
+  if (deletedCount > 0) {
+    logger.info("Invalidated integration cache", { integrationId, deletedKeys: deletedCount });
+  }
 };
 
 export const createWidgetOptionsChannel = <TData>(
@@ -338,8 +415,18 @@ export const createChannelWithLatestAndEvents = <TData>(channelName: string) => 
       });
     },
     publishAndUpdateLastStateAsync: async (data: TData) => {
-      await publisher.publish(channelName, superjson.stringify(data));
-      await getSetClient.set(channelName, superjson.stringify({ data, timestamp: new Date() }));
+      // Set first, then publish. If publish fails the storage is still consistent
+      // and subscribers will catch up on the next event.
+      const payload = superjson.stringify({ data, timestamp: new Date() });
+      await getSetClient.set(channelName, payload);
+      try {
+        await publisher.publish(channelName, superjson.stringify(data));
+      } catch (error) {
+        logger.warn("Failed to publish cache update (storage is correct, subscribers will catch up)", {
+          channel: channelName,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     },
     setAsync: async (data: TData) => {
       await getSetClient.set(channelName, superjson.stringify({ data, timestamp: new Date() }));
