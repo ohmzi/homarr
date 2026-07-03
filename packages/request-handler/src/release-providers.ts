@@ -127,7 +127,7 @@ const parseOwnerPackageName = (identifier: string) => {
 
 const removeTrailingSlash = (url: string) => url.replace(/\/$/, "");
 
-const buildUrl = (baseUrl: string, path: `/${string}`) => new URL(`${baseUrl}${path}`);
+const buildUrl = (baseUrl: string, path: `/${string}`) => new URL(`${baseUrl}${path}`).toString();
 
 const getGithubApi = (baseUrl: string, userAgent: string, token?: string) =>
   new Octokit({

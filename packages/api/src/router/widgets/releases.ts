@@ -89,9 +89,7 @@ export const releasesRouter = createTRPCRouter({
                 providerUrl: repository.providerUrl,
                 token: useToken ? tokensByProvider.get(repository.provider) : undefined,
               })
-              .getCachedOrUpdatedDataAsync({
-                forceUpdate: false,
-              });
+              .getDataAsync();
 
             return {
               id: repositoryId,
