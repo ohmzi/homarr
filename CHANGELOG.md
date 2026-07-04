@@ -1,3 +1,9 @@
+## [1.69.1](https://github.com/homarr-labs/homarr/compare/v1.69.0...v1.69.1) (2026-07-04)
+
+### Bug Fixes
+
+* unblock query cache mutations in demo mode and add cache buster ([#6176](https://github.com/homarr-labs/homarr/issues/6176)) ([a382c75](https://github.com/homarr-labs/homarr/commit/a382c75968e73bafff55b5890b1e95f0779b50d3))
+
 ## [1.69.0](https://github.com/homarr-labs/homarr/compare/v1.68.1...v1.69.0) (2026-07-03)
 
 ### Features
