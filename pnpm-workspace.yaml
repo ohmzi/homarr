@@ -14,7 +14,7 @@ catalog:
   "@dnd-kit/utilities": ^3.2.2
   "@drizzle-team/brocli": ^0.12.0
   "@extractus/feed-extractor": 7.2.1
-  '@gfazioli/mantine-onboarding-tour': ^4.0.6
+  "@gfazioli/mantine-onboarding-tour": ^4.0.6
   "@gitbeaker/rest": ^43.8.0
   "@homarr/gridstack": ^1.12.0
   "@homarr/node-unifi": ^2.6.0
@@ -177,7 +177,7 @@ catalog:
   tsdav: ^2.3.0
   tsx: 4.20.4
   turbo: ^2.10.2
-  typescript: 7.0.1-rc
+  typescript: ^6.0.3
   vite: ^8.1.2
   undici: 7.28.0
   use-deep-compare-effect: ^1.8.1
@@ -202,8 +202,6 @@ minimumReleaseAgeExclude:
   - next
   - "@next/*"
   - "@immich/sdk@3.0.0"
-  - typescript@7.0.1-rc
-  - "@typescript/*"
   # Renovate security update: turbo@2.9.14
   - turbo@2.9.14
   # Renovate security update: form-data@4.0.6
@@ -235,6 +233,7 @@ overrides:
 patchedDependencies:
   "@types/node-unifi": "patches/@types__node-unifi.patch"
   "trpc-to-openapi": "patches/trpc-to-openapi.patch"
+
 allowUnusedPatches: true
 allowBuilds:
   "@tree-sitter-grammars/tree-sitter-yaml": true
