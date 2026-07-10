@@ -9,6 +9,7 @@ import { iconsRouter } from "./router/icons";
 import { infoRouter } from "./router/info";
 import { integrationRouter } from "./router/integration/integration-router";
 import { inviteRouter } from "./router/invite";
+import { bazarrRouter } from "./router/widgets/bazarr";
 import { serverSettingsRouter } from "./router/serverSettings";
 import { beszelRouter } from "./router/widgets/beszel";
 import { calendarRouter } from "./router/widgets/calendar";
@@ -29,6 +30,7 @@ export const mcpRouter = createTRPCRouter({
   info: infoRouter,
   integration: integrationRouter,
   invite: inviteRouter,
+  bazarr: bazarrRouter,
   serverSettings: serverSettingsRouter,
   beszel: beszelRouter,
   calendar: calendarRouter,

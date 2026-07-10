@@ -33,6 +33,7 @@ export const widgetIntegrationSupport: Partial<Record<WidgetKind, readonly Integ
   "immich-serverStats": ["immich"],
   "immich-albumCarousel": ["immich"],
   paperlessNgx: ["paperlessNgx"],
+  bazarr: ["bazarr"],
   tracearr: ["tracearr"],
   speedtestTracker: ["speedtestTracker"],
   uptimeKuma: ["uptimeKuma"],

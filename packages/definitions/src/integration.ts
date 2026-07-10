@@ -137,6 +137,15 @@ export const integrationDefs = {
     defaultPort: 9696,
     apiKeySettingsPath: "/settings/general",
   },
+  bazarr: {
+    name: "Bazarr",
+    secretKinds: [["apiKey"]],
+    iconUrl: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons@master/svg/bazarr.svg",
+    category: ["subtitleManager"],
+    documentationUrl: createDocumentationLink("/docs/integrations/bazarr"),
+    defaultPort: 6767,
+    apiKeySettingsPath: "/settings/general",
+  },
   jellyfin: {
     name: "Jellyfin",
     secretKinds: [["username", "password"], ["apiKey"]],
@@ -561,6 +570,7 @@ export const integrationCategories = [
   "documents",
   "mediaLibrary",
   "uptimeMonitoring",
+  "subtitleManager",
   "reverseProxy",
 ] as const;
 

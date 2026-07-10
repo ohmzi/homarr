@@ -36,6 +36,7 @@ export const widgetKinds = [
   "immich-serverStats",
   "immich-albumCarousel",
   "paperlessNgx",
+  "bazarr",
   "tracearr",
   "speedtestTracker",
   "uptimeKuma",
@@ -57,4 +58,5 @@ export const widgetDefaultSizes: Partial<Record<WidgetKind, { width: number; hei
   uptimeKuma: { width: 2, height: 3 },
   audioStats: { width: 2, height: 2 },
   paperlessNgx: { width: 2, height: 2 },
+  bazarr: { width: 2, height: 2 },
 };
