@@ -18,6 +18,7 @@ import { downloadsRouter } from "./router/widgets/downloads";
 import { healthMonitoringRouter } from "./router/widgets/health-monitoring";
 import { mediaRequestsRouter } from "./router/widgets/media-requests";
 import { mediaServerRouter } from "./router/widgets/media-server";
+import { patchmonRouter } from "./router/widgets/patchmon";
 import { smartHomeRouter } from "./router/widgets/smart-home";
 import { widgetSecretsRouter } from "./router/widgets/widget-secrets";
 
@@ -39,6 +40,7 @@ export const mcpRouter = createTRPCRouter({
   healthMonitoring: healthMonitoringRouter,
   mediaRequests: mediaRequestsRouter,
   mediaServer: mediaServerRouter,
+  patchmon: patchmonRouter,
   smartHome: smartHomeRouter,
   widgetSecrets: widgetSecretsRouter,
 });

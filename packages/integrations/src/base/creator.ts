@@ -37,6 +37,7 @@ import { OpenMediaVaultIntegration } from "../openmediavault/openmediavault-inte
 import { OPNsenseIntegration } from "../opnsense/opnsense-integration";
 import { OverseerrIntegration } from "../overseerr/overseerr-integration";
 import { PaperlessNgxIntegration } from "../paperless-ngx/paperless-ngx-integration";
+import { PatchMonIntegration } from "../patchmon/patchmon-integration";
 import { PeaNutIntegration } from "../peanut/peanut-integration";
 import { createPiHoleIntegrationAsync } from "../pi-hole/pi-hole-integration-factory";
 import { createTechnitiumDnsIntegrationAsync } from "../technitium/technitium-integration-factory";
@@ -120,6 +121,7 @@ export const integrationCreators = {
   glances: GlancesIntegration,
   immich: ImmichIntegration,
   paperlessNgx: PaperlessNgxIntegration,
+  patchmon: PatchMonIntegration,
   speedtestTracker: SpeedtestTrackerIntegration,
   audiobookshelf: AudiobookshelfIntegration,
   navidrome: NavidromeIntegration,

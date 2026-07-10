@@ -39,6 +39,7 @@ import * as networkControllerStatus from "./network-controller/network-status";
 import * as networkControllerSummary from "./network-controller/summary";
 import * as notebook from "./notebook";
 import * as paperlessNgx from "./paperless-ngx";
+import * as patchmon from "./patchmon";
 import * as notifications from "./notifications";
 import type { WidgetOptionDefinition } from "./options";
 import * as releases from "./releases";
@@ -114,6 +115,7 @@ export const widgetImports = {
   "immich-serverStats": immichServerStats,
   "immich-albumCarousel": immichAlbumCarousel,
   paperlessNgx,
+  patchmon,
   tracearr,
   speedtestTracker,
   uptimeKuma,
