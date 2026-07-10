@@ -79,14 +79,16 @@ export const createBoardContentPage = <TParams extends Record<string, unknown>>(
       const userId = session?.user.id ?? "anonymous";
 
       return (
-        <HydrationBoundary state={dehydrate(queryClient)}>
-          <IntegrationProvider integrations={integrations}>
-            <Suspense>
-              <QueryCacheHydration userId={userId} boardId={board.id} />
-            </Suspense>
-            <DynamicClientBoard />
-          </IntegrationProvider>
-        </HydrationBoundary>
+        <>
+          <Suspense>
+            <QueryCacheHydration userId={userId} boardId={board.id} />
+          </Suspense>
+          <HydrationBoundary state={dehydrate(queryClient)}>
+            <IntegrationProvider integrations={integrations}>
+              <DynamicClientBoard />
+            </IntegrationProvider>
+          </HydrationBoundary>
+        </>
       );
     },
     generateMetadataAsync: async ({ params }: { params: Promise<TParams> }): Promise<Metadata> => {
@@ -123,9 +125,9 @@ async function QueryCacheHydration({ userId, boardId }: { userId: string; boardI
     const serialized = await getQueryCacheAsync(userId, boardId);
     if (!serialized) return null;
 
-    const persisted = superjson.parse<PersistedClient>(serialized);
-    if (persisted.buster !== queryCacheBuster) return null;
-    if (!persisted?.clientState?.queries?.length) return null;
+    const persisted = superjson.parse<PersistedClient | undefined>(serialized);
+    if (!persisted || persisted.buster !== queryCacheBuster) return null;
+    if (!persisted.clientState?.queries?.length) return null;
 
     return <HydrationBoundary state={persisted.clientState} />;
   } catch (error) {
