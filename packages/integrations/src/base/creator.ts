@@ -45,6 +45,7 @@ import { ProxmoxIntegration } from "../proxmox/proxmox-integration";
 import { SeerrIntegration } from "../seerr/seerr-integration";
 import { SpeedtestTrackerIntegration } from "../speedtest-tracker/speedtest-tracker-integration";
 import { TracearrIntegration } from "../tracearr/tracearr-integration";
+import { TraefikIntegration } from "../traefik/traefik-integration";
 import { SynologyIntegration } from "../synology/synology-integration";
 import { TrueNasIntegration } from "../truenas/truenas-integration";
 import { UmamiIntegration } from "../umami/umami-integration";
@@ -127,6 +128,7 @@ export const integrationCreators = {
   uptimeKuma: UptimeKumaIntegration,
   peaNut: PeaNutIntegration,
   beszel: BeszelIntegration,
+  traefik: TraefikIntegration,
 } satisfies Record<IntegrationKind, IntegrationInstance | [(input: IntegrationInput) => Promise<Integration>]>;
 
 type IntegrationInstanceOfKind<TKind extends keyof typeof integrationCreators> = {
