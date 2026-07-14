@@ -11,7 +11,6 @@ import {
   Select,
   Stack,
   Text,
-  Textarea,
   TextInput,
   Tooltip,
   UnstyledButton,
@@ -217,17 +216,22 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
     }
   };
 
-  const titlesFromDraft = () =>
-    draft
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0);
-
+  // One task is a single line — Enter submits it. (No multi-line entry; see native/web parity.)
   const handleQuickAdd = () => {
-    const titles = titlesFromDraft();
-    if (titles.length === 0) return;
+    const title = draft.trim();
+    if (!title) return;
     setAddError(null);
-    quickAddMutation.mutate({ integrationId, view, titles, priority, listId, due: toTdayDue(addDue) });
+    quickAddMutation.mutate({ integrationId, view, titles: [title], priority, listId, due: toTdayDue(addDue) });
+  };
+
+  // The add/save button takes the selected list's colour, falling back to the per-view accent.
+  const submitButtonStyle = (selectedListId: string | null): CSSProperties => {
+    const bg = (selectedListId ? listById.get(selectedListId)?.color : null) ?? "var(--tday-accent)";
+    return {
+      "--button-bg": bg,
+      "--button-hover": `color-mix(in srgb, ${bg} 86%, #000)`,
+      "--button-color": "#fff",
+    } as CSSProperties;
   };
 
   const cancelAdd = () => {
@@ -503,12 +507,20 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
               {confirmDelete ? t("confirmDelete") : t("delete")}
             </Button>
             <Group gap={6} justify="flex-end" style={{ marginLeft: "auto" }}>
-              <Button size="xs" radius="xl" variant="subtle" color="gray" onClick={cancelEdit}>
+              <Button
+                className="tday-cancel-btn"
+                size="xs"
+                radius="xl"
+                variant="subtle"
+                color="gray"
+                onClick={cancelEdit}
+              >
                 {t("cancel")}
               </Button>
               <Button
                 size="xs"
                 radius="xl"
+                style={submitButtonStyle(editListId)}
                 leftSection={<IconCheck size={14} />}
                 onClick={handleEditSave}
                 loading={updateMutation.isPending}
@@ -522,11 +534,8 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
       ) : options.showQuickAdd && canInteract ? (
         adding ? (
           <div className="tday-composer">
-            <Textarea
+            <TextInput
               data-autofocus
-              autosize
-              minRows={1}
-              maxRows={6}
               variant="unstyled"
               classNames={{ input: "tday-composer-input" }}
               aria-label={t("newTask")}
@@ -535,7 +544,7 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
               onKeyDown={(event) => {
                 // IME composition: Enter commits and Escape cancels the conversion, not the composer.
                 if (event.nativeEvent.isComposing) return;
-                if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+                if (event.key === "Enter") {
                   event.preventDefault();
                   handleQuickAdd();
                 }
@@ -558,19 +567,26 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
               </Text>
             )}
             <div className="tday-composer-actions">
-              <Text className="tday-composer-hint">{t("quickAddShortcutHint")}</Text>
               <Group gap={6} justify="flex-end" style={{ marginLeft: "auto" }}>
                 {/* Never disabled: the only remaining dismiss path while the request is in flight. */}
-                <Button size="xs" radius="xl" variant="subtle" color="gray" onClick={cancelAdd}>
+                <Button
+                  className="tday-cancel-btn"
+                  size="xs"
+                  radius="xl"
+                  variant="subtle"
+                  color="gray"
+                  onClick={cancelAdd}
+                >
                   {t("cancel")}
                 </Button>
                 <Button
                   size="xs"
                   radius="xl"
+                  style={submitButtonStyle(listId)}
                   leftSection={<IconPlus size={14} />}
                   onClick={handleQuickAdd}
                   loading={quickAddMutation.isPending}
-                  disabled={titlesFromDraft().length === 0}
+                  disabled={!draft.trim()}
                 >
                   {t("quickAdd")}
                 </Button>

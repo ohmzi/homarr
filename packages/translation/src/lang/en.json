@@ -1739,7 +1739,7 @@
       "confirmDelete": "Confirm?",
       "completedToast": "Task completed",
       "undo": "Undo",
-      "quickAddPlaceholder": "Add tasks — one per line",
+      "quickAddPlaceholder": "Add a task",
       "quickAddShortcutHint": "One per line · Ctrl/⌘ + Enter",
       "addPartialFailed": "Failed to add {count} task(s)",
       "priority": "Priority",

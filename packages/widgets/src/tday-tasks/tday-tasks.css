@@ -374,6 +374,13 @@
   animation: tday-nudge 260ms ease;
 }
 
+/* Cancel reads as "discard": neutral at rest, red shade on hover/focus. */
+.tday-cancel-btn:hover,
+.tday-cancel-btn:focus-visible {
+  background-color: color-mix(in srgb, var(--mantine-color-red-6) 15%, transparent) !important;
+  color: light-dark(var(--mantine-color-red-7), var(--mantine-color-red-4)) !important;
+}
+
 /* ---------- empty state: the "completed" end-state of the row checkboxes ---------- */
 .tday-empty {
   display: flex;
