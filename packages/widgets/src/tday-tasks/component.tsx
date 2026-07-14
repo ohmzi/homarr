@@ -465,7 +465,13 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
             data-autofocus
             variant="unstyled"
             classNames={{ input: "tday-composer-input" }}
+            spellCheck
+            autoCapitalize="sentences"
+            autoCorrect="on"
             aria-label={t("editTask")}
+            // Let the browser's native right-click menu (spelling suggestions) show instead of
+            // Homarr's widget context menu, which otherwise preventDefaults the whole widget.
+            onContextMenu={(event) => event.stopPropagation()}
             value={editTitle}
             onChange={(event) => setEditTitle(event.currentTarget.value)}
             onKeyDown={(event) => {
@@ -538,7 +544,13 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
               data-autofocus
               variant="unstyled"
               classNames={{ input: "tday-composer-input" }}
+              spellCheck
+              autoCapitalize="sentences"
+              autoCorrect="on"
               aria-label={t("newTask")}
+              // Let the browser's native right-click menu (spelling suggestions) show instead of
+              // Homarr's widget context menu, which otherwise preventDefaults the whole widget.
+              onContextMenu={(event) => event.stopPropagation()}
               value={draft}
               onChange={(event) => setDraft(event.currentTarget.value)}
               onKeyDown={(event) => {
