@@ -1727,8 +1727,10 @@
         }
       },
       "empty": "No tasks to show",
+      "emptyAllClear": "All clear",
       "complete": "Mark complete",
       "quickAdd": "Add task",
+      "addTaskHint": "Add a task…",
       "newTask": "New task",
       "editTask": "Edit task",
       "save": "Save",
@@ -1738,6 +1740,7 @@
       "completedToast": "Task completed",
       "undo": "Undo",
       "quickAddPlaceholder": "Add tasks — one per line",
+      "quickAddShortcutHint": "One per line · Ctrl/⌘ + Enter",
       "addPartialFailed": "Failed to add {count} task(s)",
       "priority": "Priority",
       "priorityNormal": "Normal",
@@ -1747,7 +1750,9 @@
       "listNone": "No list",
       "listLoading": "Loading…",
       "due": "Due date",
-      "dueNone": "No due date"
+      "dueNone": "No due date",
+      "dueToday": "Today",
+      "dueTomorrow": "Tomorrow"
     },
     "integrationSelect": {
       "configureIntegrationFirst": "Connect an integration first",

@@ -1,32 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActionIcon,
-  Badge,
   Button,
   Center,
   Group,
-  Paper,
   ScrollArea,
   Select,
   Stack,
   Text,
   Textarea,
   TextInput,
-  ThemeIcon,
   Tooltip,
   UnstyledButton,
 } from "@mantine/core";
 import { DateTimePicker } from "@mantine/dates";
-import { IconCheck, IconChecklist, IconPencil, IconPlus, IconTrash, IconX } from "@tabler/icons-react";
+import { IconCalendarEvent, IconCheck, IconPencil, IconPlus, IconTrash, IconX } from "@tabler/icons-react";
 import dayjs from "dayjs";
-import { Flag } from "lucide-react";
+import { CalendarClock, Clock3, Flag, Leaf, type LucideIcon, Moon, Sun } from "lucide-react";
 
 import { clientApi } from "@homarr/api/client";
 import { useIntegrationsWithInteractAccess } from "@homarr/auth/client";
 import type { TdayTask } from "@homarr/integrations";
-import { showSuccessNotification } from "@homarr/notifications";
 import { useScopedI18n } from "@homarr/translation/client";
 
 import type { WidgetComponentProps } from "../definition";
@@ -63,11 +60,11 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
   const [tasks, { refetch }] = clientApi.widget.tday.getTasks.useSuspenseQuery(
     { integrationId, view },
     {
-      // Near real-time: background refresh + on focus (Tday has no push channel reachable here).
+      // Near real-time: background poll + on focus (Tday has no push channel reachable here).
       refetchOnMount: false,
       refetchOnWindowFocus: true,
       refetchOnReconnect: true,
-      refetchInterval: 30_000,
+      refetchInterval: 15_000,
       retry: false,
     },
   );
@@ -75,6 +72,50 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
   const sortedTasks = sortTasks(tasks, options.sort);
 
   const canInteract = useIntegrationsWithInteractAccess().some(({ id }) => id === integrationId);
+
+  // A task can move between views (e.g. giving a scheduled task a due date of today), so any change
+  // here invalidates every mounted Tday widget — sibling views update without waiting for the poll.
+  const utils = clientApi.useUtils();
+  const invalidateAll = () => void utils.widget.tday.getTasks.invalidate();
+  // Complete/undo already await refetch() for the current view; only the sibling views still
+  // need refreshing, so skip the current one to avoid a redundant second fetch of it.
+  const invalidateSiblings = () =>
+    void utils.widget.tday.getTasks.invalidate(undefined, {
+      predicate: (query) => (query.queryKey[1] as { input?: { view?: string } } | undefined)?.input?.view !== view,
+    });
+
+  // Per-view identity mirrors the native app widgets: an accent colour + a faint background
+  // watermark. Today swaps sun/moon by time of day; resolved after mount to avoid an SSR mismatch.
+  const [isNight, setIsNight] = useState(false);
+  useEffect(() => {
+    const hour = new Date().getHours();
+    setIsNight(hour < 6 || hour >= 18);
+  }, []);
+  const identity = resolveViewIdentity(view, isNight);
+  const HeaderIcon = identity.HeaderIcon;
+
+  // Completion feedback lives inside this widget (not Homarr's global corner) so it reads as part
+  // of the list it came from. Auto-dismisses; a fresh completion restarts the timer via `nonce`.
+  const [toast, setToast] = useState<{
+    id: string;
+    kind: TdayTask["kind"];
+    instanceDate: string | null;
+    nonce: number;
+  } | null>(null);
+  const toastNonce = useRef(0);
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 6000);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
+  // Escape closes a composer from the keyboard; without an explicit target, focus would drop to
+  // <body> on unmount. The ghost add row occupies the same slot; the widget root is the fallback.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const ghostAddRef = useRef<HTMLButtonElement>(null);
+  const restoreFocus = () => {
+    requestAnimationFrame(() => (ghostAddRef.current ?? rootRef.current)?.focus());
+  };
 
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -107,13 +148,13 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
     onSuccess: () => {
       setEditing(null);
       setConfirmDelete(false);
-      void refetch();
+      invalidateAll();
     },
     onError: (error) => setEditError(error.message || "Failed to delete task"),
   });
   const quickAddMutation = clientApi.widget.tday.quickAdd.useMutation({
     onSuccess: (result) => {
-      void refetch();
+      invalidateAll();
       if (result.failedTitles.length > 0) {
         // Keep only the failed lines in the box so the user can retry them.
         setDraft(result.failedTitles.join("\n"));
@@ -130,13 +171,13 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
     onSuccess: () => {
       setEditing(null);
       setEditError(null);
-      void refetch();
+      invalidateAll();
     },
     onError: (error) => setEditError(error.message || "Failed to save task"),
   });
 
-  // Keep the checkbox in its "loading" (dark green) state through both the complete request
-  // and the subsequent list reload, so it doesn't flash back before the row disappears.
+  // Keep the row in its "completing" state (filled check, struck title, dimmed row) through both
+  // the complete request and the subsequent list reload, so it doesn't flash back before it leaves.
   const handleComplete = async (task: TdayTask) => {
     setPendingId(task.id);
     try {
@@ -147,35 +188,32 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
         instanceDate: task.instanceDate,
       });
       await refetch();
-      showSuccessNotification({
-        autoClose: 6000,
-        message: (
-          <Group justify="space-between" wrap="nowrap" gap="sm">
-            <Text size="sm">{t("completedToast")}</Text>
-            <Button
-              size="compact-xs"
-              variant="subtle"
-              onClick={() => {
-                void (async () => {
-                  await uncompleteMutation.mutateAsync({
-                    integrationId,
-                    id: task.id,
-                    kind: task.kind,
-                    instanceDate: task.instanceDate,
-                  });
-                  await refetch();
-                })();
-              }}
-            >
-              {t("undo")}
-            </Button>
-          </Group>
-        ),
-      });
+      invalidateSiblings();
+      toastNonce.current += 1;
+      setToast({ id: task.id, kind: task.kind, instanceDate: task.instanceDate, nonce: toastNonce.current });
     } catch {
       // leave the task in place on failure
     } finally {
       setPendingId(null);
+    }
+  };
+
+  // Undo the completion that the in-widget toast refers to, then dismiss it.
+  const handleUndo = async () => {
+    if (!toast) return;
+    const target = toast;
+    setToast(null);
+    try {
+      await uncompleteMutation.mutateAsync({
+        integrationId,
+        id: target.id,
+        kind: target.kind,
+        instanceDate: target.instanceDate,
+      });
+      await refetch();
+      invalidateSiblings();
+    } catch {
+      // if undo fails, the task stays completed
     }
   };
 
@@ -244,12 +282,18 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
     deleteMutation.mutate({ integrationId, kind: editing.kind, id: editing.id, instanceDate: editing.instanceDate });
   };
 
-  // Reusable priority/list selects (shared by the add and edit panels).
-  const prioritySelect = (value: "Low" | "Medium" | "High", onChange: (next: "Low" | "Medium" | "High") => void, disabled: boolean) => (
+  // Reusable priority/list selects (shared by the add and edit panels). Label-less inside the
+  // composer's controls strip; flex-basis lets the three controls share a row or wrap when narrow.
+  const prioritySelect = (
+    value: "Low" | "Medium" | "High",
+    onChange: (next: "Low" | "Medium" | "High") => void,
+    disabled: boolean,
+  ) => (
     <Select
       size="xs"
       radius="md"
-      label={t("priority")}
+      aria-label={t("priority")}
+      style={{ flex: "1 1 96px", minWidth: 0 }}
       value={value}
       onChange={(next) => onChange((next as "Low" | "Medium" | "High" | null) ?? "Low")}
       data={[
@@ -274,15 +318,18 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
     <Select
       size="xs"
       radius="md"
-      label={t("list")}
+      aria-label={t("list")}
+      style={{ flex: "1 1 110px", minWidth: 0 }}
       value={value}
       onChange={onChange}
       data={listOptions}
-      placeholder={listsQuery.isLoading ? t("listLoading") : t("listNone")}
+      placeholder={listsQuery.isLoading ? t("listLoading") : t("list")}
       clearable
       searchable
       nothingFoundMessage={t("listNone")}
-      leftSection={value ? listIcon(listById.get(value)?.iconKey ?? null, listById.get(value)?.color ?? null) : undefined}
+      leftSection={
+        value ? listIcon(listById.get(value)?.iconKey ?? null, listById.get(value)?.color ?? null) : undefined
+      }
       renderOption={({ option }) => {
         const meta = listById.get(option.value);
         return (
@@ -301,31 +348,49 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
     <DateTimePicker
       size="xs"
       radius="md"
-      label={t("due")}
+      aria-label={t("due")}
+      style={{ flex: "1 1 130px", minWidth: 0 }}
+      leftSection={<IconCalendarEvent size={13} />}
       value={value}
       onChange={onChange}
       clearable
       valueFormat="MMM D, YYYY · HH:mm"
-      placeholder={t("dueNone")}
+      placeholder={t("due")}
       popoverProps={{ withinPortal: true }}
       disabled={disabled}
     />
   );
 
+  // Humanized due label + semantic tone. Today/Tomorrow/weekday for the near future, dates beyond.
+  const formatDue = (due: string): { label: string; tone: "overdue" | "today" | "future" } | null => {
+    const parsed = dayjs(due);
+    if (!parsed.isValid()) return null;
+    const now = dayjs();
+    const today = now.startOf("day");
+    const day = parsed.startOf("day");
+    const dateLabel = day.year() === today.year() ? parsed.format("MMM D") : parsed.format("MMM [’]YY");
+    if (day.isBefore(today)) return { label: dateLabel, tone: "overdue" };
+    if (day.isSame(today)) {
+      // Tday defaults date-only tasks to 23:59 (end of day) — showing that time is noise.
+      if (parsed.hour() === 23 && parsed.minute() === 59) {
+        return view === "today" ? null : { label: t("dueToday"), tone: "today" };
+      }
+      return { label: parsed.format("HH:mm"), tone: parsed.isBefore(now) ? "overdue" : "today" };
+    }
+    if (day.isSame(today.add(1, "day"))) return { label: t("dueTomorrow"), tone: "future" };
+    if (day.diff(today, "day") < 7) return { label: parsed.format("ddd"), tone: "future" };
+    return { label: dateLabel, tone: "future" };
+  };
+
   // Dated views reserve a fixed-width column so every due value lines up and the icons after it
   // stay aligned across rows. Floater has no due, so no column is reserved.
   const renderDue = (task: TdayTask) => {
     if (view === "floater") return null;
-    const label = task.due ? (formatDue(task.due) ?? "") : "";
+    const info = task.due ? formatDue(task.due) : null;
     return (
-      <Text
-        size="xs"
-        c={view === "overdue" ? "red" : "dimmed"}
-        ta="right"
-        style={{ width: 54, flexShrink: 0, whiteSpace: "nowrap" }}
-      >
-        {label}
-      </Text>
+      <span className="tday-due" data-tone={info ? (view === "overdue" ? "overdue" : info.tone) : undefined}>
+        {info?.label ?? ""}
+      </span>
     );
   };
 
@@ -343,130 +408,165 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
   };
 
   return (
-    <Stack h="100%" gap="sm" p="sm">
-      <Group justify="space-between" align="center" gap="xs" wrap="nowrap">
-        <Group gap={8} wrap="nowrap" align="center" style={{ minWidth: 0 }}>
-          <Text size="sm" fw={700} truncate>
+    <Stack
+      ref={rootRef}
+      tabIndex={-1}
+      h="100%"
+      gap={6}
+      p="sm"
+      className="tday-root"
+      style={
+        { "--tday-accent-light": identity.accentLight, "--tday-accent-dark": identity.accentDark } as CSSProperties
+      }
+    >
+      <div className="tday-watermark-layer" aria-hidden>
+        <div
+          className={
+            identity.watermarkFill ? "tday-watermark tday-watermark--fill" : "tday-watermark tday-watermark--stroke"
+          }
+        >
+          {identity.watermark}
+        </div>
+      </div>
+      <Group className="tday-header" justify="space-between" wrap="nowrap" gap="xs">
+        <Group gap={7} wrap="nowrap" align="center" style={{ minWidth: 0 }}>
+          <HeaderIcon
+            size={15}
+            className="tday-view-icon"
+            style={view === "floater" ? { transform: "scaleX(-1)" } : undefined}
+            aria-hidden
+          />
+          <Text size="sm" fw={600} truncate className="tday-header-title">
             {t(`option.view.option.${view}.title`)}
           </Text>
-          <Badge size="sm" radius="sm" variant="light" color="gray">
-            {sortedTasks.length}
-          </Badge>
+          <span className="tday-count">{sortedTasks.length}</span>
         </Group>
       </Group>
       {canInteract && editing ? (
-        <Paper withBorder radius="md" p="sm">
-          <Stack gap="xs">
-            <Group justify="space-between" align="center">
-              <Text size="xs" fw={700} c="dimmed" tt="uppercase">
-                {t("editTask")}
-              </Text>
-              <ActionIcon size="sm" variant="subtle" color="gray" onClick={cancelEdit} aria-label={t("cancel")}>
-                <IconX size={14} />
-              </ActionIcon>
-            </Group>
-            <TextInput
-              data-autofocus
+        <div className="tday-composer">
+          <div className="tday-composer-head">
+            <Text className="tday-composer-kicker">{t("editTask")}</Text>
+            <ActionIcon
+              size="sm"
+              variant="subtle"
+              color="gray"
+              radius="xl"
+              onClick={cancelEdit}
+              aria-label={t("cancel")}
+            >
+              <IconX size={14} />
+            </ActionIcon>
+          </div>
+          <TextInput
+            data-autofocus
+            variant="unstyled"
+            classNames={{ input: "tday-composer-input" }}
+            aria-label={t("editTask")}
+            value={editTitle}
+            onChange={(event) => setEditTitle(event.currentTarget.value)}
+            onKeyDown={(event) => {
+              // IME composition: Enter commits and Escape cancels the conversion, not the composer.
+              if (event.nativeEvent.isComposing) return;
+              if (event.key === "Enter") {
+                event.preventDefault();
+                handleEditSave();
+              }
+              if (event.key === "Escape") {
+                cancelEdit();
+                restoreFocus();
+              }
+            }}
+            placeholder={t("quickAddPlaceholder")}
+            disabled={updateMutation.isPending}
+          />
+          <div className="tday-composer-controls">
+            {prioritySelect(editPriority, setEditPriority, updateMutation.isPending)}
+            {listSelect(editListId, setEditListId, updateMutation.isPending)}
+            {editing.kind !== "floater" && duePicker(editDue, setEditDue, updateMutation.isPending)}
+          </div>
+          {editError && (
+            <Text size="xs" c="red" px={10} pt={6}>
+              {editError}
+            </Text>
+          )}
+          <div className="tday-composer-actions">
+            <Button
               size="xs"
-              radius="md"
-              value={editTitle}
-              onChange={(event) => setEditTitle(event.currentTarget.value)}
+              radius="xl"
+              variant={confirmDelete ? "light" : "subtle"}
+              color="red"
+              className={confirmDelete ? "tday-delete-confirm" : undefined}
+              leftSection={<IconTrash size={14} />}
+              onClick={handleDelete}
+              loading={deleteMutation.isPending}
+            >
+              {confirmDelete ? t("confirmDelete") : t("delete")}
+            </Button>
+            <Group gap={6} justify="flex-end" style={{ marginLeft: "auto" }}>
+              <Button size="xs" radius="xl" variant="subtle" color="gray" onClick={cancelEdit}>
+                {t("cancel")}
+              </Button>
+              <Button
+                size="xs"
+                radius="xl"
+                leftSection={<IconCheck size={14} />}
+                onClick={handleEditSave}
+                loading={updateMutation.isPending}
+                disabled={!editTitle.trim()}
+              >
+                {t("save")}
+              </Button>
+            </Group>
+          </div>
+        </div>
+      ) : options.showQuickAdd && canInteract ? (
+        adding ? (
+          <div className="tday-composer">
+            <Textarea
+              data-autofocus
+              autosize
+              minRows={1}
+              maxRows={6}
+              variant="unstyled"
+              classNames={{ input: "tday-composer-input" }}
+              aria-label={t("newTask")}
+              value={draft}
+              onChange={(event) => setDraft(event.currentTarget.value)}
               onKeyDown={(event) => {
-                if (event.key === "Enter") {
+                // IME composition: Enter commits and Escape cancels the conversion, not the composer.
+                if (event.nativeEvent.isComposing) return;
+                if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
                   event.preventDefault();
-                  handleEditSave();
+                  handleQuickAdd();
+                }
+                if (event.key === "Escape") {
+                  cancelAdd();
+                  restoreFocus();
                 }
               }}
               placeholder={t("quickAddPlaceholder")}
-              disabled={updateMutation.isPending}
+              disabled={quickAddMutation.isPending}
             />
-            <Group gap="xs" grow align="flex-start">
-              {prioritySelect(editPriority, setEditPriority, updateMutation.isPending)}
-              {listSelect(editListId, setEditListId, updateMutation.isPending)}
-            </Group>
-            {editing.kind !== "floater" && duePicker(editDue, setEditDue, updateMutation.isPending)}
-            {editError && (
-              <Text size="xs" c="red">
-                {editError}
+            <div className="tday-composer-controls">
+              {prioritySelect(priority, setPriority, quickAddMutation.isPending)}
+              {listSelect(listId, setListId, quickAddMutation.isPending)}
+              {view !== "floater" && duePicker(addDue, setAddDue, quickAddMutation.isPending)}
+            </div>
+            {addError && (
+              <Text size="xs" c="red" px={10} pt={6}>
+                {addError}
               </Text>
             )}
-            <Group gap="xs" justify="space-between" wrap="nowrap">
-              <Button
-                size="xs"
-                radius="md"
-                variant="subtle"
-                color="red"
-                leftSection={<IconTrash size={14} />}
-                onClick={handleDelete}
-                loading={deleteMutation.isPending}
-              >
-                {confirmDelete ? t("confirmDelete") : t("delete")}
-              </Button>
-              <Group gap="xs" wrap="nowrap">
-                <Button size="xs" radius="md" variant="default" onClick={cancelEdit} disabled={updateMutation.isPending}>
+            <div className="tday-composer-actions">
+              <Text className="tday-composer-hint">{t("quickAddShortcutHint")}</Text>
+              <Group gap={6} justify="flex-end" style={{ marginLeft: "auto" }}>
+                {/* Never disabled: the only remaining dismiss path while the request is in flight. */}
+                <Button size="xs" radius="xl" variant="subtle" color="gray" onClick={cancelAdd}>
                   {t("cancel")}
                 </Button>
                 <Button
                   size="xs"
-                  radius="md"
-                  leftSection={<IconCheck size={14} />}
-                  onClick={handleEditSave}
-                  loading={updateMutation.isPending}
-                  disabled={!editTitle.trim()}
-                >
-                  {t("save")}
-                </Button>
-              </Group>
-            </Group>
-          </Stack>
-        </Paper>
-      ) : options.showQuickAdd && canInteract ? (
-        adding ? (
-          <Paper withBorder radius="md" p="sm">
-            <Stack gap="xs">
-              <Group justify="space-between" align="center">
-                <Text size="xs" fw={700} c="dimmed" tt="uppercase">
-                  {t("newTask")}
-                </Text>
-                <ActionIcon size="sm" variant="subtle" color="gray" onClick={cancelAdd} aria-label={t("cancel")}>
-                  <IconX size={14} />
-                </ActionIcon>
-              </Group>
-              <Textarea
-                data-autofocus
-                autosize
-                minRows={1}
-                maxRows={6}
-                size="xs"
-                radius="md"
-                value={draft}
-                onChange={(event) => setDraft(event.currentTarget.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
-                    event.preventDefault();
-                    handleQuickAdd();
-                  }
-                }}
-                placeholder={t("quickAddPlaceholder")}
-                disabled={quickAddMutation.isPending}
-              />
-              <Group gap="xs" grow align="flex-start">
-                {prioritySelect(priority, setPriority, quickAddMutation.isPending)}
-                {listSelect(listId, setListId, quickAddMutation.isPending)}
-              </Group>
-              {view !== "floater" && duePicker(addDue, setAddDue, quickAddMutation.isPending)}
-              {addError && (
-                <Text size="xs" c="red">
-                  {addError}
-                </Text>
-              )}
-              <Group gap="xs" justify="flex-end">
-                <Button size="xs" radius="md" variant="default" onClick={cancelAdd} disabled={quickAddMutation.isPending}>
-                  {t("cancel")}
-                </Button>
-                <Button
-                  size="xs"
-                  radius="md"
+                  radius="xl"
                   leftSection={<IconPlus size={14} />}
                   onClick={handleQuickAdd}
                   loading={quickAddMutation.isPending}
@@ -475,32 +575,31 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
                   {t("quickAdd")}
                 </Button>
               </Group>
-            </Stack>
-          </Paper>
+            </div>
+          </div>
         ) : (
-          <Button
-            size="xs"
-            radius="md"
-            variant="light"
-            leftSection={<IconPlus size={14} />}
-            onClick={() => setAdding(true)}
-            fullWidth
-          >
-            {t("quickAdd")}
-          </Button>
+          <UnstyledButton ref={ghostAddRef} className="tday-add-ghost" onClick={() => setAdding(true)}>
+            <span className="tday-add-ghost-circle" aria-hidden>
+              <IconPlus size={12} stroke={2.5} />
+            </span>
+            <span className="tday-add-ghost-label">{t("addTaskHint")}</span>
+          </UnstyledButton>
         )
       ) : null}
-      <ScrollArea style={{ flex: 1 }} type="auto" offsetScrollbars="y">
+      <ScrollArea className="tday-scroll" style={{ flex: 1, minHeight: 0 }} type="auto" offsetScrollbars="y">
         {sortedTasks.length === 0 ? (
           <Center h="100%">
-            <Stack align="center" gap={6}>
-              <ThemeIcon variant="light" color="gray" radius="xl" size="lg">
-                <IconChecklist size={18} />
-              </ThemeIcon>
-              <Text c="dimmed" size="sm">
+            <div className="tday-empty">
+              <span className="tday-empty-mark">
+                <IconCheck size={15} stroke={2.5} />
+              </span>
+              <Text size="sm" fw={600}>
+                {t("emptyAllClear")}
+              </Text>
+              <Text size="xs" c="dimmed" ta="center">
                 {t("empty")}
               </Text>
-            </Stack>
+            </div>
           </Center>
         ) : (
           <Stack gap={2}>
@@ -508,6 +607,7 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
               <Group
                 key={`${task.kind}-${task.id}-${task.instanceDate ?? task.due ?? ""}`}
                 className="tday-task-row"
+                data-completing={pendingId === task.id ? "true" : undefined}
                 gap="xs"
                 wrap="nowrap"
                 align="flex-start"
@@ -526,13 +626,13 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
                       <IconCheck size={12} stroke={3} />
                     </UnstyledButton>
                   )}
-                  <Text size="sm" fw={500} style={{ flex: 1, overflowWrap: "anywhere" }}>
+                  <Text size="sm" fw={500} className="tday-task-title" style={{ flex: 1, overflowWrap: "anywhere" }}>
                     {task.title}
                   </Text>
                 </Group>
                 <Group gap={8} wrap="nowrap" align="center" style={{ flexShrink: 0, marginTop: 1 }}>
                   {renderDue(task)}
-                  <span style={{ width: 18, display: "inline-flex", justifyContent: "center", flexShrink: 0 }}>
+                  <span className="tday-list-slot">
                     {task.listName ? (
                       <Tooltip label={task.listName} withinPortal openDelay={300}>
                         <span style={{ display: "inline-flex" }} aria-label={task.listName}>
@@ -563,13 +663,119 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
           </Stack>
         )}
       </ScrollArea>
+      {toast && (
+        <output key={toast.nonce} className="tday-toast" aria-live="polite">
+          <span className="tday-toast-check" aria-hidden>
+            <IconCheck size={12} stroke={3} />
+          </span>
+          <Text className="tday-toast-label">{t("completedToast")}</Text>
+          <UnstyledButton className="tday-toast-undo" onClick={() => void handleUndo()}>
+            {t("undo")}
+          </UnstyledButton>
+          <ActionIcon
+            size="sm"
+            variant="subtle"
+            color="gray"
+            radius="xl"
+            onClick={() => setToast(null)}
+            aria-label={t("cancel")}
+          >
+            <IconX size={13} />
+          </ActionIcon>
+        </output>
+      )}
     </Stack>
   );
 };
 
+interface ViewIdentity {
+  // Light-/dark-theme accent (fed to CSS as custom properties; CSS picks via light-dark()).
+  accentLight: string;
+  accentDark: string;
+  HeaderIcon: LucideIcon;
+  watermark: ReactNode;
+  // Ported filled paths tint via fill; lucide watermarks are stroked outlines.
+  watermarkFill: boolean;
+}
+
+// Watermark paths ported verbatim from the native Android widget vector drawables
+// (widget_empty_watermark_*.xml) so the Homarr widget's background reads like the app.
+const WATERMARK_SUN = (
+  <svg viewBox="0 0 24 24" aria-hidden focusable="false">
+    <path d="M6.76,4.84L4.96,3.05L3.55,4.46L5.34,6.25L6.76,4.84ZM1,13H4V11H1V13ZM11,1H13V4H11V1ZM20.04,3.45L21.45,4.86L19.66,6.66L18.25,5.24L20.04,3.45ZM17.24,19.16L19.03,20.96L20.44,19.55L18.64,17.76L17.24,19.16ZM20,11V13H23V11H20ZM12,6C8.69,6 6,8.69 6,12C6,15.31 8.69,18 12,18C15.31,18 18,15.31 18,12C18,8.69 15.31,6 12,6ZM12,16C9.79,16 8,14.21 8,12C8,9.79 9.79,8 12,8C14.21,8 16,9.79 16,12C16,14.21 14.21,16 12,16ZM11,20H13V23H11V20ZM3.55,19.55L4.96,20.96L6.75,19.16L5.34,17.75L3.55,19.55Z" />
+  </svg>
+);
+const WATERMARK_MOON = (
+  <svg viewBox="0 0 24 24" aria-hidden focusable="false">
+    <path d="M11.1,12.08C9.1,8.2 10.18,4.72 11.17,2.81C11.36,2.45 11.05,2.04 10.64,2.09C5.62,2.77 1.78,7.16 1.99,12.41C2,12.41 2,12.41 2,12.42C2.62,12.15 3.29,12 4,12C5.66,12 7.18,12.83 8.1,14.15C9.77,14.63 11,16.17 11,18C11,19.52 10.13,20.83 8.88,21.51C9.86,21.83 10.91,22.01 11.99,22.01C15.12,22.01 17.91,20.57 19.75,18.32C20.01,18 19.79,17.53 19.38,17.5C16.89,17.37 13.1,15.97 11.1,12.08Z" />
+    <path d="M7,16H6.82C6.4,14.84 5.3,14 4,14C2.34,14 1,15.34 1,17C1,18.66 2.34,20 4,20C4.62,20 6.49,20 7,20C8.1,20 9,19.1 9,18C9,16.9 8.1,16 7,16Z" />
+  </svg>
+);
+// Shared lucide leaf (same glyph as the app's floater screen), mirrored horizontally so it points
+// the same way as the iOS "leaf" symbol. Stroked (watermarkFill: false) to match the app.
+const WATERMARK_FLOATER = (
+  <svg viewBox="0 0 24 24" aria-hidden focusable="false">
+    <g transform="translate(24 0) scale(-1 1)">
+      <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
+      <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
+    </g>
+  </svg>
+);
+
+// Accent colours mirror the native widget/category palette (blue today, amber scheduled,
+// red overdue, teal floater; periwinkle for the evening "today" moon).
+const resolveViewIdentity = (view: string, isNight: boolean): ViewIdentity => {
+  switch (view) {
+    case "today":
+      return isNight
+        ? {
+            accentLight: "#8E9FD6",
+            accentDark: "#B8C6F4",
+            HeaderIcon: Moon,
+            watermark: WATERMARK_MOON,
+            watermarkFill: true,
+          }
+        : {
+            accentLight: "#6EA8E1",
+            accentDark: "#8DC3F3",
+            HeaderIcon: Sun,
+            watermark: WATERMARK_SUN,
+            watermarkFill: true,
+          };
+    case "scheduled":
+      return {
+        accentLight: "#C27B36",
+        accentDark: "#E0A45E",
+        HeaderIcon: CalendarClock,
+        watermark: <CalendarClock />,
+        watermarkFill: false,
+      };
+    case "overdue":
+      return {
+        accentLight: "#D0574E",
+        accentDark: "#EC7B73",
+        HeaderIcon: Clock3,
+        watermark: <Clock3 />,
+        watermarkFill: false,
+      };
+    case "floater":
+    default:
+      return {
+        accentLight: "#4D8F83",
+        accentDark: "#7FC7B9",
+        HeaderIcon: Leaf,
+        watermark: WATERMARK_FLOATER,
+        watermarkFill: false,
+      };
+  }
+};
+
 // Tday stores Low/Medium/High; the app surfaces these as Normal/Important/Urgent and shows a
 // filled flag only for Important (orange) / Urgent (red). `flag` null = no flag in task rows.
-const PRIORITY_META: Record<string, { key: "priorityNormal" | "priorityImportant" | "priorityUrgent"; flag: string | null }> = {
+const PRIORITY_META: Record<
+  string,
+  { key: "priorityNormal" | "priorityImportant" | "priorityUrgent"; flag: string | null }
+> = {
   Low: { key: "priorityNormal", flag: null },
   Medium: { key: "priorityImportant", flag: "var(--mantine-color-orange-6)" },
   High: { key: "priorityUrgent", flag: "var(--mantine-color-red-6)" },
@@ -579,12 +785,6 @@ const PRIORITY_RANK: Record<string, number> = { High: 0, Medium: 1, Low: 2 };
 
 // Mantine date pickers emit "YYYY-MM-DD HH:mm"; Tday expects an ISO local datetime ("…THH:mm").
 const toTdayDue = (value: string | null): string | null => (value ? value.replace(" ", "T") : null);
-
-const formatDue = (due: string): string | null => {
-  const parsed = dayjs(due);
-  if (!parsed.isValid()) return null;
-  return parsed.format("YYYY-MM-DD") === dayjs().format("YYYY-MM-DD") ? parsed.format("HH:mm") : parsed.format("MMM D");
-};
 
 const sortTasks = (tasks: TdayTask[], sort: string): TdayTask[] => {
   if (sort === "priority") {

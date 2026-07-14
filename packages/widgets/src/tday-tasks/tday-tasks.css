@@ -1,31 +1,202 @@
-.tday-task-row {
-  padding: 6px 8px;
-  border-radius: var(--mantine-radius-md);
-  transition: background-color 120ms ease;
+/* Tday Tasks widget — "Precision Instrument".
+   A per-view accent (blue today / amber scheduled / red overdue / teal floater, mirroring the
+   native app) plus the product's two semantic colors (orange/red priority flags).
+   All colors via Mantine variables + light-dark() so any board theme flows through. */
+
+/* ---------- root & hairline token ---------- */
+.tday-root {
+  --tday-hairline: color-mix(in srgb, var(--mantine-color-default-border) 65%, transparent);
+  /* Per-view accent, fed as custom properties from the component; falls back to the board primary. */
+  --tday-accent: light-dark(
+    var(--tday-accent-light, var(--mantine-primary-color-filled)),
+    var(--tday-accent-dark, var(--mantine-primary-color-filled))
+  );
+  --tday-accent-contrast: light-dark(#ffffff, #14161c);
+  --tday-accent-soft: color-mix(in srgb, var(--tday-accent) 14%, transparent);
+  position: relative;
+  container-type: inline-size;
 }
 
-.tday-task-row:hover {
+/* Focused programmatically after an Escape-dismissed composer, as the last-resort target. */
+.tday-root:focus {
+  outline: none;
+}
+
+/* ---------- per-view background watermark (mirrors the native widget) ---------- */
+.tday-watermark-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.tday-watermark {
+  position: absolute;
+  right: -6%;
+  bottom: -7%;
+  width: 54%;
+  min-width: 118px;
+  max-width: 196px;
+  aspect-ratio: 1 / 1;
+  color: var(--tday-accent);
+  transform: rotate(-7deg);
+}
+
+.tday-watermark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.tday-watermark--fill svg {
+  fill: currentColor;
+  opacity: 0.08;
+}
+
+.tday-watermark--stroke svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.12;
+}
+
+/* Real content sits above the watermark (which is a positioned z-index:0 layer). */
+.tday-header,
+.tday-composer,
+.tday-add-ghost,
+.tday-scroll,
+.tday-toast {
+  position: relative;
+  z-index: 1;
+}
+
+.tday-view-icon {
+  flex-shrink: 0;
+  color: var(--tday-accent);
+}
+
+/* ---------- header: masthead ---------- */
+.tday-header {
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--tday-hairline);
+}
+
+.tday-header-title {
+  letter-spacing: -0.01em;
+}
+
+.tday-count {
+  flex-shrink: 0;
+  font-size: calc(0.65625rem * var(--mantine-scale));
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  padding: 3px 7px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--tday-accent) 35%, var(--mantine-color-default-border));
+  color: color-mix(in srgb, var(--tday-accent) 60%, var(--mantine-color-dimmed));
+}
+
+/* ---------- ghost add row: an "unborn checkbox" aligned with the real ones ---------- */
+.tday-add-ghost {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: var(--mantine-radius-md);
+  transition: background-color 140ms ease;
+}
+
+.tday-add-ghost:hover,
+.tday-add-ghost:focus-visible {
   background-color: var(--mantine-color-default-hover);
 }
 
-.tday-task-edit {
-  opacity: 0;
-  transition: opacity 120ms ease;
+.tday-add-ghost:focus-visible {
+  outline: 2px solid var(--tday-accent);
+  outline-offset: -2px;
 }
 
-.tday-task-row:hover .tday-task-edit,
-.tday-task-edit:focus-visible {
-  opacity: 1;
+.tday-add-ghost-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border: 1.5px dashed var(--mantine-color-default-border);
+  border-radius: 50%;
+  color: var(--mantine-color-dimmed);
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    color 140ms ease;
 }
 
-/* Touch devices have no hover — keep the edit affordance reachable. */
-@media (hover: none) {
-  .tday-task-edit {
-    opacity: 0.55;
-  }
+.tday-add-ghost:hover .tday-add-ghost-circle,
+.tday-add-ghost:focus-visible .tday-add-ghost-circle {
+  border-style: solid;
+  border-color: var(--tday-accent);
+  background-color: var(--tday-accent-soft);
+  color: var(--tday-accent);
 }
 
-/* Complete control: empty checkbox -> light green on hover -> dark green while sending/reloading. */
+.tday-add-ghost-label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--mantine-font-size-sm);
+  color: var(--mantine-color-dimmed);
+  transition: color 140ms ease;
+}
+
+.tday-add-ghost:hover .tday-add-ghost-label,
+.tday-add-ghost:focus-visible .tday-add-ghost-label {
+  color: var(--mantine-color-text);
+}
+
+/* ---------- task rows ---------- */
+.tday-task-row {
+  padding: 6px 8px;
+  border-radius: var(--mantine-radius-md);
+  transition:
+    background-color 120ms ease,
+    opacity 200ms ease;
+  animation: tday-row-in 160ms ease backwards;
+}
+
+.tday-task-row:hover,
+.tday-task-row:focus-within {
+  background-color: var(--mantine-color-default-hover);
+}
+
+/* The task reads finished for the whole complete round-trip (pendingId persists through refetch). */
+.tday-task-row[data-completing] {
+  opacity: 0.55;
+}
+
+.tday-task-title {
+  line-height: 1.4;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  text-decoration-color: transparent;
+  transition:
+    color 200ms ease,
+    text-decoration-color 200ms ease;
+}
+
+.tday-task-row[data-completing] .tday-task-title {
+  color: var(--mantine-color-dimmed);
+  text-decoration-color: var(--mantine-color-dimmed);
+}
+
+/* ---------- complete control: circle -> accent preview -> accent fill ---------- */
 .tday-task-check {
   display: inline-flex;
   align-items: center;
@@ -33,29 +204,288 @@
   flex-shrink: 0;
   width: 18px;
   height: 18px;
-  border: 1.5px solid var(--mantine-color-gray-5);
-  border-radius: var(--mantine-radius-sm);
+  border: 1.5px solid light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-3));
+  border-radius: 50%;
   background-color: transparent;
   color: transparent;
   cursor: pointer;
   transition:
-    background-color 120ms ease,
-    border-color 120ms ease,
-    color 120ms ease;
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
 }
 
-.tday-task-check:hover {
-  border-color: var(--mantine-color-green-5);
-  background-color: var(--mantine-color-green-5);
-  color: #fff;
+.tday-task-check svg {
+  transform: scale(0.6);
+  transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.tday-task-check:hover,
+.tday-task-check:focus-visible {
+  border-color: var(--tday-accent);
+  color: var(--tday-accent);
+}
+
+.tday-task-check:hover svg,
+.tday-task-check:focus-visible svg,
+.tday-task-check[data-loading="true"] svg {
+  transform: scale(1);
+}
+
+.tday-task-check:active {
+  transform: scale(0.92);
+}
+
+.tday-task-check:focus-visible {
+  outline: 2px solid var(--tday-accent);
+  outline-offset: 2px;
 }
 
 .tday-task-check[data-loading="true"] {
-  border-color: var(--mantine-color-green-9);
-  background-color: var(--mantine-color-green-9);
-  color: #fff;
+  border-color: var(--tday-accent);
+  background-color: var(--tday-accent);
+  color: var(--tday-accent-contrast);
   cursor: default;
-  animation: tday-check-pulse 1s ease-in-out infinite;
+  animation:
+    tday-check-pop 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    tday-check-pulse 1.2s ease-in-out 300ms infinite;
+}
+
+/* ---------- due column: fixed width so every row's meta aligns ---------- */
+.tday-due {
+  width: 56px;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-align: right;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: calc(0.6875rem * var(--mantine-scale));
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  color: var(--mantine-color-dimmed);
+}
+
+.tday-due[data-tone="today"] {
+  color: var(--mantine-color-text);
+  font-weight: 500;
+}
+
+.tday-due[data-tone="overdue"] {
+  color: light-dark(var(--mantine-color-red-7), var(--mantine-color-red-4));
+  font-weight: 600;
+}
+
+/* ---------- fixed meta slots ---------- */
+.tday-list-slot {
+  width: 18px;
+  display: inline-flex;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ---------- hover-revealed edit ---------- */
+.tday-task-edit {
+  opacity: 0;
+  transform: translateX(2px);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.tday-task-row:hover .tday-task-edit,
+.tday-task-row:focus-within .tday-task-edit,
+.tday-task-edit:focus-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Touch devices have no hover — keep the edit affordance reachable. */
+@media (hover: none) {
+  .tday-task-edit {
+    opacity: 0.55;
+    transform: none;
+  }
+}
+
+/* ---------- composer: one hairline frame shared by quick add and edit ---------- */
+.tday-composer {
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: 12px;
+  transition: border-color 140ms ease;
+  animation: tday-rise 140ms ease-out;
+}
+
+.tday-composer:focus-within {
+  border-color: color-mix(in srgb, var(--tday-accent) 55%, var(--mantine-color-default-border));
+}
+
+.tday-composer-input {
+  padding: 8px 10px;
+  font-size: var(--mantine-font-size-sm);
+  line-height: 1.45;
+}
+
+.tday-composer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px 0;
+}
+
+.tday-composer-kicker {
+  font-size: calc(0.625rem * var(--mantine-scale));
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--mantine-color-dimmed);
+}
+
+.tday-composer-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--tday-hairline);
+}
+
+/* Wraps at narrow widths; the button cluster right-aligns itself via margin-left auto in the TSX. */
+.tday-composer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  row-gap: 4px;
+  padding: 6px 8px 8px;
+}
+
+.tday-composer-hint {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: calc(0.65625rem * var(--mantine-scale));
+  color: var(--mantine-color-dimmed);
+}
+
+.tday-delete-confirm {
+  animation: tday-nudge 260ms ease;
+}
+
+/* ---------- empty state: the "completed" end-state of the row checkboxes ---------- */
+.tday-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  animation: tday-rise 240ms ease-out;
+}
+
+.tday-empty-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 2px;
+  border-radius: 50%;
+  background: var(--tday-accent-soft);
+  color: var(--tday-accent);
+}
+
+/* ---------- in-widget completion toast (replaces Homarr's global corner toast) ---------- */
+.tday-toast {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 10px;
+  border-radius: 11px;
+  background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+  border: 1px solid var(--mantine-color-default-border);
+  box-shadow:
+    0 8px 24px -10px rgba(0, 0, 0, 0.5),
+    0 2px 6px -3px rgba(0, 0, 0, 0.3);
+  animation: tday-toast-in 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tday-toast-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--tday-accent);
+  color: var(--tday-accent-contrast);
+}
+
+.tday-toast-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: calc(0.8125rem * var(--mantine-scale));
+  font-weight: 500;
+  color: var(--mantine-color-text);
+}
+
+.tday-toast-undo {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: calc(0.75rem * var(--mantine-scale));
+  font-weight: 600;
+  color: var(--tday-accent);
+  transition: background-color 120ms ease;
+}
+
+.tday-toast-undo:hover,
+.tday-toast-undo:focus-visible {
+  background: var(--tday-accent-soft);
+}
+
+/* ---------- keyframes ---------- */
+@keyframes tday-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+}
+
+@keyframes tday-rise {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes tday-check-pop {
+  0% {
+    transform: scale(1);
+  }
+
+  55% {
+    transform: scale(1.15);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 @keyframes tday-check-pulse {
@@ -63,7 +493,77 @@
   100% {
     opacity: 1;
   }
+
   50% {
-    opacity: 0.6;
+    opacity: 0.65;
+  }
+}
+
+@keyframes tday-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  30% {
+    transform: translateX(-2px);
+  }
+
+  60% {
+    transform: translateX(2px);
+  }
+}
+
+@keyframes tday-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- narrow widget (progressive enhancement) ----------
+   @container measures .tday-root's CONTENT box — its 12px padding per side is already gone,
+   so these thresholds are ~24px below the intended outer widget widths (240px / 280px). */
+@container (max-width: 215px) {
+  .tday-list-slot {
+    display: none;
+  }
+
+  /* Dated labels shrink to content and empty due spans collapse, returning width to the title. */
+  .tday-due {
+    width: auto;
+    max-width: 56px;
+  }
+}
+
+@container (max-width: 255px) {
+  .tday-composer-hint {
+    display: none;
+  }
+}
+
+/* Forced colors ignores text-decoration-color, so the transparent-until-completing trick would
+   strike through every title. Gate the decoration itself instead (no fade, correct semantics). */
+@media (forced-colors: active) {
+  .tday-task-title {
+    text-decoration-line: none;
+  }
+
+  .tday-task-row[data-completing] .tday-task-title {
+    text-decoration-line: line-through;
+  }
+}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .tday-root,
+  .tday-root * {
+    animation: none !important;
+    transition: none !important;
   }
 }

@@ -19,7 +19,7 @@ export const tdayRouter = createTRPCRouter({
     .input(tdayTasksInputSchema)
     .query(async ({ ctx, input }) => {
       const handler = tdayTasksRequestHandler.handler(ctx.integration, { view: input.view });
-      const { data } = await handler.getCachedOrUpdatedDataAsync({ forceUpdate: false });
+      const { data } = await handler.getDataAsync();
       return data;
     }),
   getLists: publicProcedure
@@ -35,7 +35,7 @@ export const tdayRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const instance = await createIntegrationAsync(ctx.integration);
       await instance.completeTaskAsync(input.id, input.kind, input.instanceDate);
-      await invalidateAllViewsAsync(ctx.integration);
+      tdayTasksRequestHandler.invalidateCache();
     }),
   uncomplete: protectedProcedure
     .concat(createOneIntegrationMiddleware("interact", "tday"))
@@ -43,7 +43,7 @@ export const tdayRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const instance = await createIntegrationAsync(ctx.integration);
       await instance.uncompleteTaskAsync(input.id, input.kind, input.instanceDate);
-      await invalidateAllViewsAsync(ctx.integration);
+      tdayTasksRequestHandler.invalidateCache();
     }),
   delete: protectedProcedure
     .concat(createOneIntegrationMiddleware("interact", "tday"))
@@ -51,7 +51,7 @@ export const tdayRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const instance = await createIntegrationAsync(ctx.integration);
       await instance.deleteTaskAsync(input.kind, input.id, input.instanceDate);
-      await invalidateAllViewsAsync(ctx.integration);
+      tdayTasksRequestHandler.invalidateCache();
     }),
   update: protectedProcedure
     .concat(createOneIntegrationMiddleware("interact", "tday"))
@@ -64,31 +64,15 @@ export const tdayRouter = createTRPCRouter({
         listId: input.listId,
         due: input.due,
       });
-      await invalidateAllViewsAsync(ctx.integration);
+      tdayTasksRequestHandler.invalidateCache();
     }),
   quickAdd: protectedProcedure
     .concat(createOneIntegrationMiddleware("interact", "tday"))
     .input(tdayQuickAddInputSchema)
     .mutation(async ({ ctx, input }) => {
       const instance = await createIntegrationAsync(ctx.integration);
-      const result = await instance.createTasksAsync(
-        input.view,
-        input.titles,
-        input.priority,
-        input.listId,
-        input.due,
-      );
-      await invalidateAllViewsAsync(ctx.integration);
+      const result = await instance.createTasksAsync(input.view, input.titles, input.priority, input.listId, input.due);
+      tdayTasksRequestHandler.invalidateCache();
       return result;
     }),
 });
-
-// A mutation in one view (e.g. completing a task) can affect what the other views show,
-// so refresh every cached view for this integration.
-const invalidateAllViewsAsync = async (integration: Parameters<typeof tdayTasksRequestHandler.handler>[0]) => {
-  await Promise.all(
-    (["today", "scheduled", "overdue", "floater"] as const).map((view) =>
-      tdayTasksRequestHandler.handler(integration, { view }).invalidateAsync(),
-    ),
-  );
-};
