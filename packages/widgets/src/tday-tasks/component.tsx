@@ -115,6 +115,10 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
   const restoreFocus = () => {
     requestAnimationFrame(() => (ghostAddRef.current ?? rootRef.current)?.focus());
   };
+  // Focus the composer's input the moment it opens, so one tap on the ghost row (or the pencil) is
+  // enough to start typing. Mantine's data-autofocus only fires inside a focus trap, so do it here.
+  const draftInputRef = useRef<HTMLInputElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
 
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -131,6 +135,13 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
   const [editDue, setEditDue] = useState<string | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  useEffect(() => {
+    if (adding) draftInputRef.current?.focus();
+  }, [adding]);
+  useEffect(() => {
+    if (editing) editInputRef.current?.focus();
+  }, [editing]);
 
   // Lists for the chosen view (todo-lists, or floater-lists for the floater view).
   // Fetched once the add or edit panel is opened.
@@ -462,7 +473,7 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
             </ActionIcon>
           </div>
           <TextInput
-            data-autofocus
+            ref={editInputRef}
             variant="unstyled"
             classNames={{ input: "tday-composer-input" }}
             spellCheck
@@ -541,7 +552,7 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
         adding ? (
           <div className="tday-composer">
             <TextInput
-              data-autofocus
+              ref={draftInputRef}
               variant="unstyled"
               classNames={{ input: "tday-composer-input" }}
               spellCheck
