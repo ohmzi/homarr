@@ -93,6 +93,8 @@
   --ohmz-l-panel: #f0edea;
   --ohmz-l-line: #ddd7d0;
   --ohmz-l-text: #1a1917;
+  /* Never pure #fff — straight from ohmz.css's reasoning. */
+  --ohmz-off-white: #f6f4f2;
   /* Light-mode link/text amber. The dark-mode #e0913f measures below 4.5:1 on
      a light canvas; this is the ratio-cleared value from the brand tokens. */
   --ohmz-l-amber-text: #94571a;
@@ -107,6 +109,14 @@
   --mantine-color-default-border: var(--ohmz-l-line);
   --mantine-color-text: var(--ohmz-l-text);
   --mantine-color-anchor: var(--ohmz-l-amber-text);
+
+  /* Board tiles, cards and every other raised light surface read
+     --mantine-color-white, which is pure #fff. Pure white against warm greys is
+     the single biggest tell that a theme is bolted on, and because the board is
+     mostly tiles it made the whole page look white rather than warm.
+     ai-stack/branding/ohmz.css makes the same move on Tailwind's --color-white.
+     Inputs are deliberately exempt below — Ohmz AI keeps those on true white. */
+  --mantine-color-white: var(--ohmz-off-white);
 }
 
 [data-mantine-color-scheme="dark"] {
@@ -193,12 +203,15 @@
    with a line border at 10px/10px-12px. There is no card here, so the raise
    colour is what separates a field from the canvas behind it. */
 .ohmz-auth-screen {
+  /* 44px flat, not a min-height: Mantine's own line-height pushed these past
+     Ohmz AI's fields, and a login that is the "same app" has to agree on the
+     one measurement the eye actually compares. */
   :is(.mantine-TextInput-input, .mantine-PasswordInput-input) {
     background-color: var(--ohmz-raise);
     border: 1px solid var(--ohmz-line);
     border-radius: 10px;
-    padding: 10px 12px;
-    height: auto;
+    padding: 0 12px;
+    height: 2.75rem;
     min-height: 2.75rem;
 
     &:focus,

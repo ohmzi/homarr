@@ -31,7 +31,8 @@ export default async function Login(props: LoginProps) {
     // mih fills the viewport so the card is optically centred instead of
     // stranded at the top with dead space under it.
     <Center component="main" mih="100dvh" px="md" py="xl" className="ohmz-auth-screen">
-      <Stack align="center" gap="xl" w={520} maw="90vw">
+      {/* 24rem is Tailwind's max-w-sm, the width the Ohmz AI auth form uses. */}
+      <Stack align="center" gap="xl" w={384} maw="90vw">
         <Stack align="center" gap="lg">
           {/* Circular amber badge, as on the OhmzAI sign-in: the filled amber
               square with a centred omega, so a round crop lands the glyph dead
