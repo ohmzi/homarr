@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
 
 import "@gfazioli/mantine-onboarding-tour/styles.css";
 import "@homarr/notifications/styles.css";
@@ -7,6 +6,7 @@ import "@homarr/spotlight/styles.css";
 import "@homarr/ui/styles.css";
 import "mantine-datatable/styles.css";
 import "~/styles/color-scheme.scss";
+import "~/styles/ohmz-brand.scss";
 import "~/styles/scroll-area.scss";
 
 import { notFound } from "next/navigation";
@@ -38,29 +38,33 @@ import { AuthProvider } from "./_client-providers/session";
 import { TRPCReactProvider } from "./_client-providers/trpc";
 import { composeWrappers } from "./compose";
 
-const fontSans = Inter({
-  subsets: ["latin"],
-  variable: "--font-sans",
-});
-
 // eslint-disable-next-line no-restricted-syntax
 export const generateMetadata = async (): Promise<Metadata> => ({
-  title: "Homarr",
+  title: "Ohmz HomeLab",
   description:
     "A self-hosted dashboard for the *arr stack and your entire homelab. Integrates with 50+ services, real-time widgets, no config files.",
   openGraph: {
-    title: "Homarr Dashboard",
+    title: "Ohmz HomeLab",
     description:
       "A self-hosted dashboard for the *arr stack and your entire homelab. Integrates with 50+ services, real-time widgets, no config files.",
     url: "https://homarr.dev",
-    siteName: "Homarr",
+    siteName: "Ohmz HomeLab",
   },
+  // Declared explicitly and in preference order so browsers never fall back to
+  // a generated letter tile. The filled amber square is deliberate here: a tab
+  // favicon sits on the browser's own chrome, where a transparent glyph would
+  // vanish. The bare omega is for the in-app header only.
   icons: {
-    icon: "/logo/logo.png",
-    apple: "/logo/logo.png",
+    icon: [
+      { url: "/logo/favicon.svg", type: "image/svg+xml" },
+      { url: "/logo/favicon-96x96.png", type: "image/png", sizes: "96x96" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/logo/apple-touch-icon.png",
   },
   appleWebApp: {
-    title: "Homarr",
+    title: "Ohmz HomeLab",
     capable: true,
     startupImage: { url: "/logo/logo.png" },
     statusBarStyle: (await getCurrentColorSchemeAsync()) === "dark" ? "black-translucent" : "default",
@@ -134,7 +138,10 @@ export default async function Layout(props: {
       dir={direction}
       data-mantine-color-scheme={colorScheme}
       style={{
-        backgroundColor: colorScheme === "dark" ? "#242424" : colorScheme === "auto" ? undefined : "#fff",
+        // Brand canvases (--ohmz-canvas / --ohmz-l-canvas). These must match the
+        // Mantine body colour exactly, otherwise any page shorter than the
+        // viewport shows a hard seam where <html> takes over from <body>.
+        backgroundColor: colorScheme === "dark" ? "#1a1917" : colorScheme === "auto" ? undefined : "#faf9f7",
       }}
       suppressHydrationWarning
     >
@@ -142,7 +149,7 @@ export default async function Layout(props: {
         <SearchEngineOptimization />
         <CrowdinLiveTranslation locale={locale} />
       </head>
-      <body className={[fontSans.className, fontSans.variable].join(" ")} suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <Analytics enabled={serverSettings.analytics.enableGeneral} />
         <StackedProvider>
           <Notifications pauseResetOnHover="notification" />

@@ -29,25 +29,29 @@ export default async function Login(props: LoginProps) {
   const t = await getScopedI18n("user.page.login");
 
   return (
-    <Center>
-      <Stack align="center" mt="xl">
-        <HomarrLogoWithTitle size="lg" />
-        <Stack gap={6} align="center">
-          <Title order={3} fw={400} ta="center">
-            {t("title")}
-          </Title>
-          <Text size="sm" c="gray.5" ta="center">
-            {t("subtitle")}
-          </Text>
+    // mih fills the viewport so the card is optically centred instead of
+    // stranded at the top with dead space under it.
+    <Center component="main" mih="100dvh" px="md" py="xl" className="ohmz-auth-screen">
+      <Stack align="center" gap="xl" w={64 * 6} maw="90vw">
+        <Stack align="center" gap="sm">
+          <HomarrLogoWithTitle size="lg" />
+          <Stack gap={4} align="center">
+            <Title order={3} fw={500} ta="center">
+              {t("title")}
+            </Title>
+            <Text size="sm" c="dimmed" ta="center">
+              {t("subtitle")}
+            </Text>
+          </Stack>
         </Stack>
         {appEnv.DEMO_MODE && (
-          <Alert icon={<IconLogin size={18} />} color="blue" variant="light" w={64 * 6} maw="90vw">
+          <Alert icon={<IconLogin size={18} />} color="blue" variant="light" w="100%">
             <Text size="sm" fw={500}>
               Demo mode is enabled. Sign in with username <Code>demo</Code> and password <Code>demo</Code>
             </Text>
           </Alert>
         )}
-        <Card w={64 * 6} maw="90vw">
+        <Card w="100%" p="xl" radius="lg" withBorder className="ohmz-auth-card">
           <LoginForm
             providers={env.AUTH_PROVIDERS}
             oidcClientName={env.AUTH_OIDC_CLIENT_NAME}

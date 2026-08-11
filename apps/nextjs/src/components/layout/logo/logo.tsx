@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Image from "next/image";
 import type { TitleOrder } from "@mantine/core";
 import { Group, Title } from "@mantine/core";
@@ -26,7 +27,8 @@ const logoWithTitleSizes = {
 
 export interface LogoWithTitleProps {
   size: keyof typeof logoWithTitleSizes;
-  title: string;
+  /** A node rather than a string so the brand lockup can two-tone the wordmark. */
+  title: ReactNode;
   image: Omit<LogoProps, "size">;
   hideTitleOnMobile?: boolean;
 }

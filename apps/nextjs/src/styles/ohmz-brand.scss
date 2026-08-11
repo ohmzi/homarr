@@ -1,0 +1,169 @@
+/* ============================================================================
+   Ohmz HomeLab brand skin.
+
+   Palette, radius and fonts are ported from the ohmz-cloud project
+   (~/StudioProjects/ohmz-cloud/src/styles/tokens.css), whose --ohmz-* block is
+   itself a verbatim snapshot of ~/ai-stack/branding/ohmz.css — the source of
+   truth for the brand.
+
+   The warm-grey ramp is wired into Mantine through the `dark` colour tuple in
+   packages/ui/src/theme.ts, which maps onto Mantine's own dark-scheme
+   semantics (body = dark[7], surface = dark[6], hover = dark[5],
+   border = dark[4]). That means the surfaces below need no overrides here;
+   this file only carries the webfonts, the raw tokens and the handful of
+   values Mantine does not derive from the tuple.
+   ========================================================================= */
+
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/ohmz/space-grotesk-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/ohmz/space-grotesk-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF,
+    U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/ohmz/ibm-plex-mono-400-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/ohmz/ibm-plex-mono-400-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF,
+    U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/ohmz/ibm-plex-mono-500-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/ohmz/ibm-plex-mono-500-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF,
+    U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+  --ohmz-canvas: #1a1917;
+  --ohmz-panel: #211f1d;
+  --ohmz-raise: #262421;
+  --ohmz-hover: #2d2a26;
+  --ohmz-line: #3a3733;
+  --ohmz-line-soft: #302d2a;
+  --ohmz-text: #f0edea;
+  --ohmz-secondary: #cbc5be;
+  --ohmz-muted: #8b857e;
+  --ohmz-amber: #e0913f;
+  --ohmz-amber-bright: #edaa5f;
+  --ohmz-on-amber: #241f18;
+  --ohmz-code: #131211;
+
+  --ohmz-l-canvas: #faf9f7;
+  --ohmz-l-panel: #f0edea;
+  --ohmz-l-line: #ddd7d0;
+  --ohmz-l-text: #1a1917;
+  /* Light-mode link/text amber. The dark-mode #e0913f measures below 4.5:1 on
+     a light canvas; this is the ratio-cleared value from the brand tokens. */
+  --ohmz-l-amber-text: #94571a;
+}
+
+/* Mantine derives most light-scheme surfaces from `white` / `gray`, neither of
+   which is on the warm ramp. Pure #fff against warm greys is the single
+   biggest tell that a theme is bolted on, so the light scheme gets the brand's
+   own off-white canvas. */
+[data-mantine-color-scheme="light"] {
+  --mantine-color-body: var(--ohmz-l-canvas);
+  --mantine-color-default-border: var(--ohmz-l-line);
+  --mantine-color-text: var(--ohmz-l-text);
+  --mantine-color-anchor: var(--ohmz-l-amber-text);
+}
+
+[data-mantine-color-scheme="dark"] {
+  --mantine-color-anchor: var(--ohmz-amber-bright);
+}
+
+/* Mantine's Card already resolves to --mantine-color-dark-6 (the panel), so the
+   colour tuple covers it. Paper is the exception: it paints
+   --mantine-color-body, which is the canvas — that leaves modals, menus and
+   popovers flush with the page instead of raised above it. */
+[data-mantine-color-scheme="dark"] .mantine-Paper-root {
+  background-color: var(--ohmz-panel);
+}
+
+/* --- Auth screens (login / invite / init) ------------------------------- */
+
+.ohmz-auth-screen {
+  position: relative;
+  isolation: isolate;
+}
+
+/* A soft amber bloom behind the lockup — the restrained cousin of the oversized
+   omega watermark on home.ohmz.cloud. Sits on its own layer so it never
+   intercepts clicks on the form. */
+.ohmz-auth-screen::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: min(34rem, 55vh);
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse 40rem 20rem at 50% 12%, rgb(224 145 63 / 14%), transparent 70%);
+}
+
+[data-mantine-color-scheme="light"] .ohmz-auth-screen::before {
+  background: radial-gradient(ellipse 40rem 20rem at 50% 12%, rgb(168 99 29 / 10%), transparent 70%);
+}
+
+/* The card sits on the panel colour by default, which is also what inputs use —
+   so without this the fields dissolve into the card. Dropping them to the
+   canvas gives the form an inset, layered read. */
+[data-mantine-color-scheme="dark"] .ohmz-auth-card {
+  box-shadow: 0 18px 48px rgb(0 0 0 / 45%);
+
+  :is(.mantine-TextInput-input, .mantine-PasswordInput-input) {
+    background-color: var(--ohmz-canvas);
+    border-color: var(--ohmz-line);
+
+    &:focus,
+    &:focus-within {
+      border-color: var(--ohmz-amber);
+    }
+  }
+}
+
+.ohmz-auth-card :is(.mantine-InputWrapper-label) {
+  margin-bottom: var(--mantine-spacing-xs);
+  font-weight: 500;
+}

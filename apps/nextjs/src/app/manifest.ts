@@ -2,13 +2,14 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Homarr",
-    short_name: "Homarr",
+    name: "Ohmz HomeLab",
+    short_name: "Ohmz HomeLab",
     description: "Your dashboard for managing your server.",
     start_url: "/",
     display: "standalone",
-    background_color: "#fff",
-    theme_color: "#fff",
+    // Brand canvas (--ohmz-canvas), so the PWA splash matches the app shell.
+    background_color: "#1a1917",
+    theme_color: "#1a1917",
     icons: [
       {
         src: "/images/pwa/192.maskable.png",
