@@ -23,6 +23,30 @@ const ohmzDark: MantineColorsTuple = [
   "#0d0c0b",
 ];
 
+/**
+ * Mantine's stock `gray` is a cool ramp, and it drives most of the light
+ * scheme — borders, dimmed text, hovers, table rules. Left alone it puts cool
+ * greys next to the brand's warm canvas, which is exactly the mismatch the
+ * brand sheet warns about, and it is why the light theme read as a different
+ * product from ohmz.cloud and Ohmz AI.
+ *
+ * These are the same warm values ai-stack/branding/ohmz.css assigns to
+ * Tailwind's --color-gray-50..900, in the same lightness order, so every
+ * light:/dark: pairing still resolves the way its author intended.
+ */
+const ohmzGray: MantineColorsTuple = [
+  "#f7f5f3",
+  "#f0edea",
+  "#e2ddd8",
+  "#cbc5be",
+  "#8b857e",
+  "#7d7770",
+  "#4d4944",
+  "#3a3733",
+  "#302d2a",
+  "#1a1917",
+];
+
 const ohmzAmber: MantineColorsTuple = [
   "#fdf5ec",
   "#f8e6d2",
@@ -43,6 +67,7 @@ export const theme = createTheme({
   primaryShade: { light: 8, dark: 6 },
   colors: {
     dark: ohmzDark,
+    gray: ohmzGray,
     ohmzAmber,
   },
   autoContrast: true,
