@@ -34,7 +34,12 @@ export const defaultServerSettings = {
     enableGravatar: true,
   },
   appearance: {
-    defaultColorScheme: "auto" as ColorScheme,
+    // Dark by default, matching Ohmz AI and ohmz.cloud: these apps are
+    // dark-first, and a visitor whose OS is in light mode should still meet the
+    // brand the way it is designed. "auto" would hand that decision to the OS.
+    // A signed-in user's own choice still wins — it is stored in the colour
+    // scheme cookie and read ahead of this in theme/color-scheme.ts.
+    defaultColorScheme: "dark" as ColorScheme,
   },
   culture: {
     defaultLocale: "en" as SupportedLanguage,

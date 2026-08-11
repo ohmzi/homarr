@@ -191,9 +191,10 @@
 }
 
 .ohmz-auth-heading {
-  /* Same 24px as every other lockup — matches #auth-page .ohmz-wordmark in
-     ai-stack/branding/ohmz.css. */
+  /* text-2xl font-medium — the classes the Ohmz AI heading actually carries.
+     Mantine's h2 defaults to 700, which read heavier than Ohmz AI's. */
   font-size: 24px;
+  font-weight: 500;
   letter-spacing: -0.02em;
   line-height: 1;
 }
@@ -206,13 +207,17 @@
   /* 44px flat, not a min-height: Mantine's own line-height pushed these past
      Ohmz AI's fields, and a login that is the "same app" has to agree on the
      one measurement the eye actually compares. */
+  /* 42px = Ohmz AI's field: text-sm (14px) inside ohmz.css's 10px/12px padding
+     and 1px border. Stated as a flat height because Mantine's own line-height
+     is taller than Tailwind's and would otherwise push the box past it. */
   :is(.mantine-TextInput-input, .mantine-PasswordInput-input) {
     background-color: var(--ohmz-raise);
     border: 1px solid var(--ohmz-line);
     border-radius: 10px;
     padding: 0 12px;
-    height: 2.75rem;
-    min-height: 2.75rem;
+    height: 42px;
+    min-height: 42px;
+    font-size: 14px;
 
     &:focus,
     &:focus-within {
@@ -220,8 +225,10 @@
     }
   }
 
+  /* text-sm font-medium mb-1 */
   .mantine-InputWrapper-label {
-    margin-bottom: 6px;
+    margin-bottom: 4px;
+    font-size: 14px;
     font-weight: 500;
   }
 
@@ -250,12 +257,15 @@
 
 /* Primary action takes the accent, hover goes to the bright amber — same
    contract as the OhmzAI submit button, down to the pill radius. */
+/* w-full rounded-full font-medium text-sm py-2.5 — 14px in 10px of vertical
+   padding lands at 40px, and medium (500), not semibold. */
 .ohmz-auth-screen button[type="submit"] {
-  height: 2.75rem;
+  height: 40px;
   border-radius: 9999px;
   background-color: var(--ohmz-amber);
   color: var(--ohmz-on-amber);
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
 
   &:hover:not([data-disabled]) {
     background-color: var(--ohmz-amber-bright);
