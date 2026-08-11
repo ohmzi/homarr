@@ -1,17 +1,31 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { skipToken } from "@tanstack/react-query";
 
 import { clientApi } from "@homarr/api/client";
 import type { BeszelContainerStatsRecord, BeszelSystemStatsRecord } from "@homarr/integrations/types";
 
-// 120 records at ~1 per second = 2 minutes of rolling data for charts
-const MAX_BUFFER = 120;
+// Beszel emits roughly one record per second. Keep a sliding one-minute window
+// without synthesizing points for missed updates.
+const MAX_BUFFER = 60;
+
+const subscribeToVisibility = (onChange: () => void) => {
+  if (typeof document === "undefined") return () => {};
+  document.addEventListener("visibilitychange", onChange);
+  return () => document.removeEventListener("visibilitychange", onChange);
+};
+
+const getPageVisibility = () => typeof document === "undefined" || document.visibilityState === "visible";
+
+const usePageVisible = () => useSyncExternalStore(subscribeToVisibility, getPageVisibility, () => true);
 
 export const useLiveStats = (integrationIds: string[], systemId: string, enabled: boolean) => {
   const [systemStats, setSystemStats] = useState<BeszelSystemStatsRecord[]>([]);
   const [containerStats, setContainerStats] = useState<BeszelContainerStatsRecord[]>([]);
   const [error, setError] = useState<Error | null>(null);
+  const pageVisible = usePageVisible();
+  const subscriptionEnabled = enabled && pageVisible && systemId !== "";
 
   // Append to buffer, trimming to MAX_BUFFER
   const appendSystemStats = useCallback((record: BeszelSystemStatsRecord) => {
@@ -29,9 +43,8 @@ export const useLiveStats = (integrationIds: string[], systemId: string, enabled
   }, []);
 
   clientApi.widget.beszel.subscribeSystemStats.useSubscription(
-    { integrationIds, systemId },
+    subscriptionEnabled ? { integrationIds, systemId } : skipToken,
     {
-      enabled: enabled && systemId !== "",
       onData(event) {
         setError(null);
         if (event.type === "system_stats") {
@@ -48,7 +61,7 @@ export const useLiveStats = (integrationIds: string[], systemId: string, enabled
 
   // Reset buffers when system changes or integration changes
   const prevKeyRef = useRef<string>("");
-  const currentKey = `${integrationIds.join(",")}:${systemId}`;
+  const currentKey = `${integrationIds.join(",")}:${systemId}:${subscriptionEnabled}`;
   useEffect(() => {
     if (prevKeyRef.current !== currentKey) {
       prevKeyRef.current = currentKey;
