@@ -146,24 +146,74 @@
   background: radial-gradient(ellipse 40rem 20rem at 50% 12%, rgb(168 99 29 / 10%), transparent 70%);
 }
 
-/* The card sits on the panel colour by default, which is also what inputs use —
-   so without this the fields dissolve into the card. Dropping them to the
-   canvas gives the form an inset, layered read. */
-[data-mantine-color-scheme="dark"] .ohmz-auth-card {
-  box-shadow: 0 18px 48px rgb(0 0 0 / 45%);
+/* Circular brand badge above the form. */
+.ohmz-auth-badge .logo {
+  display: block;
+  border-radius: 50%;
+}
 
+.ohmz-auth-heading {
+  /* Matches #auth-page .ohmz-wordmark in ai-stack/branding/ohmz.css. */
+  font-size: 1.75rem;
+  letter-spacing: -0.02em;
+}
+
+/* Form chrome copied from the OhmzAI sign-in
+   (ai-stack/branding/ohmz.css, "--- Sign-in ---"): fields sit on --ohmz-raise
+   with a line border at 10px/10px-12px. There is no card here, so the raise
+   colour is what separates a field from the canvas behind it. */
+.ohmz-auth-screen {
   :is(.mantine-TextInput-input, .mantine-PasswordInput-input) {
-    background-color: var(--ohmz-canvas);
-    border-color: var(--ohmz-line);
+    background-color: var(--ohmz-raise);
+    border: 1px solid var(--ohmz-line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    height: auto;
+    min-height: 2.75rem;
 
     &:focus,
     &:focus-within {
       border-color: var(--ohmz-amber);
     }
   }
+
+  .mantine-InputWrapper-label {
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+
+  /* Chrome paints autofilled fields pale blue over whatever background it is
+     given; an inset shadow is the only way to reach them. */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px var(--ohmz-raise) inset;
+    -webkit-text-fill-color: var(--ohmz-text);
+    caret-color: var(--ohmz-text);
+  }
 }
 
-.ohmz-auth-card :is(.mantine-InputWrapper-label) {
-  margin-bottom: var(--mantine-spacing-xs);
-  font-weight: 500;
+[data-mantine-color-scheme="light"] .ohmz-auth-screen {
+  :is(.mantine-TextInput-input, .mantine-PasswordInput-input) {
+    background-color: #fff;
+    border-color: var(--ohmz-l-line);
+  }
+
+  input:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px #fff inset;
+    -webkit-text-fill-color: var(--ohmz-l-text);
+  }
+}
+
+/* Primary action takes the accent, hover goes to the bright amber — same
+   contract as the OhmzAI submit button. */
+.ohmz-auth-screen button[type="submit"] {
+  height: 2.75rem;
+  background-color: var(--ohmz-amber);
+  color: var(--ohmz-on-amber);
+
+  &:hover:not([data-disabled]) {
+    background-color: var(--ohmz-amber-bright);
+    color: var(--ohmz-on-amber);
+  }
 }

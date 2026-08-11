@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Alert, Card, Center, Code, Stack, Text, Title } from "@mantine/core";
+import { Alert, Box, Center, Code, Stack, Text, Title } from "@mantine/core";
 import { IconLogin } from "@tabler/icons-react";
 
 import { env } from "@homarr/auth/env";
@@ -9,7 +9,8 @@ import { sanitizeRedirectionUrl } from "@homarr/validation/redirection-url";
 
 import { env as appEnv } from "~/env";
 
-import { HomarrLogoWithTitle } from "~/components/layout/logo/homarr-logo";
+import { BrandWordmark } from "~/components/layout/logo/homarr-logo";
+import { Logo } from "~/components/layout/logo/logo";
 import { LoginForm } from "./_login-form";
 
 interface LoginProps {
@@ -33,14 +34,19 @@ export default async function Login(props: LoginProps) {
     // stranded at the top with dead space under it.
     <Center component="main" mih="100dvh" px="md" py="xl" className="ohmz-auth-screen">
       <Stack align="center" gap="xl" w={64 * 6} maw="90vw">
-        <Stack align="center" gap="sm">
-          <HomarrLogoWithTitle size="lg" />
-          <Stack gap={4} align="center">
-            <Title order={3} fw={500} ta="center">
-              {t("title")}
+        <Stack align="center" gap="lg">
+          {/* Circular amber badge, as on the OhmzAI sign-in. logo.png is the
+              filled amber square with a centred omega, so a round crop lands
+              the glyph dead centre without needing a separate asset. */}
+          <Box className="ohmz-auth-badge">
+            <Logo size={84} src="/logo/logo.png" alt="Ohmz HomeLab" />
+          </Box>
+          <Stack gap={6} align="center">
+            <Title order={2} className="ohmz-auth-heading" ta="center">
+              <BrandWordmark />
             </Title>
             <Text size="sm" c="dimmed" ta="center">
-              {t("subtitle")}
+              {t("title")}
             </Text>
           </Stack>
         </Stack>
@@ -51,14 +57,15 @@ export default async function Login(props: LoginProps) {
             </Text>
           </Alert>
         )}
-        <Card w="100%" p="xl" radius="lg" withBorder className="ohmz-auth-card">
+        {/* Card-free: the form sits straight on the canvas, matching OhmzAI. */}
+        <Box w="100%">
           <LoginForm
             providers={env.AUTH_PROVIDERS}
             oidcClientName={env.AUTH_OIDC_CLIENT_NAME}
             isOidcAutoLoginEnabled={env.AUTH_OIDC_AUTO_LOGIN}
             callbackUrl={searchParams.callbackUrl ?? "/"}
           />
-        </Card>
+        </Box>
       </Stack>
     </Center>
   );
