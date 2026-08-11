@@ -52,7 +52,8 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     description: "Your dashboard for managing your server.",
     start_url: "/",
     display: "standalone",
-    background_color: "#fff",
+    // Brand canvas (--ohmz-canvas), so the PWA splash matches the app shell.
+    background_color: "#1a1917",
     theme_color: branding.primaryColor,
     icons,
   };

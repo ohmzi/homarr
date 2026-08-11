@@ -1,1 +1,1 @@
-export const homarrLogoPath = "/logo/logo.png";
+export const homarrLogoPath = "/logo/ohmz-mark.svg";

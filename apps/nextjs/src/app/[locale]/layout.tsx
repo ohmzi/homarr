@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
 
 import "@gfazioli/mantine-onboarding-tour/styles.css";
 import "@homarr/notifications/styles.css";
@@ -9,6 +8,7 @@ import "@homarr/ui/styles.css";
 import "flag-icons/css/flag-icons.min.css";
 import "mantine-datatable/styles.css";
 import "~/styles/color-scheme.scss";
+import "~/styles/ohmz-brand.scss";
 import "~/styles/scroll-area.scss";
 
 import { notFound } from "next/navigation";
@@ -46,11 +46,6 @@ import { AuthProvider } from "./_client-providers/session";
 import { TRPCReactProvider } from "./_client-providers/trpc";
 import { composeWrappers } from "./compose";
 
-const fontSans = Inter({
-  subsets: ["latin"],
-  variable: "--font-sans",
-});
-
 const logger = createLogger({ module: "rootLayout" });
 
 export const generateMetadata = async (): Promise<Metadata> => {
@@ -61,7 +56,7 @@ export const generateMetadata = async (): Promise<Metadata> => {
   ]);
   const { appName, faviconImageUrl, logoImageUrl } = serverSettings.branding;
   const logo = logoImageUrl ?? "/logo/logo.png";
-  const favicon = faviconImageUrl ?? logo;
+  const customIcon = faviconImageUrl ?? logoImageUrl;
   const description = t("description");
 
   return {
@@ -76,10 +71,21 @@ export const generateMetadata = async (): Promise<Metadata> => {
       url: env.HOMARR_WEBSITE_URL,
       siteName: appName,
     },
-    icons: {
-      icon: favicon,
-      apple: logo,
-    },
+    // Without a custom icon, declare the default set explicitly and in preference
+    // order so browsers never fall back to a generated letter tile. The filled
+    // amber square is deliberate: a tab favicon sits on the browser's own chrome,
+    // where the transparent header omega would vanish.
+    icons: customIcon
+      ? { icon: customIcon, apple: logo }
+      : {
+          icon: [
+            { url: "/logo/favicon.svg", type: "image/svg+xml" },
+            { url: "/logo/favicon-96x96.png", type: "image/png", sizes: "96x96" },
+            { url: "/favicon.ico", sizes: "any" },
+          ],
+          shortcut: "/favicon.ico",
+          apple: "/logo/apple-touch-icon.png",
+        },
     appleWebApp: {
       title: appName,
       capable: true,
@@ -185,7 +191,10 @@ export default async function Layout(props: {
       lang={locale}
       dir={direction}
       style={{
-        backgroundColor: colorScheme === "dark" ? "#242424" : colorScheme === "auto" ? undefined : "#fff",
+        // Brand canvases (--ohmz-canvas / --ohmz-l-canvas). These must match the
+        // Mantine body colour exactly, otherwise any page shorter than the
+        // viewport shows a hard seam where <html> takes over from <body>.
+        backgroundColor: colorScheme === "dark" ? "#1a1917" : colorScheme === "auto" ? undefined : "#faf9f7",
       }}
       suppressHydrationWarning
     >
@@ -202,7 +211,7 @@ export default async function Layout(props: {
         <CrowdinLiveTranslation locale={locale} />
         <style data-homarr-global-custom-css>{serverSettings.branding.customCss}</style>
       </head>
-      <body className={[fontSans.className, fontSans.variable].join(" ")} suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <ViewportHint />
         <StackedProvider>
           <Notifications pauseResetOnHover="notification" />

@@ -58,12 +58,12 @@ export const brandingServerSettingsSchema = z.object({
 export type BrandingSettings = z.infer<typeof brandingServerSettingsSchema>;
 
 export const defaultBrandingSettings: BrandingSettings = {
-  appName: "Homarr",
+  appName: "Ohmz HomeLab",
   greeting: "",
   logoImageUrl: null,
   faviconImageUrl: null,
-  primaryColor: "#fa5252",
-  secondaryColor: "#fd7e14",
+  primaryColor: "#e0913f",
+  secondaryColor: "#c87c31",
   lockPrimaryColor: false,
   signInBackgroundImageUrl: null,
   signInBackgroundOverlay: 0.55,
