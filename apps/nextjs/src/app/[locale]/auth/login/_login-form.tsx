@@ -122,6 +122,7 @@ export const LoginForm = ({ providers, oidcClientName, isOidcAutoLoginEnabled, c
               <Stack gap="lg">
                 <TextInput
                   label={t("field.username.label")}
+                  placeholder={t("field.username.label")}
                   id="username"
                   autoComplete="username"
                   autoCapitalize="none"
@@ -131,6 +132,7 @@ export const LoginForm = ({ providers, oidcClientName, isOidcAutoLoginEnabled, c
                 />
                 <PasswordInput
                   label={t("field.password.label")}
+                  placeholder={t("field.password.label")}
                   id="password"
                   autoComplete="current-password"
                   {...form.getInputProps("password")}

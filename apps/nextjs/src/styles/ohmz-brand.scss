@@ -146,6 +146,30 @@
   background: radial-gradient(ellipse 40rem 20rem at 50% 12%, rgb(168 99 29 / 10%), transparent 70%);
 }
 
+/* --- Brand lockup ------------------------------------------------------
+   One scale across Homarr, OhmzAI and ohmz.cloud: the name at 24px with the
+   brand's -0.02em tracking, and the omega at 1.25x that. The mark's SVG is
+   cropped to the glyph's own bounds and is taller than it is wide, so it is
+   sized by height and left to find its own width — a square box would letterbox
+   it and make the omega read smaller than the one on ohmz.cloud. */
+
+.ohmz-lockup-title {
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.ohmz-lockup .logo[src$="ohmz-mark.svg"] {
+  width: auto;
+  height: 30px;
+}
+
+/* The second half of the wordmark carries the accent and a touch more weight,
+   the same grammar as Ohmz.cloud and OhmzAI. */
+.ohmz-lockup-suffix {
+  font-weight: 600;
+}
+
 /* Circular brand badge above the form. */
 .ohmz-auth-badge .logo {
   display: block;
@@ -153,9 +177,11 @@
 }
 
 .ohmz-auth-heading {
-  /* Matches #auth-page .ohmz-wordmark in ai-stack/branding/ohmz.css. */
-  font-size: 1.75rem;
+  /* Same 24px as every other lockup — matches #auth-page .ohmz-wordmark in
+     ai-stack/branding/ohmz.css. */
+  font-size: 24px;
   letter-spacing: -0.02em;
+  line-height: 1;
 }
 
 /* Form chrome copied from the OhmzAI sign-in
@@ -206,14 +232,27 @@
 }
 
 /* Primary action takes the accent, hover goes to the bright amber — same
-   contract as the OhmzAI submit button. */
+   contract as the OhmzAI submit button, down to the pill radius. */
 .ohmz-auth-screen button[type="submit"] {
   height: 2.75rem;
+  border-radius: 9999px;
   background-color: var(--ohmz-amber);
   color: var(--ohmz-on-amber);
+  font-weight: 600;
 
   &:hover:not([data-disabled]) {
     background-color: var(--ohmz-amber-bright);
     color: var(--ohmz-on-amber);
+  }
+}
+
+/* OhmzAI keeps its secondary actions quiet — no fill, just the line and text.
+   Homarr's equivalent here is the password-reset toggle. */
+.ohmz-auth-screen .mantine-Anchor-root {
+  color: var(--ohmz-secondary);
+  font-size: var(--mantine-font-size-sm);
+
+  &:hover {
+    color: var(--ohmz-amber-bright);
   }
 }

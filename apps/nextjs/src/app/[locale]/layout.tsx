@@ -62,7 +62,9 @@ export const generateMetadata = async (): Promise<Metadata> => {
   return {
     title: {
       default: appName,
-      template: `%s • ${appName}`,
+      // The brand alone on every tab: child pages pass their own title, and a
+      // template with no %s placeholder discards it.
+      template: appName,
     },
     description,
     openGraph: {

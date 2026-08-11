@@ -12,6 +12,7 @@ import { env as appEnv } from "~/env";
 
 import { BrandWordmark } from "~/components/layout/logo/homarr-logo";
 import { Logo } from "~/components/layout/logo/logo";
+import { brandPageTitle } from "~/metadata";
 import { LoginForm } from "./_login-form";
 
 interface LoginProps {
@@ -38,11 +39,11 @@ export default async function Login(props: LoginProps) {
     // mih fills the viewport so the block is optically centred instead of
     // stranded at the top with dead space under it.
     <Center component="main" mih="100dvh" px={40} py="xl" className="ohmz-auth-screen">
-      <Stack align="center" gap={18} w="100%" maw={448} pb={141}>
+      <Stack align="center" gap={18} w="100%" maw={520} pb={141}>
         <Stack align="center" gap={24}>
           {branding.authBranding.showLogo && (
             <Box className="ohmz-auth-badge">
-              <Logo size={96} src={branding.logoImageUrl ?? "/logo/logo.png"} alt={branding.appName} />
+              <Logo size={110} src={branding.logoImageUrl ?? "/logo/ohmz-badge.png"} alt={branding.appName} />
             </Box>
           )}
           {branding.authBranding.showAppName && (

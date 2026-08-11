@@ -21,7 +21,7 @@ interface LogoProps {
 export const BrandWordmark = () => (
   <>
     Ohmz{" "}
-    <Text component="span" inherit c="ohmzAmber.6">
+    <Text component="span" inherit c="ohmzAmber.6" className="ohmz-lockup-suffix">
       HomeLab
     </Text>
   </>
