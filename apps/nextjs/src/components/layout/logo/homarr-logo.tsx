@@ -18,7 +18,7 @@ interface LogoProps {
  * half in brand amber. Only the default app name gets the lockup; an admin's own
  * app name is shown as typed.
  */
-const BrandWordmark = () => (
+export const BrandWordmark = () => (
   <>
     Ohmz{" "}
     <Text component="span" inherit c="ohmzAmber.6">
