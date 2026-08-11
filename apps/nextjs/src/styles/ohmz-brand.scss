@@ -142,8 +142,12 @@
   background: radial-gradient(ellipse 40rem 20rem at 50% 12%, rgb(224 145 63 / 14%), transparent 70%);
 }
 
+/* Light mode needs a deeper, more opaque amber than dark: the dark bloom is
+   light added to a near-black canvas, where a little goes a long way, while on
+   an off-white canvas the same wash is all but invisible. This is
+   --ohmz-l-amber, the darker light-mode amber, at nearly twice the alpha. */
 [data-mantine-color-scheme="light"] .ohmz-auth-screen::before {
-  background: radial-gradient(ellipse 40rem 20rem at 50% 12%, rgb(168 99 29 / 10%), transparent 70%);
+  background: radial-gradient(ellipse 40rem 20rem at 50% 12%, rgb(168 99 29 / 18%), transparent 72%);
 }
 
 /* --- Brand lockup ------------------------------------------------------
