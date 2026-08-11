@@ -7,6 +7,7 @@ import { getScopedI18n } from "@homarr/translation/server";
 
 import { CrawlingAndIndexingSettings } from "~/app/[locale]/manage/settings/_components/crawling-and-indexing.settings";
 import { DynamicBreadcrumb } from "~/components/navigation/dynamic-breadcrumb";
+import { brandPageTitle } from "~/metadata";
 import { AnalyticsSettings } from "./_components/analytics.settings";
 import { AppearanceSettingsForm } from "./_components/appearance-settings-form";
 import { BoardSettingsForm } from "./_components/board-settings-form";
@@ -15,11 +16,8 @@ import { SearchSettingsForm } from "./_components/search-settings-form";
 import { UserSettingsForm } from "./_components/user-settings-form";
 
 export async function generateMetadata() {
-  const t = await getScopedI18n("management");
-  const metaTitle = `${t("metaTitle")} • Homarr`;
-
   return {
-    title: metaTitle,
+    title: brandPageTitle,
   };
 }
 

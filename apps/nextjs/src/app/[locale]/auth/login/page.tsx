@@ -4,13 +4,13 @@ import { IconLogin } from "@tabler/icons-react";
 
 import { env } from "@homarr/auth/env";
 import { auth } from "@homarr/auth/next";
-import { getScopedI18n } from "@homarr/translation/server";
 import { sanitizeRedirectionUrl } from "@homarr/validation/redirection-url";
 
 import { env as appEnv } from "~/env";
 
 import { BrandWordmark } from "~/components/layout/logo/homarr-logo";
 import { Logo } from "~/components/layout/logo/logo";
+import { brandPageTitle } from "~/metadata";
 import { LoginForm } from "./_login-form";
 
 interface LoginProps {
@@ -27,28 +27,28 @@ export default async function Login(props: LoginProps) {
     redirect(sanitizeRedirectionUrl(searchParams.callbackUrl));
   }
 
-  const t = await getScopedI18n("user.page.login");
-
   return (
     // mih fills the viewport so the card is optically centred instead of
     // stranded at the top with dead space under it.
     <Center component="main" mih="100dvh" px="md" py="xl" className="ohmz-auth-screen">
-      <Stack align="center" gap="xl" w={64 * 6} maw="90vw">
+      <Stack align="center" gap="xl" w={520} maw="90vw">
         <Stack align="center" gap="lg">
-          {/* Circular amber badge, as on the OhmzAI sign-in. logo.png is the
-              filled amber square with a centred omega, so a round crop lands
-              the glyph dead centre without needing a separate asset. */}
+          {/* Circular amber badge, as on the OhmzAI sign-in: the filled amber
+              square with a centred omega, so a round crop lands the glyph dead
+              centre without needing a separate asset.
+
+              Served from its own filename rather than reusing /logo/logo.png.
+              That path shipped the old Homarr mark for a long time, and
+              replacing an image in place leaves every browser that already
+              cached it showing the previous artwork indefinitely — a new URL is
+              the only reliable way to retire it. */}
           <Box className="ohmz-auth-badge">
-            <Logo size={84} src="/logo/logo.png" alt="Ohmz HomeLab" />
+            <Logo size={110} src="/logo/ohmz-badge.png" alt={brandPageTitle} />
           </Box>
-          <Stack gap={6} align="center">
-            <Title order={2} className="ohmz-auth-heading" ta="center">
-              <BrandWordmark />
-            </Title>
-            <Text size="sm" c="dimmed" ta="center">
-              {t("title")}
-            </Text>
-          </Stack>
+          {/* The brand name alone, matching the OhmzAI heading. */}
+          <Title order={2} className="ohmz-auth-heading" ta="center">
+            <BrandWordmark />
+          </Title>
         </Stack>
         {appEnv.DEMO_MODE && (
           <Alert icon={<IconLogin size={18} />} color="blue" variant="light" w="100%">

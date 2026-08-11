@@ -19,9 +19,18 @@ export const Logo = ({ size = 60, shouldUseNextImage = false, src, alt }: LogoPr
     <img className="logo" src={src} alt={alt} width={size} height={size} />
   );
 
+/**
+ * Brand lockup scale, shared with ohmz-cloud and OhmzAI.
+ *
+ * The name is 24px everywhere and the mark is 1.25x that (30px), the same
+ * mark-to-text ratio ohmz-cloud/src/components/Wordmark.astro uses. `titleOrder`
+ * now only picks the heading level for semantics — the visual size comes from
+ * .ohmz-lockup-title so every lockup lands on the same number regardless of
+ * which heading level the surrounding page needs.
+ */
 const logoWithTitleSizes = {
-  lg: { logoSize: 48, titleOrder: 1 },
-  md: { logoSize: 32, titleOrder: 2 },
+  lg: { logoSize: 30, titleOrder: 1 },
+  md: { logoSize: 30, titleOrder: 2 },
   sm: { logoSize: 24, titleOrder: 3 },
 } satisfies Record<string, { logoSize: number; titleOrder: TitleOrder }>;
 
@@ -37,9 +46,14 @@ export const LogoWithTitle = ({ size, title, image, hideTitleOnMobile }: LogoWit
   const { logoSize, titleOrder } = logoWithTitleSizes[size];
 
   return (
-    <Group gap="xs" wrap="nowrap">
+    <Group gap={8} wrap="nowrap" className="ohmz-lockup">
       <Logo {...image} size={logoSize} />
-      <Title order={titleOrder} visibleFrom={hideTitleOnMobile ? "sm" : undefined} textWrap="nowrap">
+      <Title
+        order={titleOrder}
+        visibleFrom={hideTitleOnMobile ? "sm" : undefined}
+        textWrap="nowrap"
+        className="ohmz-lockup-title"
+      >
         {title}
       </Title>
     </Group>

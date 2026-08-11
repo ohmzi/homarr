@@ -10,7 +10,7 @@ interface LogoProps {
 // The bare omega for the header lockup; the amber-square variant lives at
 // /logo/logo.png and is used for favicons, PWA icons and OG images.
 export const homarrLogoPath = "/logo/ohmz-mark.svg";
-export const homarrPageTitle = "Ohmz HomeLab";
+export { brandPageTitle as homarrPageTitle } from "~/metadata";
 
 const imageOptions = {
   src: homarrLogoPath,
@@ -34,7 +34,7 @@ interface CommonLogoWithTitleProps {
 export const BrandWordmark = () => (
   <>
     Ohmz{" "}
-    <Text component="span" inherit c="ohmzAmber.6">
+    <Text component="span" inherit c="ohmzAmber.6" className="ohmz-lockup-suffix">
       HomeLab
     </Text>
   </>
