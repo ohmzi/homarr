@@ -46,6 +46,7 @@ export const widgetDocSlugs: Record<WidgetKind, string | null> = {
   uptimeKuma: "uptime-kuma",
   audioStats: "audio-stats",
   umami: "umami",
+  tdayTasks: null,
   vpn: "vpn",
   ups: "ups",
   archiveTeamWarrior: null,

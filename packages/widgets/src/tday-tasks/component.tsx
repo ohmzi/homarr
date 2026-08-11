@@ -412,7 +412,7 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
   // Priority flag: colored+filled for Important/Urgent. Normal shows a muted outline flag in
   // menus (so every option has a marker) but nothing in the compact task rows (matches the app).
   const priorityFlag = (value: string, { forMenu = false }: { forMenu?: boolean } = {}) => {
-    const meta = PRIORITY_META[value] ?? PRIORITY_META.Low;
+    const meta = PRIORITY_META[value] ?? PRIORITY_NORMAL;
     if (meta.flag) return <Flag size={15} color={meta.flag} fill={meta.flag} />;
     return forMenu ? <Flag size={15} color="var(--mantine-color-dimmed)" /> : null;
   };
@@ -811,11 +811,13 @@ const resolveViewIdentity = (view: string, isNight: boolean): ViewIdentity => {
 
 // Tday stores Low/Medium/High; the app surfaces these as Normal/Important/Urgent and shows a
 // filled flag only for Important (orange) / Urgent (red). `flag` null = no flag in task rows.
-const PRIORITY_META: Record<
-  string,
-  { key: "priorityNormal" | "priorityImportant" | "priorityUrgent"; flag: string | null }
-> = {
-  Low: { key: "priorityNormal", flag: null },
+const PRIORITY_NORMAL: { key: "priorityNormal" | "priorityImportant" | "priorityUrgent"; flag: string | null } = {
+  key: "priorityNormal",
+  flag: null,
+};
+
+const PRIORITY_META: Record<string, typeof PRIORITY_NORMAL> = {
+  Low: PRIORITY_NORMAL,
   Medium: { key: "priorityImportant", flag: "var(--mantine-color-orange-6)" },
   High: { key: "priorityUrgent", flag: "var(--mantine-color-red-6)" },
 };
