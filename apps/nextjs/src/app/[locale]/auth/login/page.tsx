@@ -31,11 +31,19 @@ export default async function Login(props: LoginProps) {
     // mih fills the viewport so the card is optically centred instead of
     // stranded at the top with dead space under it.
     <Center component="main" mih="100dvh" px={40} py="xl" className="ohmz-auth-screen">
-      {/* Ohmz AI's card is `w-full sm:max-w-md` inside a `px-10` container: full
+      {/* pb=141 is not decoration. Ohmz AI's card measures 551px tall and is
+          vertically centred, so its logo lands at (100vh - 551) / 2. This block
+          is only ~410px — it has no sign-up row, no guest button and no caption
+          — so the same centring put it ~70px lower. Padding it out to the same
+          551px total makes identical centring produce an identical position,
+          rather than nudging it with an offset that would only hold at one
+          viewport height. Ohmz AI uses the same device on its own card (pb-10).
+
+          Ohmz AI's card is `w-full sm:max-w-md` inside a `px-10` container: full
           width on mobile with 40px of page padding, capped at 28rem only from the
           sm breakpoint up. A fixed width with maw="90vw" is NOT the same thing —
           it left the fields ~40px wider per side on a phone. */}
-      <Stack align="center" gap={18} w="100%" maw={448}>
+      <Stack align="center" gap={18} w="100%" maw={448} pb={141}>
         <Stack align="center" gap={24}>
           {/* Circular amber badge, as on the OhmzAI sign-in: the filled amber
               square with a centred omega, so a round crop lands the glyph dead
