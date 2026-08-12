@@ -39,6 +39,13 @@ export default async function Login(props: LoginProps) {
     // mih fills the viewport so the block is optically centred instead of
     // stranded at the top with dead space under it.
     <Center component="main" mih="100dvh" px={40} py="xl" className="ohmz-auth-screen">
+      {/* pb=141 is not decoration. Ohmz AI's card measures 551px tall and is
+          vertically centred, so its logo lands at (100vh - 551) / 2. This block
+          is only ~410px: it has no sign-up row, no guest button and no caption.
+          Padding it out to the same 551px total makes identical centring produce
+          an identical position, rather than nudging it with an offset that would
+          only hold at one viewport height. Ohmz AI uses the same device on its own
+          card (pb-10). */}
       <Stack align="center" gap={18} w="100%" maw={448} pb={141}>
         <Stack align="center" gap={24}>
           {branding.authBranding.showLogo && (
