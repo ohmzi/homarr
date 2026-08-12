@@ -49,13 +49,15 @@ export default async function Login(props: LoginProps) {
               square with a centred omega, so a round crop lands the glyph dead
               centre without needing a separate asset.
 
-              Served from its own filename rather than reusing /logo/logo.png.
-              That path shipped the old Homarr mark for a long time, and
-              replacing an image in place leaves every browser that already
+              The filename carries a hash of the file's own bytes. This is the
+              SAME artwork Ohmz AI serves (identical md5 to its favicon.png), and
+              a content-addressed name means the URL changes whenever the bytes
+              do — so a browser can never serve a stale mark. Replacing an image
+              in place does not work: every browser that already
               cached it showing the previous artwork indefinitely — a new URL is
               the only reliable way to retire it. */}
           <Box className="ohmz-auth-badge">
-            <Logo size={96} src="/logo/ohmz-badge.png" alt={brandPageTitle} />
+            <Logo size={96} src="/logo/ohmz-badge.1b89078f.png" alt={brandPageTitle} />
           </Box>
           {/* The brand name alone, matching the OhmzAI heading. */}
           <Title order={2} className="ohmz-auth-heading" ta="center">
