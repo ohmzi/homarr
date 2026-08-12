@@ -48,9 +48,12 @@ export default async function Login(props: LoginProps) {
           card (pb-10). */}
       <Stack align="center" gap={18} w="100%" maw={448} pb={141}>
         <Stack align="center" gap={24}>
+          {/* Ohmz AI's badge artwork. The filename carries a hash of the file's bytes:
+              replacing an image in place leaves browsers that cached it showing the
+              old mark, and a new hash means a new URL that no stale copy can serve. */}
           {branding.authBranding.showLogo && (
             <Box className="ohmz-auth-badge">
-              <Logo size={96} src={branding.logoImageUrl ?? "/logo/ohmz-badge.png"} alt={branding.appName} />
+              <Logo size={96} src={branding.logoImageUrl ?? "/logo/ohmz-badge.1b89078f.png"} alt={branding.appName} />
             </Box>
           )}
           {branding.authBranding.showAppName && (
