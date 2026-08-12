@@ -48,58 +48,20 @@ import { composeWrappers } from "./compose";
 
 const logger = createLogger({ module: "rootLayout" });
 
-export const generateMetadata = async (): Promise<Metadata> => {
-  const [serverSettings, colorScheme, t] = await Promise.all([
-    getRscServerSettingsAsync(),
-    getCurrentColorSchemeAsync(),
-    getI18n("metadata"),
-  ]);
-  const { appName, faviconImageUrl, logoImageUrl } = serverSettings.branding;
-  const logo = logoImageUrl ?? "/logo/logo.png";
-  const customIcon = faviconImageUrl ?? logoImageUrl;
-  const description = t("description");
-
-  return {
-    title: {
-      default: appName,
-      // The brand alone on every tab: child pages pass their own title, and a
-      // template with no %s placeholder discards it.
-      template: appName,
-    },
-    description,
-    openGraph: {
-      title: t("dashboardTitle", { appName }),
-      description,
-      url: env.HOMARR_WEBSITE_URL,
-      siteName: appName,
-    },
-    // Without a custom icon, declare the default set explicitly and in preference
-    // order so browsers never fall back to a generated letter tile. The filled
-    // amber square is deliberate: a tab favicon sits on the browser's own chrome,
-    // where the transparent header omega would vanish.
-    icons: customIcon
-      ? { icon: customIcon, apple: logo }
-      : {
-          icon: [
-            { url: "/logo/favicon.svg", type: "image/svg+xml" },
-            { url: "/logo/favicon-96x96.png", type: "image/png", sizes: "96x96" },
-            { url: "/favicon.ico", sizes: "any" },
-          ],
-          shortcut: "/favicon.ico",
-          apple: "/logo/apple-touch-icon.png",
-        },
-    appleWebApp: {
-      title: appName,
-      capable: true,
-      startupImage: { url: logo },
-      statusBarStyle: colorScheme === "dark" ? "black-translucent" : "default",
-    },
-  };
-};
-
 export const generateViewport = async (): Promise<Viewport> => {
   const serverSettings = await getRscServerSettingsAsync();
-  return { themeColor: serverSettings.branding.primaryColor };
+  return {
+    // Pin the scale so the dashboard behaves like an app rather than a document
+    // on mobile. Android and installed PWAs honour this; iOS Safari deliberately
+    // ignores both maximumScale and userScalable for pinch-zoom, so the companion
+    // half of this is the 16px touch-device field size in ohmz-brand.scss, which
+    // is what actually stops iOS zooming when a field takes focus.
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    themeColor: serverSettings.branding.primaryColor,
+  };
 };
 
 export default async function Layout(props: {
