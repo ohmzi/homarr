@@ -260,7 +260,7 @@
 /* w-full rounded-full font-medium text-sm py-2.5 — 14px in 10px of vertical
    padding lands at 40px, and medium (500), not semibold. */
 .ohmz-auth-screen button[type="submit"] {
-  height: 40px;
+  height: 42px;
   border-radius: 9999px;
   background-color: var(--ohmz-amber);
   color: var(--ohmz-on-amber);
@@ -281,5 +281,24 @@
 
   &:hover {
     color: var(--ohmz-amber-bright);
+  }
+}
+
+/* --- Mobile: no zoom ------------------------------------------------------
+   The viewport meta in layout.tsx pins the scale, which Android and installed
+   PWAs honour. iOS Safari does not: it has ignored maximum-scale and
+   user-scalable since iOS 10 so pinch-zoom always stays available, and no meta
+   tag will change that.
+
+   What iOS *does* still do — and what actually reads as "the page zoomed on
+   me" — is auto-zoom to a field that takes focus with a computed font-size
+   under 16px. The only lever for that is the font size itself, so touch
+   devices get 16px fields. Scoped to `pointer: coarse` so the 14px geometry
+   that matches the Ohmz AI sign-in is untouched on desktop, where none of this
+   applies. */
+@media (pointer: coarse) {
+  :is(input, select, textarea):not([type="checkbox"], [type="radio"]),
+  .ohmz-auth-screen :is(.mantine-TextInput-input, .mantine-PasswordInput-input) {
+    font-size: 16px;
   }
 }

@@ -33,8 +33,8 @@ export default async function Login(props: LoginProps) {
     <Center component="main" mih="100dvh" px="md" py="xl" className="ohmz-auth-screen">
       {/* 28rem = Tailwind's max-w-md, the class the Ohmz AI auth form actually
           carries (build/_app/immutable/nodes/50.*.js). */}
-      <Stack align="center" gap="xl" w={448} maw="90vw">
-        <Stack align="center" gap="lg">
+      <Stack align="center" gap={4} w={448} maw="90vw">
+        <Stack align="center" gap={24}>
           {/* Circular amber badge, as on the OhmzAI sign-in: the filled amber
               square with a centred omega, so a round crop lands the glyph dead
               centre without needing a separate asset.

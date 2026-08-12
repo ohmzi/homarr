@@ -72,6 +72,15 @@ export const generateMetadata = async (): Promise<Metadata> => ({
 });
 
 export const viewport: Viewport = {
+  // Pin the scale so the dashboard behaves like an app rather than a document
+  // on mobile. Android and installed PWAs honour this; iOS Safari deliberately
+  // ignores both maximumScale and userScalable for pinch-zoom, so the companion
+  // half of this is the 16px touch-device field size in ohmz-brand.scss, which
+  // is what actually stops iOS zooming when a field takes focus.
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "white" },
     { media: "(prefers-color-scheme: dark)", color: "black" },
