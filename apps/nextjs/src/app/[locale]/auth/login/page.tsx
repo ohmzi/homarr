@@ -30,10 +30,12 @@ export default async function Login(props: LoginProps) {
   return (
     // mih fills the viewport so the card is optically centred instead of
     // stranded at the top with dead space under it.
-    <Center component="main" mih="100dvh" px="md" py="xl" className="ohmz-auth-screen">
-      {/* 28rem = Tailwind's max-w-md, the class the Ohmz AI auth form actually
-          carries (build/_app/immutable/nodes/50.*.js). */}
-      <Stack align="center" gap={4} w={448} maw="90vw">
+    <Center component="main" mih="100dvh" px={40} py="xl" className="ohmz-auth-screen">
+      {/* Ohmz AI's card is `w-full sm:max-w-md` inside a `px-10` container: full
+          width on mobile with 40px of page padding, capped at 28rem only from the
+          sm breakpoint up. A fixed width with maw="90vw" is NOT the same thing —
+          it left the fields ~40px wider per side on a phone. */}
+      <Stack align="center" gap={18} w="100%" maw={448}>
         <Stack align="center" gap={24}>
           {/* Circular amber badge, as on the OhmzAI sign-in: the filled amber
               square with a centred omega, so a round crop lands the glyph dead
