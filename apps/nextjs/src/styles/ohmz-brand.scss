@@ -192,11 +192,13 @@
 
 .ohmz-auth-heading {
   /* text-2xl font-medium — the classes the Ohmz AI heading actually carries.
-     Mantine's h2 defaults to 700, which read heavier than Ohmz AI's. */
+     Mantine's h2 defaults to 700, which read heavier than Ohmz AI's.
+     line-height is 2rem, text-2xl's own: measured against the real page the
+     heading box is 32px, and collapsing it to 1 pulled the form 8px up. */
   font-size: 24px;
   font-weight: 500;
   letter-spacing: -0.02em;
-  line-height: 1;
+  line-height: 32px;
 }
 
 /* Form chrome copied from the OhmzAI sign-in
@@ -225,11 +227,14 @@
     }
   }
 
-  /* text-sm font-medium mb-1 */
+  /* text-sm font-medium mb-1. line-height stated because Mantine's is taller
+     than text-sm's 1.25rem, which made the label box 21.7px against Ohmz AI's
+     20px; the 6px below is the measured label-to-field gap. */
   .mantine-InputWrapper-label {
-    margin-bottom: 4px;
+    margin-bottom: 6px;
     font-size: 14px;
     font-weight: 500;
+    line-height: 20px;
   }
 
   /* Chrome paints autofilled fields pale blue over whatever background it is
@@ -260,7 +265,9 @@
 /* w-full rounded-full font-medium text-sm py-2.5 — 14px in 10px of vertical
    padding lands at 40px, and medium (500), not semibold. */
 .ohmz-auth-screen button[type="submit"] {
-  height: 42px;
+  /* 40px, measured off the real Ohmz AI button. py-2.5 + text-sm implies
+     exactly this; an earlier 42 came from reading a screenshot instead. */
+  height: 40px;
   border-radius: 9999px;
   background-color: var(--ohmz-amber);
   color: var(--ohmz-on-amber);
