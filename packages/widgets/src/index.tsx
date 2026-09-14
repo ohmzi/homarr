@@ -65,6 +65,7 @@ import * as beszelSystemStats from "./beszel-system-stats";
 import * as video from "./video";
 import * as weather from "./weather";
 import * as customApi from "./custom-api";
+import * as wud from "./wud";
 
 export type {
   WidgetDefinition,
@@ -131,6 +132,7 @@ export const widgetImports = {
   beszelSystemStats,
   traefik,
   customApi,
+  wud,
 } satisfies WidgetImportRecord;
 
 export type WidgetImports = typeof widgetImports;

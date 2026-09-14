@@ -1,5 +1,6 @@
 // General integrations
 export { ArchiveTeamWarriorIntegration } from "./archive-team-warrior/archive-team-warrior-integration";
+export { WudIntegration } from "./wud/wud-integration";
 export { AdGuardHomeIntegration } from "./adguard-home/adguard-home-integration";
 export { TechnitiumDnsIntegration } from "./technitium/technitium-integration";
 export { AnchorIntegration } from "./anchor/anchor-integration";
@@ -93,6 +94,7 @@ export type {
   ArchiveTeamWarriorStatus,
 } from "./archive-team-warrior/archive-team-warrior-types";
 export type { TdayTask, TdayTaskKind, TdayTaskView, TdayList, TdayPriority } from "./tday/tday-types";
+export type { WudStats, WudContainerUpdate } from "./wud/wud-types";
 
 // Schemas
 export { anchorNotesListInputSchema } from "./anchor/anchor-types";
