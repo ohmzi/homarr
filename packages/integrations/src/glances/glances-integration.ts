@@ -48,7 +48,10 @@ export class GlancesIntegration extends Integration implements ISystemHealthMoni
       availablePkgUpdates: 0,
       version: session.version,
       fileSystem: stats.fs.map((fileSystem) => ({
-        deviceName: fileSystem.device_name,
+        // Prefer a human-readable name: the alias set in glances.conf, else the
+        // mount point. Falls back to the raw device, whose /dev/sdX letters are
+        // not stable across reboots.
+        deviceName: fileSystem.alias ?? fileSystem.mnt_point ?? fileSystem.device_name,
         used: `${fileSystem.used}`,
         available: `${fileSystem.free}`,
         percentage: fileSystem.percent,
@@ -151,6 +154,8 @@ const allSchema = z.object({
   fs: z.array(
     z.object({
       device_name: z.string(),
+      mnt_point: z.string(),
+      alias: z.string().optional(),
       used: z.number().min(0),
       free: z.number().min(0),
       percent: z.number().min(0).max(100),

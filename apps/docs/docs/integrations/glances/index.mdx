@@ -35,3 +35,25 @@ import { healthMonitoringWidget } from '@site/docs/widgets/health-monitoring';
     credentials: [],
     steps: []
 }]} />
+
+### Disk labels
+
+In the [Health monitoring](../../widgets/health-monitoring) widget, each filesystem is
+labelled with its Glances **alias** if one is configured, otherwise its **mount point**.
+The raw device (`/dev/sda1`) is only used as a last resort, because device letters are
+not stable across reboots.
+
+To control the labels, set aliases in your `glances.conf`:
+
+```ini
+[fs]
+alias=/mnt/media:Media,/mnt/backup:Backup
+```
+
+Alias keys are matched lowercased against the mount point.
+
+:::note
+If Glances runs in a container and reads the host filesystems through a bind mount,
+the mount points it reports include that prefix (for example `/rootfs/mnt/media`).
+Set aliases to get clean names, and match the alias keys to the prefixed paths.
+:::
