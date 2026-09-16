@@ -54,7 +54,15 @@ import {
   Sparkline,
 } from "@mantine/charts";
 
-import { PaginatedList, TabsContainer, TabPanel, Collapsible, StatBar, TypeBadge } from "./jsx-interactive-components";
+import {
+  ActionButton,
+  PaginatedList,
+  TabsContainer,
+  TabPanel,
+  Collapsible,
+  StatBar,
+  TypeBadge,
+} from "./jsx-interactive-components";
 
 const SAFE_URL_PATTERN = /^https?:\/\//i;
 
@@ -139,6 +147,7 @@ export const WHITELISTED_COMPONENTS: Record<string, ComponentType<never>> = {
   Collapsible,
   StatBar,
   TypeBadge,
+  ActionButton,
 };
 
 function sanitizeData(obj: unknown): unknown {

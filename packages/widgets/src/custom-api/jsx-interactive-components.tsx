@@ -2,8 +2,107 @@
 
 import type { ReactNode } from "react";
 import { Children, isValidElement, useEffect, useRef, useState } from "react";
-import { ActionIcon, Badge, Collapse, Group, Stack, Tabs, Text, UnstyledButton } from "@mantine/core";
-import { IconChevronDown, IconChevronLeft, IconChevronRight, IconChevronUp } from "@tabler/icons-react";
+import { ActionIcon, Badge, Button, Collapse, Group, Stack, Tabs, Text, UnstyledButton } from "@mantine/core";
+import {
+  IconCheck,
+  IconChevronDown,
+  IconChevronLeft,
+  IconChevronRight,
+  IconChevronUp,
+} from "@tabler/icons-react";
+
+import { clientApi } from "@homarr/api/client";
+import { useConfirmModal } from "@homarr/modals";
+import { showErrorNotification, showSuccessNotification } from "@homarr/notifications";
+
+interface ActionButtonProps {
+  /**
+   * Id of an existing `actionButton` custom-widget definition. The server-side
+   * `execute` mutation resolves the URL, method, body and secrets from it, so a
+   * template never sees credentials and cannot invent a request of its own.
+   */
+  definitionId: string;
+  label?: string;
+  color?: string;
+  variant?: string;
+  /** Variant used while `active` is true, so the current selection reads as pressed. */
+  activeVariant?: string;
+  active?: boolean;
+  size?: string;
+  radius?: string | number;
+  fullWidth?: boolean;
+  confirmText?: string;
+  successMessage?: string;
+}
+
+/**
+ * Fires a configured actionButton definition from inside a customJsx template.
+ * This is the only interactive component with a side effect, which is why it
+ * delegates to the same `customWidget.execute` mutation the standalone
+ * actionButton widget uses rather than performing a request itself.
+ */
+export function ActionButton({
+  definitionId,
+  label = "Execute",
+  color = "blue",
+  variant = "light",
+  activeVariant = "filled",
+  active = false,
+  size = "sm",
+  radius = "md",
+  fullWidth = true,
+  confirmText = "",
+  successMessage = "",
+}: ActionButtonProps) {
+  const { openConfirmModal } = useConfirmModal();
+  const utils = clientApi.useUtils();
+  const executeMutation = clientApi.customWidget.execute.useMutation();
+  const [justSucceeded, setJustSucceeded] = useState(false);
+
+  const runAction = async () => {
+    if (!definitionId) return;
+    setJustSucceeded(false);
+    try {
+      const result = await executeMutation.mutateAsync({ definitionId });
+      if (result.success) {
+        setJustSucceeded(true);
+        showSuccessNotification({ title: label, message: successMessage || "Done" });
+        setTimeout(() => setJustSucceeded(false), 3000);
+        // Pull the panel's own data forward so the new state is reflected
+        // immediately instead of waiting for the next refresh tick.
+        await utils.widget.customApi.getData.invalidate();
+      } else {
+        showErrorNotification({ title: label, message: result.error ?? "Request failed" });
+      }
+    } catch {
+      showErrorNotification({ title: label, message: "Request failed" });
+    }
+  };
+
+  const handleClick = () => {
+    if (confirmText) {
+      openConfirmModal({ title: label, children: confirmText, onConfirm: () => void runAction() });
+    } else {
+      void runAction();
+    }
+  };
+
+  return (
+    <Button
+      size={size}
+      radius={radius}
+      color={color}
+      variant={active ? activeVariant : variant}
+      fullWidth={fullWidth}
+      loading={executeMutation.isPending}
+      onClick={handleClick}
+      leftSection={active || justSucceeded ? <IconCheck size={16} stroke={3} /> : undefined}
+      styles={{ label: { fontWeight: 700 } }}
+    >
+      {label}
+    </Button>
+  );
+}
 
 interface PaginatedListProps {
   children: ReactNode;
