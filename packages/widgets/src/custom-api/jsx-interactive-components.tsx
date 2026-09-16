@@ -23,6 +23,8 @@ interface ActionButtonProps {
    */
   definitionId: string;
   label?: string;
+  /** Secondary value pinned to the right of the label, e.g. the percentage a preset sets. */
+  sublabel?: string;
   color?: string;
   variant?: string;
   /** Variant used while `active` is true, so the current selection reads as pressed. */
@@ -44,6 +46,7 @@ interface ActionButtonProps {
 export function ActionButton({
   definitionId,
   label = "Execute",
+  sublabel = "",
   color = "blue",
   variant = "light",
   activeVariant = "filled",
@@ -96,7 +99,15 @@ export function ActionButton({
       fullWidth={fullWidth}
       loading={executeMutation.isPending}
       onClick={handleClick}
+      justify={sublabel ? "space-between" : "center"}
       leftSection={active || justSucceeded ? <IconCheck size={16} stroke={3} /> : undefined}
+      rightSection={
+        sublabel ? (
+          <Text component="span" fz={12} fw={700} opacity={0.75}>
+            {sublabel}
+          </Text>
+        ) : undefined
+      }
       styles={{ label: { fontWeight: 700 } }}
     >
       {label}
