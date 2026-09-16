@@ -117,6 +117,13 @@ const extractors: Record<string, Extractor> = {
     buttonColor: c.buttonColor ?? "blue",
     confirmText: c.confirmText ?? "",
     successMessage: c.successMessage ?? "",
+    // Style options must be forwarded explicitly: this extractor is a
+    // whitelist, so anything omitted here never reaches the component
+    // regardless of what the schema accepts or the config stores.
+    variant: c.variant ?? "filled",
+    size: c.size ?? "lg",
+    hideIcon: c.hideIcon ?? false,
+    fullWidth: c.fullWidth ?? false,
   }),
   customJsx: (json, config) => ({
     type: "customJsx" as const,
