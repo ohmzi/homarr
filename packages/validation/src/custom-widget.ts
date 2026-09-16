@@ -315,6 +315,24 @@ const actionButtonDisplayConfigSchema = z.object({
     .boolean()
     .optional()
     .describe("Stretch the button to fill the widget width (default: false)."),
+  stateUrl: z
+    .string()
+    .optional()
+    .describe(
+      "Optional GET endpoint used only to read current state, so the button can show whether it is the active choice. Separate from the action url, which is never fetched.",
+    ),
+  statePath: z
+    .string()
+    .optional()
+    .describe("JSONPath into the stateUrl response identifying the current value (e.g. $.fan_max_pct)."),
+  activeValue: z
+    .string()
+    .optional()
+    .describe("When the value at statePath equals this, the button renders as the active selection."),
+  activeVariant: z
+    .enum(["filled", "light", "outline", "subtle", "default", "white"])
+    .optional()
+    .describe("Mantine variant used while this button is the active selection (default: 'filled')."),
 });
 
 export const displayConfigSchema = z

@@ -124,6 +124,12 @@ const extractors: Record<string, Extractor> = {
     size: c.size ?? "lg",
     hideIcon: c.hideIcon ?? false,
     fullWidth: c.fullWidth ?? false,
+    activeVariant: c.activeVariant ?? "filled",
+    // isActive is resolved by the caller, which is the only place that may
+    // fetch stateUrl. Default false so a button without state config renders
+    // exactly as before.
+    isActive: false,
+    pollable: Boolean(c.stateUrl && c.statePath),
   }),
   customJsx: (json, config) => ({
     type: "customJsx" as const,
@@ -149,4 +155,17 @@ export function extractDisplayDataWithFallback(json: unknown, displayType: strin
 
 export function extractActionButtonDisplay(displayConfig: Config): unknown {
   return extractors.actionButton?.(null, displayConfig);
+}
+
+/**
+ * Resolve whether an actionButton is the currently-active selection by reading a
+ * separate read-only state endpoint. Kept apart from the extractor because the
+ * action url itself must never be fetched - it performs the action.
+ */
+export function resolveActionButtonActive(stateJson: unknown, displayConfig: Config): boolean {
+  const path = displayConfig.statePath as string | undefined;
+  const expected = displayConfig.activeValue as string | undefined;
+  if (!path || expected === undefined) return false;
+  const current = query(stateJson, path) as unknown;
+  return String(current) === String(expected);
 }

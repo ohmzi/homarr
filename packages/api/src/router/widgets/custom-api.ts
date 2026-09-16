@@ -8,7 +8,11 @@ import { eq } from "@homarr/db";
 import { createLogger } from "@homarr/core/infrastructure/logs";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { applyAuth } from "../custom-widget/auth";
-import { extractActionButtonDisplay, extractDisplayDataWithFallback } from "../custom-widget/display-data";
+import {
+  extractActionButtonDisplay,
+  extractDisplayDataWithFallback,
+  resolveActionButtonActive,
+} from "../custom-widget/display-data";
 
 const logger = createLogger({ module: "widget:customApi" });
 
@@ -39,7 +43,35 @@ export const customApiRouter = createTRPCRouter({
     }
 
     if (definition.displayType === "actionButton") {
-      return extractActionButtonDisplay(displayConfig);
+      const base = extractActionButtonDisplay(displayConfig) as Record<string, unknown>;
+      const stateUrl = displayConfig.stateUrl as string | undefined;
+      const statePath = displayConfig.statePath as string | undefined;
+
+      // The action url is never fetched - it performs the action. stateUrl is a
+      // separate read-only endpoint used purely to decide whether this button is
+      // the active selection. A failure here must not break the button.
+      if (!stateUrl || !statePath) return base;
+
+      try {
+        const stateController = new AbortController();
+        const stateTimeout = setTimeout(() => stateController.abort(), FETCH_TIMEOUT_MS);
+        try {
+          const stateResponse = await fetch(validateUrl(stateUrl).toString(), {
+            method: "GET",
+            headers: new Headers({ Accept: "application/json" }),
+            redirect: "follow",
+            signal: stateController.signal,
+          });
+          if (!stateResponse.ok) return base;
+          const stateJson: unknown = await stateResponse.json();
+          return { ...base, isActive: resolveActionButtonActive(stateJson, displayConfig) };
+        } finally {
+          clearTimeout(stateTimeout);
+        }
+      } catch (error) {
+        logger.warn("Failed to read actionButton state", { definitionId: input.definitionId, error });
+        return base;
+      }
     }
 
     const decryptedSecrets = definition.secrets.map((s) => ({

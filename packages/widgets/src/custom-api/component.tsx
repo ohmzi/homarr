@@ -341,7 +341,10 @@ function ActionButtonDisplay({ data }: { data: Record<string, unknown> }) {
   const confirmText = (data.confirmText as string) || "";
   const successMessage = (data.successMessage as string) || t("executeSuccess");
   const definitionId = data.widgetDefinitionId as string | undefined;
-  const buttonVariant = (data.variant as string) ?? "filled";
+  const isActive = data.isActive === true;
+  const buttonVariant = isActive
+    ? ((data.activeVariant as string) ?? "filled")
+    : ((data.variant as string) ?? "filled");
   const buttonSize = (data.size as string) ?? "lg";
   const hideIcon = data.hideIcon === true;
   const fullWidth = data.fullWidth === true;
@@ -384,9 +387,9 @@ function ActionButtonDisplay({ data }: { data: Record<string, unknown> }) {
         loading={executeMutation.isPending}
         fullWidth={fullWidth}
         leftSection={
-          lastSuccess ? <IconCheck size={18} /> : hideIcon ? undefined : <IconPlayerPlay size={20} />
+          lastSuccess || isActive ? <IconCheck size={18} /> : hideIcon ? undefined : <IconPlayerPlay size={20} />
         }
-        variant={lastSuccess ? "light" : buttonVariant}
+        variant={buttonVariant}
       >
         {executeMutation.isPending ? t("executing") : buttonLabel}
       </Button>
@@ -437,7 +440,10 @@ function CustomApiWidgetInner({ definitionId, refreshInterval }: { definitionId:
     {
       refetchInterval: (query) => {
         const result = query.state.data as Record<string, unknown> | undefined;
-        if (result?.type === "actionButton" || result?.type === "disabled") return false;
+        if (result?.type === "disabled") return false;
+        // actionButtons normally never refetch, but one tracking a state
+        // endpoint must poll so the active selection stays in sync.
+        if (result?.type === "actionButton" && result.pollable !== true) return false;
         return intervalMs;
       },
       retry: (failureCount, err) => {
