@@ -299,6 +299,22 @@ const actionButtonDisplayConfigSchema = z.object({
     .string()
     .optional()
     .describe("Notification message shown after successful API execution. Omit for a generic success message."),
+  variant: z
+    .enum(["filled", "light", "outline", "subtle", "default", "white"])
+    .optional()
+    .describe("Mantine button variant (default: 'filled'). Use 'light' or 'outline' for a quieter control."),
+  size: z
+    .enum(["xs", "sm", "md", "lg", "xl"])
+    .optional()
+    .describe("Button size (default: 'lg')."),
+  hideIcon: z
+    .boolean()
+    .optional()
+    .describe("Hide the leading play icon. Useful when the button selects a setting rather than running a task."),
+  fullWidth: z
+    .boolean()
+    .optional()
+    .describe("Stretch the button to fill the widget width (default: false)."),
 });
 
 export const displayConfigSchema = z

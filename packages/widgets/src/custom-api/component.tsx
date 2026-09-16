@@ -341,6 +341,10 @@ function ActionButtonDisplay({ data }: { data: Record<string, unknown> }) {
   const confirmText = (data.confirmText as string) || "";
   const successMessage = (data.successMessage as string) || t("executeSuccess");
   const definitionId = data.widgetDefinitionId as string | undefined;
+  const buttonVariant = (data.variant as string) ?? "filled";
+  const buttonSize = (data.size as string) ?? "lg";
+  const hideIcon = data.hideIcon === true;
+  const fullWidth = data.fullWidth === true;
 
   const handleExecute = async () => {
     if (!definitionId) return;
@@ -374,12 +378,15 @@ function ActionButtonDisplay({ data }: { data: Record<string, unknown> }) {
   return (
     <Center h="100%">
       <Button
-        size="lg"
+        size={buttonSize}
         color={buttonColor}
         onClick={handleClick}
         loading={executeMutation.isPending}
-        leftSection={lastSuccess ? <IconCheck size={20} /> : <IconPlayerPlay size={20} />}
-        variant={lastSuccess ? "light" : "filled"}
+        fullWidth={fullWidth}
+        leftSection={
+          lastSuccess ? <IconCheck size={18} /> : hideIcon ? undefined : <IconPlayerPlay size={20} />
+        }
+        variant={lastSuccess ? "light" : buttonVariant}
       >
         {executeMutation.isPending ? t("executing") : buttonLabel}
       </Button>
