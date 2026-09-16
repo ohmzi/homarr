@@ -3968,6 +3968,9 @@
             "network": "Network"
           }
         },
+        "showUptime": {
+          "label": "Show uptime"
+        },
         "labelDisplayMode": {
           "label": "Label display mode",
           "option": {
@@ -3984,7 +3987,8 @@
         "gpu": "GPU",
         "network": "NET",
         "up": "UP",
-        "down": "DOWN"
+        "down": "DOWN",
+        "uptime": "UPTIME"
       }
     },
     "systemDisks": {

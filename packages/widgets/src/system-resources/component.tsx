@@ -12,8 +12,10 @@ import { SystemResourceCPUChart } from "./chart/cpu-chart";
 import { SystemResourceGPUChart } from "./chart/gpu-chart";
 import { SystemResourceMemoryChart } from "./chart/memory-chart";
 import { NetworkTrafficChart } from "./chart/network-traffic";
+import { SystemResourceUptimeCard } from "./chart/uptime-card";
 
 const MAX_QUEUE_SIZE = 15;
+const UPTIME_ROW_HEIGHT = 30;
 
 const toChartItem = (healthInfo: {
   cpuUtilization: number;
@@ -61,10 +63,23 @@ export default function SystemResources({ integrationIds, options }: WidgetCompo
 
   const showNetwork =
     items.length === 0 || (items.every((item) => item.network !== null) && options.visibleCharts.includes("network"));
-  const rowHeight = `calc((100% - ${(options.visibleCharts.length - 1) * 8}px) / ${options.visibleCharts.length})`;
+  const uptimeInSeconds = data[0]?.healthInfo.uptime;
+  const showUptime = options.showUptime && uptimeInSeconds !== undefined;
+  // The uptime strip is a fixed-height row, so take it (and its gap) out of the
+  // space the charts divide between themselves.
+  const reservedHeight = (options.visibleCharts.length - 1) * 8 + (showUptime ? UPTIME_ROW_HEIGHT + 8 : 0);
+  const rowHeight = `calc((100% - ${reservedHeight}px) / ${options.visibleCharts.length})`;
 
   return (
     <Stack gap="xs" p="xs" ref={ref} h="100%">
+      {showUptime && uptimeInSeconds !== undefined && (
+        <Box h={UPTIME_ROW_HEIGHT}>
+          <SystemResourceUptimeCard
+            uptimeInSeconds={uptimeInSeconds}
+            labelDisplayMode={options.labelDisplayMode}
+          />
+        </Box>
+      )}
       {options.visibleCharts.includes("cpu") && (
         <Box h={rowHeight}>
           <SystemResourceCPUChart

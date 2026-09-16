@@ -20,6 +20,7 @@ export const { definition, componentLoader } = createWidgetDefinition("systemRes
   createOptions() {
     return optionsBuilder.from((factory) => ({
       hasShadow: factory.switch({ defaultValue: true }),
+      showUptime: factory.switch({ defaultValue: true }),
       visibleCharts: factory.multiSelect({
         options: (["cpu", "memory", "gpu", "network"] as const).map((key) => ({
           value: key,
