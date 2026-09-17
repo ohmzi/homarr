@@ -49,6 +49,7 @@ export const {
   sectionLayouts,
   trustedCertificateHostnames,
   cronJobConfigurations,
+  uptimeDaily,
   customWidgetDefinitions,
   customWidgetSecrets,
   widgetSecrets,

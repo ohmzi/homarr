@@ -42,6 +42,7 @@ export const widgetKinds = [
   "tracearr",
   "speedtestTracker",
   "uptimeKuma",
+  "uptimeStatus",
   "audioStats",
   "umami",
   "tdayTasks",
@@ -60,6 +61,7 @@ export type WidgetKind = (typeof widgetKinds)[number];
 
 export const widgetDefaultSizes: Partial<Record<WidgetKind, { width: number; height: number }>> = {
   uptimeKuma: { width: 2, height: 3 },
+  uptimeStatus: { width: 4, height: 2 },
   audioStats: { width: 2, height: 2 },
   paperlessNgx: { width: 2, height: 2 },
   patchmon: { width: 2, height: 2 },

@@ -100,6 +100,18 @@ External redis is currently not supported with Proxmox Community Scripts
 | `HTTPS_PROXY`        | HTTPS proxy to use                                                  | Any valid HTTPS proxy URL | -       |
 | `NO_PROXY`           | Comma separated list of hosts that should be excluded from proxying | Any valid hostnames       | -       |
 
+## Uptime status
+
+These configure the [Uptime Status](/docs/widgets/uptime-status) widget's OpenWebUI row.
+The probe is skipped entirely when `OPENWEBUI_EMAIL` or `OPENWEBUI_PASSWORD` are unset.
+
+| Environment Variable | Description                                                                                                     | Possible values            | Default                |
+| -------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------- | ---------------------- |
+| `OPENWEBUI_URL`      | Base URL of the OpenWebUI instance to probe. Homarr reaches a local instance over the host network.              | Any URL                    | `http://127.0.0.1:4567` |
+| `OPENWEBUI_EMAIL`    | Email of the account the probe signs in with. Use a dedicated account rather than a personal one.                | Any email                  | (unset)                |
+| `OPENWEBUI_PASSWORD` | Password for that account.                                                                                       | Any string                 | (unset)                |
+| `OPENWEBUI_MODEL`    | Model to ask. When unset, the first model the instance reports is used.                                          | Any model ID               | (unset)                |
+
 ## Advanced deployments
 
 :::warning

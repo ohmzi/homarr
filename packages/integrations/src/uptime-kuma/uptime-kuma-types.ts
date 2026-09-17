@@ -49,6 +49,18 @@ export interface UptimeKumaMonitor {
   uptimePercent24h: number | null;
 }
 
+/**
+ * A monitor together with its heartbeat history. The status page endpoint caps
+ * heartbeats at 100 per monitor, so this is a recent window rather than full history.
+ */
+export interface UptimeKumaMonitorHeartbeats {
+  id: number;
+  name: string;
+  heartbeats: UptimeKumaHeartbeatEntry[];
+}
+
+export type UptimeKumaHeartbeatEntry = z.infer<typeof uptimeKumaHeartbeatEntrySchema>;
+
 export interface UptimeKumaDashboardData {
   totalMonitors: number;
   upCount: number;

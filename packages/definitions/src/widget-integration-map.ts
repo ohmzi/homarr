@@ -41,6 +41,7 @@ export const widgetIntegrationSupport: Partial<Record<WidgetKind, readonly Integ
   tracearr: ["tracearr"],
   speedtestTracker: ["speedtestTracker"],
   uptimeKuma: ["uptimeKuma"],
+  uptimeStatus: ["uptimeKuma"],
   audioStats: ["navidrome", "audiobookshelf"],
   umami: ["umami"],
   vpn: getIntegrationKindsByCategory("vpn"),
@@ -53,6 +54,7 @@ export const widgetIntegrationSupport: Partial<Record<WidgetKind, readonly Integ
   anchorNote: ["anchor"],
   traefik: ["traefik"],
   wud: ["wud"],
+  tdayTasks: ["tday"],
 };
 
 export const getWidgetKindsForIntegration = (integrationKind: IntegrationKind): WidgetKind[] => {

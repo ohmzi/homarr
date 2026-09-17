@@ -556,6 +556,31 @@ export const cronJobConfigurations = sqliteTable("cron_job_configuration", {
   isEnabled: int({ mode: "boolean" }).default(true).notNull(),
 });
 
+/**
+ * One row per monitor per day. Uptime is kept at daily granularity on purpose:
+ * a fixed row count per monitor regardless of probe frequency, pruned to a rolling
+ * window. `sourceId` is an integration id, or the literal "host" for the machine
+ * Homarr itself runs on (which has no integration, hence no foreign key).
+ */
+export const uptimeDaily = sqliteTable(
+  "uptime_daily",
+  {
+    sourceId: text().notNull(),
+    monitorId: text().notNull(),
+    monitorName: text().notNull(),
+    date: text().notNull(),
+    upSeconds: int().notNull().default(0),
+    downSeconds: int().notNull().default(0),
+    lastBeatAt: int({ mode: "timestamp" }),
+  },
+  (table) => ({
+    compoundKey: primaryKey({
+      columns: [table.sourceId, table.monitorId, table.date],
+    }),
+    dateIdx: index("uptime_daily__date_idx").on(table.date),
+  }),
+);
+
 export const accountRelations = relations(accounts, ({ one }) => ({
   user: one(users, {
     fields: [accounts.userId],

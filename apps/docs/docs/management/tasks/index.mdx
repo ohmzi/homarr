@@ -23,6 +23,16 @@ In the column `Schedule interval` you can change the interval in which the task 
 Different intervals are available, such as `1 minute`, `5 minutes`, `10 minutes`, `30 minutes`, and `1 hour`.
 All intervals are cron expressions, which means it will run the next time the cron expression matches the current time.
 
+## Jobs
+
+| Job              | Default interval | Description                                                                                             |
+| ---------------- | ---------------- | ------------------------------------------------------------------------------------------------------- |
+| `Icons Updater`  | Weekly           | Refreshes the cached icon repositories.                                                                  |
+| `Analytics`      | Weekly           | Sends anonymous server analytics. Disabled when `NO_EXTERNAL_CONNECTION` is set.                        |
+| `Pings`          | 1 minute         | Simple reachability pings for apps that have status indicators enabled.                                  |
+| `Uptime Sync`    | 5 minutes        | Collects daily uptime history for Uptime Kuma monitors and this machine, for the Uptime Status widget.   |
+| `OpenWebUI Probe` | Daily           | Signs in to OpenWebUI and streams a chat completion, requiring the model to follow the instruction — so the Uptime Status widget reflects auth, model load and inference rather than just an open port. |
+
 ## Actions
 
 You can find different actions for each task on the right side of a task item.

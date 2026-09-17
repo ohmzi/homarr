@@ -3864,6 +3864,37 @@
         "internalServerError": "Failed to fetch uptime data"
       }
     },
+    "uptimeStatus": {
+      "name": "Uptime Status",
+      "description": "Daily uptime history for your monitors and this machine",
+      "option": {
+        "includeHost": {
+          "label": "Show server power",
+          "description": "Include the machine Homarr runs on, reconstructed from Glances uptime"
+        },
+        "includeOpenWebUi": {
+          "label": "Show OpenWebUI",
+          "description": "Include the OpenWebUI probe, which logs in and asks the model a question once a day"
+        },
+        "showUptimePercent": {
+          "label": "Show uptime",
+          "description": "Display the uptime percentage across the visible days"
+        },
+        "visibleDays": {
+          "label": "Maximum days",
+          "description": "Upper limit on the bar's length. It grows one segment per day of history, up to this"
+        }
+      },
+      "empty": "Nothing recorded yet - the Uptime Sync task starts filling this in every 5 minutes.",
+      "day": {
+        "up": "Operational",
+        "down": "Outage",
+        "empty": "No data"
+      },
+      "error": {
+        "internalServerError": "Failed to load uptime history"
+      }
+    },
     "traefik": {
       "name": "Traefik",
       "description": "Overview of Traefik routers, services, middlewares, and entry points",
@@ -5047,6 +5078,12 @@
             },
             "ping": {
               "label": "Pings"
+            },
+            "uptimeSync": {
+              "label": "Uptime Sync"
+            },
+            "openWebUiProbe": {
+              "label": "OpenWebUI Probe"
             }
           },
           "interval": {

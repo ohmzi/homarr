@@ -48,6 +48,7 @@ import * as smartHomeEntityState from "./smart-home/entity-state";
 import * as smartHomeExecuteAutomation from "./smart-home/execute-automation";
 import * as speedtestTracker from "./speedtest-tracker";
 import * as uptimeKuma from "./uptime-kuma";
+import * as uptimeStatus from "./uptime-status";
 import * as stockPrice from "./stocks";
 import * as systemDisks from "./system-disks";
 import * as systemResources from "./system-resources";
@@ -121,6 +122,7 @@ export const widgetImports = {
   tracearr,
   speedtestTracker,
   uptimeKuma,
+  uptimeStatus,
   audioStats,
   umami,
   tdayTasks,

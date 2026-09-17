@@ -1,0 +1,69 @@
+---
+title: "Uptime Status"
+description: "Displays daily uptime history for your monitors and this machine."
+hide_title: true
+---
+
+import { WidgetHeader } from "@site/src/components/widgets/header";
+import { AddingWidget } from "@site/src/components/widgets/adding";
+import { WidgetConfig } from "@site/src/components/widgets/configuration";
+import { WidgetIntegrations } from "@site/src/components/widgets/integrations";
+import { uptimeStatusWidget } from ".";
+import { uptimeKumaIntegration } from "@site/docs/integrations/uptime-kuma";
+
+<WidgetHeader widget={uptimeStatusWidget} categories={["Monitoring"]} />
+
+This widget shows one bar per monitor, with a segment for each day, coloured by how
+that day went: green for a day with no downtime, orange for a day with some, and red
+for a day that was down throughout. Grey means no data was recorded for that day.
+
+The bar only covers the days that actually have history, so a fresh install is a single
+full-width segment rather than a long run of empty ones. It grows by a segment a day until
+it reaches the configured maximum, which is capped at the 90 days that are kept.
+
+Unlike the [Uptime Kuma](./uptime-kuma) widget, which reads live statistics, this widget
+builds its own history in Homarr's database. That history is kept at daily granularity
+and rolls forward, so a bar stays the same size no matter how long it runs.
+
+### How the history is collected
+
+The **Uptime Sync** task runs every 5 minutes. It reads recent heartbeats from your
+Uptime Kuma status page and adds them to a running total for the day. Because Uptime Kuma
+only serves the most recent 100 heartbeats per monitor, a sync can recover at most
+`100 × your monitor interval` — around 8 hours for a monitor probing every 5 minutes, and
+about 100 days for one probing daily. Each monitor is weighted by the real gap between its
+beats, so monitors on very different schedules are handled by the same code.
+
+Two rows are produced by Homarr itself rather than by Uptime Kuma:
+
+- **Homelab Server Power** uses the uptime counter reported by Glances. Homarr cannot
+  observe that machine while it is off, so a reboot is reconstructed from Glances once it
+  comes back: a genuine power cut is recorded as downtime, while a restart of Homarr alone
+  is not.
+- **OpenWebUI** is checked by the **OpenWebUI Probe** task, which signs in, streams a real
+  chat completion, and requires the model to have followed the instruction it was given.
+  That covers authentication, model load and inference rather than just whether the port
+  answers — a `200` carrying an error string does not count as healthy. It needs
+  `OPENWEBUI_EMAIL` and `OPENWEBUI_PASSWORD`, and is skipped entirely when they are unset.
+
+Both of those describe the stretch *since the previous check*, so a result reflects the
+period leading up to it rather than the moment it ran.
+
+### Supported Integrations
+
+<WidgetIntegrations
+  items={[
+    {
+      integration: uptimeKumaIntegration,
+      note: "Supplies the monitors to track. The widget still shows this machine without one.",
+    },
+  ]}
+/>
+
+### Adding the widget
+
+<AddingWidget />
+
+### Configuration
+
+<WidgetConfig configuration={uptimeStatusWidget.configuration} />

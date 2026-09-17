@@ -13,6 +13,8 @@ export const widgetQueryRefetchIntervals = [
   { queryKey: [["widget", "healthMonitoring"]], intervalSeconds: 5 },
   { queryKey: [["widget", "mediaServer"]], intervalSeconds: 5 },
   { queryKey: [["widget", "tracearr"]], intervalSeconds: 5 },
+  // The history only moves when the uptimeSync job runs, so polling it fast buys nothing.
+  { queryKey: [["widget", "uptimeStatus"]], intervalSeconds: 300 },
   { queryKey: [["widget", "immich"]], intervalSeconds: null },
   { queryKey: [["widget", "indexerManager"]], intervalSeconds: null },
   { queryKey: [["widget", "mediaRelease"]], intervalSeconds: null },
