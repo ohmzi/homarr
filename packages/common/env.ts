@@ -24,20 +24,20 @@ export const env = createEnv({
         message: `SECRET_ENCRYPTION_KEY must only contain hex characters${errorSuffix}`,
       }),
     NO_EXTERNAL_CONNECTION: createBooleanSchema(false),
-    // Optional. The OpenWebUI uptime probe logs in and asks the model a question, so it
-    // needs an account; the probe is skipped entirely when these are unset.
-    OPENWEBUI_URL: z.string().optional(),
-    OPENWEBUI_EMAIL: z.string().optional(),
-    OPENWEBUI_PASSWORD: z.string().optional(),
-    OPENWEBUI_MODEL: z.string().optional(),
+    // Optional. The Ohmz AI uptime probe reaches a guest instance and asks the model a question,
+    // so it needs to know which instance to reach. It signs in as a guest rather than with an
+    // account, so there is no password to configure.
+    OHMZAI_URL: z.string().optional(),
+    // A guest is not shown the model list, so the probe cannot discover one. When this is unset
+    // the probe falls back to the instance's own list and gives up quietly if that is empty —
+    // "I do not know which model to ask" is a misconfiguration, not an outage.
+    OHMZAI_MODEL: z.string().optional(),
   },
   runtimeEnv: {
     SECRET_ENCRYPTION_KEY: process.env.SECRET_ENCRYPTION_KEY,
     NODE_ENV: process.env.NODE_ENV,
     NO_EXTERNAL_CONNECTION: process.env.NO_EXTERNAL_CONNECTION,
-    OPENWEBUI_URL: process.env.OPENWEBUI_URL,
-    OPENWEBUI_EMAIL: process.env.OPENWEBUI_EMAIL,
-    OPENWEBUI_PASSWORD: process.env.OPENWEBUI_PASSWORD,
-    OPENWEBUI_MODEL: process.env.OPENWEBUI_MODEL,
+    OHMZAI_URL: process.env.OHMZAI_URL,
+    OHMZAI_MODEL: process.env.OHMZAI_MODEL,
   },
 });

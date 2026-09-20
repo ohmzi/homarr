@@ -34,20 +34,33 @@ only serves the most recent 100 heartbeats per monitor, a sync can recover at mo
 about 100 days for one probing daily. Each monitor is weighted by the real gap between its
 beats, so monitors on very different schedules are handled by the same code.
 
-Two rows are produced by Homarr itself rather than by Uptime Kuma:
+Three rows are produced by Homarr itself rather than by Uptime Kuma:
 
 - **Homelab Server Power** uses the uptime counter reported by Glances. Homarr cannot
   observe that machine while it is off, so a reboot is reconstructed from Glances once it
   comes back: a genuine power cut is recorded as downtime, while a restart of Homarr alone
   is not.
-- **OpenWebUI** is checked by the **OpenWebUI Probe** task, which signs in, streams a real
-  chat completion, and requires the model to have followed the instruction it was given.
-  That covers authentication, model load and inference rather than just whether the port
-  answers — a `200` carrying an error string does not count as healthy. It needs
-  `OPENWEBUI_EMAIL` and `OPENWEBUI_PASSWORD`, and is skipped entirely when they are unset.
+- **Ohmz AI** is checked by the **Ohmz AI Probe** task, which signs in to the configured
+  instance, streams a real chat completion, and requires the model to have followed the
+  instruction it was given. That covers the guest gate, sign-in, model load and inference
+  rather than just whether the port answers — a `200` carrying an error string does not
+  count as healthy. See [environment variables](/docs/advanced/environment-variables).
+- **Plex** is checked by the **Plex Probe** task, which walks the library the way the web
+  client does: it lists the movie libraries, opens a real movie page, and requires that page
+  to come back with its file still attached. `/identity` deliberately answers without a
+  token, so the shallow check could stay green while the library behind it was broken.
 
-Both of those describe the stretch *since the previous check*, so a result reflects the
-period leading up to it rather than the moment it ran.
+### How the two probes are sampled
+
+Each probe samples once every six hours. If an attempt fails it is retried after 30 minutes,
+twice. A window whose three attempts all fail is recorded as down in full, so a service that
+recovers halfway through still shows that window as an outage — and a window that succeeds is
+likewise counted as up for the whole of itself. A window nobody observed, because the task was
+disabled or Homarr was down, stays empty rather than being guessed at.
+
+Because a probe reaches a target you configure, pointing the Ohmz AI probe at a public hostname
+means an outage of the edge in front of it is reported here too. That is usually what you want:
+it is the path your visitors take.
 
 ### Supported Integrations
 

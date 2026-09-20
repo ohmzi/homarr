@@ -3872,9 +3872,13 @@
           "label": "Show server power",
           "description": "Include the machine Homarr runs on, reconstructed from Glances uptime"
         },
-        "includeOpenWebUi": {
-          "label": "Show OpenWebUI",
-          "description": "Include the OpenWebUI probe, which logs in and asks the model a question once a day"
+        "includeOhmzAi": {
+          "label": "Show Ohmz AI",
+          "description": "Include the Ohmz AI probe, which asks the model a question every six hours"
+        },
+        "includePlex": {
+          "label": "Show Plex",
+          "description": "Include the Plex probe, which opens a movie page every six hours"
         },
         "showUptimePercent": {
           "label": "Show uptime",
@@ -5082,8 +5086,11 @@
             "uptimeSync": {
               "label": "Uptime Sync"
             },
-            "openWebUiProbe": {
-              "label": "OpenWebUI Probe"
+            "ohmzaiProbe": {
+              "label": "Ohmz AI Probe"
+            },
+            "plexProbe": {
+              "label": "Plex Probe"
             }
           },
           "interval": {

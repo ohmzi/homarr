@@ -19,7 +19,11 @@ export const { definition, componentLoader } = createWidgetDefinition("uptimeSta
         defaultValue: true,
         withDescription: true,
       }),
-      includeOpenWebUi: factory.switch({
+      includeOhmzAi: factory.switch({
+        defaultValue: true,
+        withDescription: true,
+      }),
+      includePlex: factory.switch({
         defaultValue: true,
         withDescription: true,
       }),

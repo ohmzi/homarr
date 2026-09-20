@@ -15,8 +15,14 @@ export const uptimeStatusWidget: WidgetDefinition = {
         defaultValue: "yes",
       },
       {
-        name: "Show OpenWebUI",
-        description: "Include the OpenWebUI probe, which logs in and asks the model a question once a day",
+        name: "Show Ohmz AI",
+        description: "Include the Ohmz AI probe, which asks the model a question every six hours",
+        values: { type: "boolean" },
+        defaultValue: "yes",
+      },
+      {
+        name: "Show Plex",
+        description: "Include the Plex probe, which opens a movie page every six hours",
         values: { type: "boolean" },
         defaultValue: "yes",
       },

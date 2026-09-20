@@ -33,7 +33,8 @@ export default function UptimeStatusWidget({ options, integrationIds }: WidgetCo
   const { data } = clientApi.widget.uptimeStatus.getHistory.useQuery({
     integrationIds,
     includeHost: options.includeHost,
-    includeOpenWebUi: options.includeOpenWebUi,
+    includeOhmzAi: options.includeOhmzAi,
+    includePlex: options.includePlex,
     days: options.visibleDays,
   });
 

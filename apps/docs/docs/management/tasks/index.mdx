@@ -31,7 +31,12 @@ All intervals are cron expressions, which means it will run the next time the cr
 | `Analytics`      | Weekly           | Sends anonymous server analytics. Disabled when `NO_EXTERNAL_CONNECTION` is set.                        |
 | `Pings`          | 1 minute         | Simple reachability pings for apps that have status indicators enabled.                                  |
 | `Uptime Sync`    | 5 minutes        | Collects daily uptime history for Uptime Kuma monitors and this machine, for the Uptime Status widget.   |
-| `OpenWebUI Probe` | Daily           | Signs in to OpenWebUI and streams a chat completion, requiring the model to follow the instruction — so the Uptime Status widget reflects auth, model load and inference rather than just an open port. |
+| `Ohmz AI Probe`  | 30 minutes       | Asks the configured instance a question and requires the model to have answered it, so the Uptime Status widget reflects the guest gate, sign-in, model load and inference rather than just an open port. Skipped when no model can be resolved. |
+| `Plex Probe`     | 30 minutes       | Opens movie pages on the local Plex server, so the Uptime Status widget reflects whether the library and the web client work rather than just whether the port answers. Skipped when no Plex integration is configured. |
+
+Both probes sample every six hours, retrying after 30 minutes if an attempt fails. A window whose
+three attempts all fail is recorded as downtime in full. Their interval is fixed because that
+retry policy is expressed in ticks.
 
 ## Actions
 

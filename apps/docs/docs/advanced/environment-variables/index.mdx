@@ -102,15 +102,14 @@ External redis is currently not supported with Proxmox Community Scripts
 
 ## Uptime status
 
-These configure the [Uptime Status](/docs/widgets/uptime-status) widget's OpenWebUI row.
-The probe is skipped entirely when `OPENWEBUI_EMAIL` or `OPENWEBUI_PASSWORD` are unset.
+These configure the [Uptime Status](/docs/widgets/uptime-status) widget's Ohmz AI row. The probe
+signs in as a guest rather than with an account, so there is no password to set. The Plex row
+needs no configuration at all — it uses the Plex integration you have already added.
 
-| Environment Variable | Description                                                                                                     | Possible values            | Default                |
-| -------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------- | ---------------------- |
-| `OPENWEBUI_URL`      | Base URL of the OpenWebUI instance to probe. Homarr reaches a local instance over the host network.              | Any URL                    | `http://127.0.0.1:4567` |
-| `OPENWEBUI_EMAIL`    | Email of the account the probe signs in with. Use a dedicated account rather than a personal one.                | Any email                  | (unset)                |
-| `OPENWEBUI_PASSWORD` | Password for that account.                                                                                       | Any string                 | (unset)                |
-| `OPENWEBUI_MODEL`    | Model to ask. When unset, the first model the instance reports is used.                                          | Any model ID               | (unset)                |
+| Environment Variable | Description                                                                                                                       | Possible values | Default                          |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------- | -------------------------------- |
+| `OHMZAI_URL`         | Base URL of the instance to probe. Point this at the hostname your visitors use to have the probe cover the edge in front of it.   | Any URL         | `https://aipublic.ohmz.cloud`    |
+| `OHMZAI_MODEL`       | Model to ask. A guest is not shown the model list, so this is normally required; when unset the probe falls back to the instance's own list and skips if that is empty. | Any model ID    | (unset)                          |
 
 ## Advanced deployments
 
