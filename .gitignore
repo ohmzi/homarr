@@ -82,6 +82,9 @@ skills-lock.json
 apps/docs/.docusaurus
 apps/docs/build
 .pnpm-store
+
+# next-intl generated message declarations
+packages/translation/src/lang/*.d.json.ts
 benchmark-results
 
 # local performance investigation (never ship benchmark data or restored backups)

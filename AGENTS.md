@@ -111,3 +111,32 @@ Portable skills live in `.agents/skills/`. Read the relevant `SKILL.md` before w
 - `documentation-sync` — documentation for changes users need explained
 - `mcp-integration` — safe tRPC-to-MCP exposure
 - `homarr-custom-widget` — safe Custom JSX v2 authoring
+- Icons: @tabler/icons-react
+- Docs app can import from `@homarr/definitions` for shared types
+- Run `pnpm dev:cli -- dev` to browse local `homarr:*` images and remote PR images.
+- Run `pnpm dev:cli -- build <name>` from a Homarr checkout to build `homarr:<name>` with rebuild provenance.
+- Run `pnpm dev:cli -- build --pr <number>` to build a PR locally from a temporary checkout.
+- Run Go checks from `tools/homarr-dev` with `go test ./...` and `go vet ./...`.
+
+## Deploying this fork — use `./deploy-homarr.sh`
+
+**Do not hand-write `docker run` for homarr.** Run `./deploy-homarr.sh` (add `--build` to
+rebuild the image first). Deploying by hand has repeatedly regressed the container:
+the ad-hoc recipe mounts `/var/run/docker.sock` read-write and sets no security options,
+which hands homarr root-equivalent control of the Docker daemon.
+
+The script deploys with:
+- **no** `/var/run/docker.sock` mount — `DOCKER_HOST=tcp://127.0.0.1:2375` points dockerode
+  at a read-only docker-socket-proxy (`CONTAINERS=1`, `POST=0`). Consequence: the Docker
+  widget can list containers, but start/stop/restart buttons return 403. That is intended.
+- `--security-opt no-new-privileges:true`
+- `--network host` (required: nginx in the image listens on 7575 and proxies to 3000/3001 —
+  do not convert to a bridge with `-p`)
+- secrets from `/home/ohmz/.config/homarr/homarr.env` (0600, outside this repo)
+- a sqlite backup under `/data/compose/5/homarr/appdata/db/` before replacing the container
+
+It fails loudly if the container does not come up, or if the hardening did not stick.
+
+Note: Portainer stack 5 (`homarr`) still exists and points at upstream
+`ghcr.io/homarr-labs/homarr:latest`. Clicking "Update the stack" there replaces this fork
+with upstream. Deploy from this script instead.
