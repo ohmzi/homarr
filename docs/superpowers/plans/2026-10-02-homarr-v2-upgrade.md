@@ -732,7 +732,34 @@ cp /data/compose/5/homarr/appdata/db/db.sqlite "/tmp/homarr-pre-cutover-$TS.sqli
 ls -la /tmp/homarr-pre-cutover-*.sqlite
 ```
 
-- [ ] **Step 2: Build and deploy**
+- [ ] **Step 2: Repair the migration watermark — REQUIRED**
+
+Discovered during execution and NOT in the original plan. Drizzle applies migrations by timestamp
+watermark, not by index: it runs every journal entry whose `when` exceeds the largest recorded
+`created_at`. The fork's `0042_regular_dragon_lord` is stamped `1789615820333` — later than every
+v2 migration (max `1788763848930`) — so without this repair v2 **skips its own 0042–0047** and
+starts with missing tables. Task 3 reproduced exactly that: the seed then crashes with
+`no such table: custom_widget_v2_definition`. Back-dating the single recorded row by one
+millisecond is sufficient, and was verified end-to-end on a copy of the live database.
+
+```bash
+python3 - <<'PY'
+import sqlite3
+c = sqlite3.connect("/data/compose/5/homarr/appdata/db/db.sqlite")
+n = c.execute(
+    "update __drizzle_migrations set created_at = 1784305283909 where created_at = 1789615820333"
+).rowcount
+c.commit()
+print("rows back-dated:", n, "| expect 1")
+print("watermark now:", c.execute("select max(created_at) from __drizzle_migrations").fetchone()[0])
+PY
+```
+
+Expected: `rows back-dated: 1` and watermark `1784305283909` (one below v2's 0042 at
+`1784305283910`). If the row count is 0, the database was already repaired or never had the fork's
+`0042` — stop and check rather than deploying.
+
+- [ ] **Step 3: Build and deploy**
 
 ```bash
 git rev-parse --abbrev-ref HEAD   # must be feat/v2-integration
@@ -741,12 +768,12 @@ git rev-parse --abbrev-ref HEAD   # must be feat/v2-integration
 Expected: the script backs up, builds, replaces the container, and reports it came up. It fails
 loudly otherwise — read its output, don't paper over it.
 
-- [ ] **Step 3: Verify the deployment**
+- [ ] **Step 4: Verify the deployment**
 
 Open the dashboard and confirm: it renders, version reports v2.0.0, all boards are present, and each
 custom area is visible (tday-tasks, uptime widget + strip, rebrand, glances).
 
-- [ ] **Step 4: Verify rollback still works — Review Focus #4**
+- [ ] **Step 5: Verify rollback still works — Review Focus #4**
 
 If anything is wrong, restore the backup and redeploy the previous `homarr:develop` image *before*
 debugging:
@@ -756,7 +783,7 @@ docker image ls | grep homarr
 ```
 Confirm the previous image tag is still present, so rollback is available for at least one deploy cycle.
 
-- [ ] **Step 5: Reconcile `develop` — Review Focus #5**
+- [ ] **Step 6: Reconcile `develop` — Review Focus #5**
 
 Only after the deployment is verified stable, decide with the human how to land the work on
 `develop` (fast-forward, merge, or reset + force-push). If force-pushing, warn any other clone of
@@ -783,4 +810,9 @@ Step 3's grep against `uptime_daily` (snake_case table). Migration tags `0048_up
 `0016_uptime_daily` are used consistently across Task 2.
 
 **Review Focus.** All five items are pinned: #1 → Task 3 Steps 2/4, #2 → Task 3 Step 5, #3 → Task 10
-Step 5, #4 → Task 13 Step 4, #5 → Task 13 Step 5.
+Step 5, #4 → Task 13 Step 5, #5 → Task 13 Step 6.
+
+**Post-execution amendment.** Task 13 Step 2 was added during execution: the migration watermark
+repair described there is required, and the original plan omitted it. See the executor ledger
+(`.superpowers/sdd/2026-10-02-homarr-v2-upgrade/progress.md`, Task 3) for the reproduction and the
+verification on a database copy.
