@@ -35,11 +35,7 @@ export class GlancesIntegration extends Integration implements ISystemHealthMoni
 
     if (session == null) throw new Error("Session was unexpectitly null");
 
-    const [stats, cpuTemp, smart] = await Promise.all([
-      this.getAllStatsAsync(),
-      this.getCpuTempAsync(),
-      this.getSmartAsync(),
-    ]);
+    const [stats, sensors] = await Promise.all([this.getAllStatsAsync(), this.getSensorsAsync()]);
 
     return {
       cpuUtilization: stats.cpu.total,
@@ -52,7 +48,10 @@ export class GlancesIntegration extends Integration implements ISystemHealthMoni
       availablePkgUpdates: 0,
       version: session.version,
       fileSystem: stats.fs.map((fileSystem) => ({
-        deviceName: fileSystem.device_name,
+        // Prefer a human-readable name: the alias set in glances.conf, else the
+        // mount point. Falls back to the raw device, whose /dev/sdX letters are
+        // not stable across reboots.
+        deviceName: fileSystem.alias ?? fileSystem.mnt_point ?? fileSystem.device_name,
         used: `${fileSystem.used}`,
         available: `${fileSystem.free}`,
         percentage: fileSystem.percent,
@@ -61,8 +60,8 @@ export class GlancesIntegration extends Integration implements ISystemHealthMoni
       rebootRequired: false,
       cpuModelName: stats.quicklook?.cpu_name ?? "Unknown",
       loadAverage: null,
-      smart,
-      cpuTemp,
+      smart: buildGlancesDiskSmartFromSensors(sensors, stats.fs),
+      cpuTemp: parseGlancesCpuTempFromSensors(sensors),
       gpu: stats.gpu.map((gpu) => ({
         gpuId: gpu.gpu_id,
         name: gpu.name,
@@ -84,35 +83,22 @@ export class GlancesIntegration extends Integration implements ISystemHealthMoni
     return await response.text();
   }
 
-  private async getCpuTempAsync(): Promise<number | undefined> {
-    // CPU temperature is optional data, so a transport error or payload drift on
-    // /api/4/sensors must not fail the whole getSystemInfoAsync() call.
+  /**
+   * Sensor readings, or an empty list.
+   *
+   * Temperatures are optional data, so a transport error or payload drift on /api/4/sensors
+   * must not fail the whole getSystemInfoAsync() call - that would blank every widget fed by
+   * this integration just because a fan reading changed shape.
+   */
+  private async getSensorsAsync(): Promise<z.infer<typeof sensorsSchema>> {
     try {
       const response = await fetchWithTrustedCertificatesAsync(this.url("/api/4/sensors"));
-
-      if (!response.ok) {
-        return undefined;
-      }
-
-      const sensors = await sensorsSchema.parseAsync(await response.json());
-      return parseGlancesCpuTempFromSensors(sensors);
-    } catch {
-      return undefined;
-    }
-  }
-
-  private async getSmartAsync(): Promise<SystemHealthMonitoring["smart"]> {
-    // The SMART plugin is disabled by default (Glances answers 400), so a missing
-    // or unexpected /api/4/smart response must not fail getSystemInfoAsync().
-    try {
-      const response = await fetchWithTrustedCertificatesAsync(this.url("/api/4/smart"));
 
       if (!response.ok) {
         return [];
       }
 
-      const devices = await smartSchema.parseAsync(await response.json());
-      return devices.flatMap(mapGlancesSmartDevice);
+      return await sensorsSchema.parseAsync(await response.json());
     } catch {
       return [];
     }
@@ -165,13 +151,20 @@ const allSchema = z.object({
   }),
   network: z.array(
     z.object({
-      bytes_sent_rate_per_sec: z.number().min(0),
-      bytes_recv_rate_per_sec: z.number().min(0),
+      // A host with heavy container churn constantly gains and loses veth/br-
+      // interfaces. On the first poll after one appears Glances has no rate for
+      // it yet (missing or null), and a strict schema would reject the entire
+      // payload - blanking every widget fed by this integration. Treat an
+      // unusable rate as 0 rather than failing the whole response.
+      bytes_sent_rate_per_sec: z.number().min(0).catch(0),
+      bytes_recv_rate_per_sec: z.number().min(0).catch(0),
     }),
   ),
   fs: z.array(
     z.object({
       device_name: z.string(),
+      mnt_point: z.string(),
+      alias: z.string().optional(),
       used: z.number().min(0),
       free: z.number().min(0),
       percent: z.number().min(0).max(100),
@@ -215,23 +208,96 @@ const allSchema = z.object({
 const sensorsSchema = z.array(
   z.object({
     label: z.string(),
-    value: z.number(),
+    // Deliberately not z.number(): a spun-down or failing drive can report a non-numeric
+    // sentinel instead of a temperature, and because this is one array a single such entry
+    // would fail the whole parse - silently blanking every disk temperature and the CPU
+    // ring at once. Callers coerce and skip rather than trusting the shape.
+    value: z.union([z.number(), z.string()]),
     type: z.string().optional(),
   }),
 );
 
-const cpuTempLabelPriority = ["CPU", "Package id 0"] as const;
+/**
+ * Sensor labels to prefer for the CPU reading, best first.
+ *
+ * This host's Super I/O reports `CPUTIN` and its cores report `Core 0` upward, so the two
+ * upstream names alone matched nothing here and the function fell through to the first
+ * reading it could find - an AUXTIN rail, which read 26C and would have looked like a
+ * perfectly plausible CPU temperature while being unrelated to the CPU.
+ */
+const cpuTempLabelPriority = ["Package id 0", "CPU", "CPUTIN", "Core 0"] as const;
+
+/**
+ * Per-disk temperature, joined onto the filesystem list.
+ *
+ * Glances reports these under `temperature_hdd`, labelled with the bare kernel device
+ * ("sda", "nvme0n1"). It does not carry the mount point, and the widget matches a
+ * temperature to a disk by the same deviceName it prints on the card - the glances.conf
+ * alias, else the mount point. So each reading is joined back to the filesystem entry
+ * whose device it belongs to, partition suffix included: "/dev/sdi" has to find
+ * "/dev/sdi1", and "/dev/nvme0n1" has to find "/dev/nvme0n1p2".
+ *
+ * These readings arrive over the loopback hddtemp bridge rather than from Glances' SMART
+ * plugin, which refuses to run without root. `overallStatus` is deliberately left empty -
+ * a temperature is not evidence about SMART health, and the card already renders an
+ * absent status as "N/A" rather than asserting a pass we have not established.
+ */
+export const buildGlancesDiskSmartFromSensors = (
+  sensors: z.infer<typeof sensorsSchema>,
+  fileSystems: z.infer<typeof allSchema>["fs"],
+) =>
+  sensors
+    .filter((sensor) => sensor.type === "temperature_hdd")
+    .flatMap((sensor) => {
+      // Coerced rather than trusted: a drive that is spinning up or unreachable reports a
+      // sentinel here, and publishing that as a temperature would put a nonsense number on
+      // the card. Dropping it leaves the card blank, which is honest.
+      const celsius = Number(sensor.value);
+      if (!Number.isFinite(celsius)) return [];
+
+      const devicePath = `/dev/${sensor.label}`;
+
+      // Every partition of this disk, not just the first. One physical drive can carry
+      // several mounted filesystems - the 24TB disk here holds two backup targets and the
+      // next-cloud partition - and each of those gets its own card, so each needs the
+      // reading. Attaching it to only the first match would leave the others blank.
+      return fileSystems
+        .filter((candidate) => {
+          if (candidate.device_name === devicePath) return true;
+          const suffix = candidate.device_name.slice(devicePath.length);
+          // Only a partition suffix counts, so /dev/sda never claims /dev/sdaa.
+          return candidate.device_name.startsWith(devicePath) && /^p?[0-9]+$/.test(suffix);
+        })
+        .map((fileSystem) => ({
+          deviceName: fileSystem.alias ?? fileSystem.mnt_point ?? fileSystem.device_name,
+          temperature: Math.round(celsius),
+          overallStatus: "",
+          healthy: true,
+        }));
+    });
 
 export const parseGlancesCpuTempFromSensors = (sensors: z.infer<typeof sensorsSchema>): number | undefined => {
-  const temperatureSensors = sensors.filter(
-    (sensor) => sensor.type === "temperature_core" || sensor.type === "temperature",
-  );
+  // Non-numeric readings are dropped up front, so neither the priority match nor the
+  // fallback can select a sentinel and publish it as a CPU temperature.
+  const temperatureSensors = sensors
+    .filter((sensor) => sensor.type === "temperature_core" || sensor.type === "temperature")
+    .map((sensor) => ({ label: sensor.label, value: Number(sensor.value) }))
+    .filter((sensor) => Number.isFinite(sensor.value));
 
   for (const label of cpuTempLabelPriority) {
     const match = temperatureSensors.find((sensor) => sensor.label === label);
     if (match) {
       return match.value;
     }
+  }
+
+  // Last resort before the blind fallback: anything that looks like a CPU sensor. The
+  // fallback below takes the first reading in the list, which on a board with a Super I/O
+  // chip is reliably a bogus AUXTIN rail - this host reports -8C and 81C on those - so
+  // preferring a named core keeps the ring honest.
+  const namedCore = temperatureSensors.find((sensor) => /^Core [0-9]+$/.test(sensor.label));
+  if (namedCore) {
+    return namedCore.value;
   }
 
   const firstCore = temperatureSensors[0];
@@ -242,73 +308,3 @@ export const parseGlancesCpuTempFromSensors = (sensors: z.infer<typeof sensorsSc
   return undefined;
 };
 
-// Glances (pySMART) returns one object per disk: "DeviceName" is "<device> <model>",
-// every other object value is a SMART attribute (ATA) or an NVMe health log entry.
-const smartAttributeSchema = z.object({
-  name: z.string().nullable().optional(),
-  key: z.string().nullable().optional(),
-  value: z.union([z.string(), z.number()]).nullable().optional(),
-  raw: z.union([z.string(), z.number()]).nullable().optional(),
-  when_failed: z.string().nullable().optional(),
-});
-
-const smartSchema = z.array(z.object({ DeviceName: z.string() }).catchall(z.unknown()));
-
-const ataTemperatureNames = ["Temperature_Celsius", "Airflow_Temperature_Cel"] as const;
-
-const mapGlancesSmartDevice = (device: z.infer<typeof smartSchema>[number]): SystemHealthMonitoring["smart"] => {
-  const attributes = Object.values(device).flatMap((value) => {
-    const result = smartAttributeSchema.safeParse(value);
-    return result.success ? [result.data] : [];
-  });
-
-  // ATA: when_failed is "-" unless the attribute crossed its threshold. NVMe: critical warning bitmask.
-  const failedAttributes = attributes
-    .filter((attribute) => attribute.when_failed && attribute.when_failed !== "-")
-    .flatMap((attribute) => attribute.name ?? attribute.key ?? []);
-  const criticalWarningValue = attributes.find((attribute) => attribute.key === "criticalWarning")?.value;
-  const criticalWarningCount = criticalWarningValue == null ? Number.NaN : Number(criticalWarningValue);
-  const isNvme = Number.isFinite(criticalWarningCount);
-
-  // Glances lists a device even when no health attribute was read (or all are hidden by hide_attributes).
-  // Without ATA thresholds or an NVMe critical warning there is no verdict, so the widget shows N/A.
-  const hasAtaThresholds = attributes.some((attribute) => typeof attribute.when_failed === "string");
-  if (!hasAtaThresholds && !isNvme) return [];
-
-  const hasCriticalWarning = isNvme && criticalWarningCount !== 0;
-  const healthy = failedAttributes.length === 0 && !hasCriticalWarning;
-
-  return [
-    {
-      deviceName: `/dev/${device.DeviceName.split(" ")[0]}`,
-      temperature: getSmartTemperature(attributes),
-      overallStatus: healthy ? "PASSED" : "FAILED",
-      healthy,
-      statusReason: getSmartStatusReason(failedAttributes, isNvme, hasCriticalWarning),
-    },
-  ];
-};
-
-const getSmartStatusReason = (
-  failedAttributes: string[],
-  isNvme: boolean,
-  hasCriticalWarning: boolean,
-): SystemHealthMonitoring["smart"][number]["statusReason"] => {
-  if (failedAttributes.length > 0) return { type: "attributesFailed", attributes: failedAttributes };
-  if (hasCriticalWarning) return { type: "criticalWarning" };
-  return { type: isNvme ? "noCriticalWarning" : "attributesWithinThresholds" };
-};
-
-const getSmartTemperature = (attributes: z.infer<typeof smartAttributeSchema>[]): number | null => {
-  const nvmeTemperature = attributes.find((attribute) => attribute.key === "_temperature")?.value;
-  if (typeof nvmeTemperature === "number") return nvmeTemperature;
-
-  for (const name of ataTemperatureNames) {
-    // ATA raw values may carry extra data, e.g. "35 (Min/Max 20/45)".
-    const raw = attributes.find((attribute) => attribute.name === name)?.raw;
-    const temperature = Number.parseInt(String(raw ?? ""), 10);
-    if (!Number.isNaN(temperature)) return temperature;
-  }
-
-  return null;
-};
