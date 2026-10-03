@@ -759,6 +759,12 @@ Expected: `rows back-dated: 1` and watermark `1784305283909` (one below v2's 004
 `1784305283910`). If the row count is 0, the database was already repaired or never had the fork's
 `0042` — stop and check rather than deploying.
 
+**As of the post-execution fix, `./deploy-homarr.sh` performs this repair itself** (idempotently,
+after the backup and before the new container starts) and aborts if it cannot confirm it. Running
+the command above by hand is now only needed to inspect or pre-verify the state; Step 3 is safe to
+run directly. Confirm the script logged `migration watermark repaired` or
+`migration watermark already repaired`.
+
 - [ ] **Step 3: Build and deploy**
 
 ```bash
@@ -775,13 +781,16 @@ custom area is visible (tday-tasks, uptime widget + strip, rebrand, glances).
 
 - [ ] **Step 5: Verify rollback still works — Review Focus #4**
 
-If anything is wrong, restore the backup and redeploy the previous `homarr:develop` image *before*
-debugging:
+If anything is wrong, restore the backup and roll the image back *before* debugging:
 ```bash
 cp /tmp/homarr-pre-cutover-*.sqlite /data/compose/5/homarr/appdata/db/db.sqlite
-docker image ls | grep homarr
+./deploy-homarr.sh --rollback
 ```
-Confirm the previous image tag is still present, so rollback is available for at least one deploy cycle.
+`--build` preserves the replaced image as `homarr:previous` before retagging, so `--rollback` really
+redeploys the previous build. (Without that preservation the tag would already point at v2 and the
+rollback would silently redeploy the broken image — the original plan's rollback step could not have
+worked.) Note that the migration itself is not reversed by this: the database backup is what undoes
+the schema change.
 
 - [ ] **Step 6: Reconcile `develop` — Review Focus #5**
 
