@@ -1,0 +1,38 @@
+---
+title: "Uptime Status"
+description: "Displays a daily uptime history for Uptime Kuma monitors, this machine, and the Ohmz AI and Plex probes."
+hide_title: true
+---
+
+import { WidgetHeader } from "@site/src/components/widgets/header";
+import { AddingWidget } from "@site/src/components/widgets/adding";
+import { WidgetConfig } from "@site/src/components/widgets/configuration";
+import { WidgetIntegrations } from "@site/src/components/widgets/integrations";
+import { uptimeStatusWidget } from ".";
+import { uptimeKumaIntegration } from "@site/docs/integrations/uptime-kuma";
+
+<WidgetHeader widget={uptimeStatusWidget} categories={["Monitoring"]} />
+
+This widget shows one row per monitor with a day-by-day history strip, so a service that was down
+overnight is visible the next morning rather than only at the moment you look.
+
+History is recorded once a day by the Uptime Sync task for Uptime Kuma monitors and for this
+machine, and by the Ohmz AI and Plex probe tasks. The widget reads that history rather than polling
+the services itself, so it is cheap to leave open.
+
+<WidgetIntegrations
+  items={[
+    {
+      integration: uptimeKumaIntegration,
+      note: "Supplies monitors and their daily history",
+    },
+  ]}
+/>
+
+### Configuration
+
+<WidgetConfig />
+
+### Adding the widget
+
+<AddingWidget />
