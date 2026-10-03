@@ -27,6 +27,19 @@ interface LoginFormProps {
 
 const extendedValidation = userSignInSchema.extend({ provider: z.enum(["credentials", "ldap"]) });
 
+/**
+ * Drops Mantine's inline error so an empty field is reported the way the Ohmz
+ * AI sign-in reports it: the browser's own validation bubble, from `required`,
+ * instead of red text under the field and a red-tinted box.
+ *
+ * Nothing is lost by doing this. userSignInSchema is exactly `min(1)` on both
+ * fields, which is the same rule `required` enforces — and the browser enforces
+ * it earlier, blocking submit before the handler runs. Anything the server
+ * rejects (wrong credentials) already surfaces as a notification, not as field
+ * state.
+ */
+const withNativeValidation = <T extends { error?: unknown }>({ error: _error, ...rest }: T) => rest;
+
 export const LoginForm = ({ providers, oidcClientName, isOidcAutoLoginEnabled, callbackUrl }: LoginFormProps) => {
   const t = useI18n("user");
   const searchParams = useSearchParams();
@@ -122,23 +135,29 @@ export const LoginForm = ({ providers, oidcClientName, isOidcAutoLoginEnabled, c
               <Stack gap="lg">
                 <TextInput
                   label={t("field.username.label")}
+                  placeholder={t("field.username.label")}
                   id="username"
                   autoComplete="username"
                   autoCapitalize="none"
                   spellCheck={false}
-                  {...form.getInputProps("name")}
+                  required
+                  withAsterisk={false}
+                  {...withNativeValidation(form.getInputProps("name"))}
                   name="username"
                 />
                 <PasswordInput
                   label={t("field.password.label")}
+                  placeholder={t("field.password.label")}
                   id="password"
                   autoComplete="current-password"
-                  {...form.getInputProps("password")}
+                  required
+                  withAsterisk={false}
+                  {...withNativeValidation(form.getInputProps("password"))}
                   name="password"
                 />
 
                 {providers.includes("credentials") && (
-                  <Stack gap="sm">
+                  <Stack gap="sm" mt={12}>
                     <SubmitButton isPending={isPending} form={form} provider="credentials">
                       {t("action.login.label")}
                     </SubmitButton>

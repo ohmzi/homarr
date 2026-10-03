@@ -2215,6 +2215,80 @@
     }
   },
   "widget": {
+    "tdayTasks": {
+      "name": "Tday Tasks",
+      "description": "Displays your Tday tasks for a chosen view and lets you complete or add tasks.",
+      "option": {
+        "view": {
+          "label": "View",
+          "option": {
+            "today": {
+              "label": "Today's tasks",
+              "title": "Today"
+            },
+            "scheduled": {
+              "label": "Scheduled tasks",
+              "title": "Scheduled"
+            },
+            "overdue": {
+              "label": "Overdue tasks",
+              "title": "Overdue"
+            },
+            "floater": {
+              "label": "Floater tasks",
+              "title": "Floater"
+            }
+          }
+        },
+        "sort": {
+          "label": "Sort by",
+          "option": {
+            "default": {
+              "label": "Default"
+            },
+            "due": {
+              "label": "Due date"
+            },
+            "priority": {
+              "label": "Priority"
+            }
+          }
+        },
+        "showCompleteButton": {
+          "label": "Show complete button"
+        },
+        "showQuickAdd": {
+          "label": "Show quick-add input"
+        }
+      },
+      "empty": "No tasks to show",
+      "emptyAllClear": "All clear",
+      "complete": "Mark complete",
+      "quickAdd": "Add task",
+      "addTaskHint": "Add a task…",
+      "newTask": "New task",
+      "editTask": "Edit task",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "confirmDelete": "Confirm?",
+      "completedToast": "Task completed",
+      "undo": "Undo",
+      "quickAddPlaceholder": "Add a task",
+      "quickAddShortcutHint": "One per line · Ctrl/⌘ + Enter",
+      "addPartialFailed": "Failed to add {count} task(s)",
+      "priority": "Priority",
+      "priorityNormal": "Normal",
+      "priorityImportant": "Important",
+      "priorityUrgent": "Urgent",
+      "list": "List",
+      "listNone": "No list",
+      "listLoading": "Loading…",
+      "due": "Due date",
+      "dueNone": "No due date",
+      "dueToday": "Today",
+      "dueTomorrow": "Tomorrow"
+    },
     "integrationSelect": {
       "configureIntegrationFirst": "Connect an integration first",
       "placeholder": "Select an option"
@@ -4824,6 +4898,41 @@
         "paused": "Paused"
       }
     },
+    "uptimeStatus": {
+      "name": "Uptime Status",
+      "description": "Daily uptime history for your monitors and this machine",
+      "option": {
+        "includeHost": {
+          "label": "Show server power",
+          "description": "Include the machine Homarr runs on, reconstructed from Glances uptime"
+        },
+        "includeOhmzAi": {
+          "label": "Show Ohmz AI",
+          "description": "Include the Ohmz AI probe, which asks the model a question every six hours"
+        },
+        "includePlex": {
+          "label": "Show Plex",
+          "description": "Include the Plex probe, which opens a movie page every six hours"
+        },
+        "showUptimePercent": {
+          "label": "Show uptime",
+          "description": "Display the uptime percentage across the visible days"
+        },
+        "visibleDays": {
+          "label": "Maximum days",
+          "description": "Upper limit on the bar's length. It grows one segment per day of history, up to this"
+        }
+      },
+      "empty": "Nothing recorded yet - the Uptime Sync task starts filling this in every 5 minutes.",
+      "day": {
+        "up": "Operational",
+        "down": "Outage",
+        "empty": "No data"
+      },
+      "error": {
+        "internalServerError": "Failed to load uptime history"
+      }
+    },
     "traefik": {
       "description": "Overview of Traefik routers, services, middlewares, and entry points",
       "option": {
@@ -4937,6 +5046,9 @@
             "network": "Network"
           }
         },
+        "showUptime": {
+          "label": "Show uptime"
+        },
         "labelDisplayMode": {
           "label": "Label display mode",
           "option": {
@@ -4952,7 +5064,8 @@
         "network": "NET",
         "up": "UP",
         "down": "DOWN",
-        "memoryTooltip": "{used} / {available} ({percent}%)"
+        "memoryTooltip": "{used} / {available} ({percent}%)",
+        "uptime": "UPTIME"
       }
     },
     "systemDisks": {

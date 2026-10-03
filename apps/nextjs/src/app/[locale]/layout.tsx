@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
 
 import "@gfazioli/mantine-onboarding-tour/styles.css";
 import "@homarr/notifications/styles.css";
@@ -9,6 +8,7 @@ import "@homarr/ui/styles.css";
 import "flag-icons/css/flag-icons.min.css";
 import "mantine-datatable/styles.css";
 import "~/styles/color-scheme.scss";
+import "~/styles/ohmz-brand.scss";
 import "~/styles/scroll-area.scss";
 
 import { notFound } from "next/navigation";
@@ -45,11 +45,6 @@ import { CustomMantineProvider } from "./_client-providers/mantine";
 import { AuthProvider } from "./_client-providers/session";
 import { TRPCReactProvider } from "./_client-providers/trpc";
 import { composeWrappers } from "./compose";
-
-const fontSans = Inter({
-  subsets: ["latin"],
-  variable: "--font-sans",
-});
 
 const logger = createLogger({ module: "rootLayout" });
 
@@ -91,7 +86,18 @@ export const generateMetadata = async (): Promise<Metadata> => {
 
 export const generateViewport = async (): Promise<Viewport> => {
   const serverSettings = await getRscServerSettingsAsync();
-  return { themeColor: serverSettings.branding.primaryColor };
+  return {
+    // Pin the scale so the dashboard behaves like an app rather than a document
+    // on mobile. Android and installed PWAs honour this; iOS Safari deliberately
+    // ignores both maximumScale and userScalable for pinch-zoom, so the companion
+    // half of this is the 16px touch-device field size in ohmz-brand.scss, which
+    // is what actually stops iOS zooming when a field takes focus.
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    themeColor: serverSettings.branding.primaryColor,
+  };
 };
 
 export default async function Layout(props: {
@@ -185,7 +191,10 @@ export default async function Layout(props: {
       lang={locale}
       dir={direction}
       style={{
-        backgroundColor: colorScheme === "dark" ? "#242424" : colorScheme === "auto" ? undefined : "#fff",
+        // Brand canvases (--ohmz-canvas / --ohmz-l-canvas). These must match the
+        // Mantine body colour exactly, otherwise any page shorter than the
+        // viewport shows a hard seam where <html> takes over from <body>.
+        backgroundColor: colorScheme === "dark" ? "#1a1917" : colorScheme === "auto" ? undefined : "#faf9f7",
       }}
       suppressHydrationWarning
     >
@@ -202,7 +211,7 @@ export default async function Layout(props: {
         <CrowdinLiveTranslation locale={locale} />
         <style data-homarr-global-custom-css>{serverSettings.branding.customCss}</style>
       </head>
-      <body className={[fontSans.className, fontSans.variable].join(" ")} suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <ViewportHint />
         <StackedProvider>
           <Notifications pauseResetOnHover="notification" />
