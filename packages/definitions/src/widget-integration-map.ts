@@ -80,6 +80,7 @@ export const widgetIntegrationConfigs = {
   tracearr: { supportedIntegrations: ["tracearr", "mock"] },
   speedtestTracker: { supportedIntegrations: ["speedtestTracker", "mock"] },
   uptimeKuma: { supportedIntegrations: ["uptimeKuma", "mock"] },
+  uptimeStatus: { supportedIntegrations: ["uptimeKuma"] },
   audioStats: { supportedIntegrations: ["navidrome", "audiobookshelf", "mock"], maxIntegrations: 1 },
   umami: { supportedIntegrations: ["umami", "mock"], maxIntegrations: 1 },
   vpn: { supportedIntegrations: [...getIntegrationKindsByCategory("vpn"), "mock"] },

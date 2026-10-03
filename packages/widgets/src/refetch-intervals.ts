@@ -17,6 +17,8 @@ export const widgetQueryRefetchIntervals = [
   { queryKey: [["widget", "llamacpp"]], intervalSeconds: 5 },
   { queryKey: [["widget", "mediaServer", "getCurrentStreams"]], intervalSeconds: 10 },
   { queryKey: [["widget", "tracearr"]], intervalSeconds: 10 },
+  // The history only moves when the uptimeSync job runs, so polling it fast buys nothing.
+  { queryKey: [["widget", "uptimeStatus"]], intervalSeconds: 300 },
   {
     queryKey: [["widget", "weather", "atLocation"]],
     intervalSeconds: 600,

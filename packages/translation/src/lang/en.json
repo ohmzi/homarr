@@ -6894,6 +6894,15 @@
             },
             "ping": {
               "label": "Pings"
+            },
+            "uptimeSync": {
+              "label": "Uptime Sync"
+            },
+            "ohmzaiProbe": {
+              "label": "Ohmz AI Probe"
+            },
+            "plexProbe": {
+              "label": "Plex Probe"
             }
           },
           "action": {

@@ -56,6 +56,7 @@ import type * as traefik from "./traefik";
 import type * as umami from "./umami";
 import type * as ups from "./ups";
 import type * as uptimeKuma from "./uptime-kuma";
+import type * as uptimeStatus from "./uptime-status";
 import type * as video from "./video";
 import type * as vpn from "./vpn";
 import type * as weather from "./weather";
@@ -121,6 +122,7 @@ export const widgetModuleLoaders = {
   tracearr: () => import("./tracearr"),
   speedtestTracker: () => import("./speedtest-tracker"),
   uptimeKuma: () => import("./uptime-kuma"),
+  uptimeStatus: () => import("./uptime-status"),
   audioStats: () => import("./audio-stats"),
   umami: () => import("./umami"),
   vpn: () => import("./vpn"),
@@ -193,6 +195,7 @@ export type WidgetImports = {
   tracearr: typeof tracearr;
   speedtestTracker: typeof speedtestTracker;
   uptimeKuma: typeof uptimeKuma;
+  uptimeStatus: typeof uptimeStatus;
   audioStats: typeof audioStats;
   umami: typeof umami;
   vpn: typeof vpn;
@@ -272,6 +275,7 @@ export const widgetComponentLoaders = {
   tracearr: () => import("./tracearr/component"),
   speedtestTracker: () => import("./speedtest-tracker/component"),
   uptimeKuma: () => import("./uptime-kuma/component"),
+  uptimeStatus: () => import("./uptime-status/component"),
   audioStats: () => import("./audio-stats/component"),
   umami: () => import("./umami/component"),
   vpn: () => import("./vpn/component"),

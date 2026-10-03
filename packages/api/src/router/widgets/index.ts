@@ -39,6 +39,7 @@ export const widgetRouter = createTRPCRouter({
   tracearr: lazy(() => import("./tracearr").then((mod) => mod.tracearrRouter)),
   speedtestTracker: lazy(() => import("./speedtest-tracker").then((mod) => mod.speedtestTrackerRouter)),
   uptimeKuma: lazy(() => import("./uptime-kuma").then((mod) => mod.uptimeKumaRouter)),
+  uptimeStatus: lazy(() => import("./uptime-status").then((mod) => mod.uptimeStatusRouter)),
   audioStats: lazy(() => import("./audio-stats").then((mod) => mod.audioStatsRouter)),
   umami: lazy(() => import("./umami").then((mod) => mod.umamiRouter)),
   vpn: lazy(() => import("./vpn").then((mod) => mod.vpnRouter)),

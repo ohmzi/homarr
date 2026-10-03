@@ -10,7 +10,12 @@ import {
   uptimeKumaHeartbeatResponseSchema,
   uptimeKumaStatusPageResponseSchema,
 } from "./uptime-kuma-types";
-import type { UptimeKumaDashboardData, UptimeKumaMonitor, UptimeKumaMonitorCategory } from "./uptime-kuma-types";
+import type {
+  UptimeKumaDashboardData,
+  UptimeKumaMonitor,
+  UptimeKumaMonitorCategory,
+  UptimeKumaMonitorHeartbeats,
+} from "./uptime-kuma-types";
 
 export class UptimeKumaIntegration extends Integration {
   protected async testingAsync(input: IntegrationTestingInput): Promise<TestingResult> {
@@ -59,6 +64,33 @@ export class UptimeKumaIntegration extends Integration {
     );
 
     return this.buildDashboardData(monitors);
+  }
+
+  /**
+   * Heartbeat history per monitor. `getDashboardDataAsync` keeps only the newest
+   * heartbeat of each monitor; this keeps the whole window, which is what the uptime
+   * widget accumulates into its own daily history.
+   *
+   * The status page endpoint caps heartbeats at 100 per monitor, so the window is
+   * `100 × probe interval` — about 8 hours at a 300s interval. Callers should treat
+   * beats older than what they last recorded as unavailable rather than absent.
+   */
+  public async getMonitorHeartbeatsAsync(): Promise<UptimeKumaMonitorHeartbeats[]> {
+    const [statusPageResponse, heartbeatResponse] = await Promise.all([
+      this.getStatusPageAsync(),
+      this.getHeartbeatAsync(),
+    ]);
+
+    const statusPage = uptimeKumaStatusPageResponseSchema.parse(await statusPageResponse.json());
+    const heartbeat = uptimeKumaHeartbeatResponseSchema.parse(await heartbeatResponse.json());
+
+    return statusPage.publicGroupList.flatMap((group) =>
+      group.monitorList.map((monitor) => ({
+        id: monitor.id,
+        name: monitor.name,
+        heartbeats: heartbeat.heartbeatList[String(monitor.id)] ?? [],
+      })),
+    );
   }
 
   private mapMonitor(

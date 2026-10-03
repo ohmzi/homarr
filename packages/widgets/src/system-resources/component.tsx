@@ -15,10 +15,12 @@ import { SystemResourceCPUChart } from "./chart/cpu-chart";
 import { SystemResourceGPUChart } from "./chart/gpu-chart";
 import { SystemResourceMemoryChart } from "./chart/memory-chart";
 import { NetworkTrafficChart } from "./chart/network-traffic";
+import { SystemResourceUptimeCard } from "./chart/uptime-card";
 
 const COMPACT_HISTORY_SIZE = 15;
 const ADVANCED_HISTORY_SIZE = 60;
 const ALL_SYSTEM_CHARTS = ["cpu", "memory", "gpu", "network"] as const;
+const UPTIME_ROW_HEIGHT = 30;
 
 const ADVANCED_CHART_COLUMN_BREAKPOINTS = [
   { minWidth: 1100, columns: 4 },
@@ -140,19 +142,31 @@ export default function SystemResources({
     const fullHistory = historyByIntegration[entry.integrationId] ?? [currentItem, currentItem];
     const history = isAdvanced ? fullHistory : fullHistory.slice(-COMPACT_HISTORY_SIZE);
 
+    const uptimeInSeconds = entry.healthInfo.uptime;
+    const showUptime = options.showUptime && uptimeInSeconds !== undefined;
+    // The uptime strip is a fixed-height row, so take it (and its gap) out of the
+    // height the charts divide between themselves.
+    const chartHeight = Math.max(0, availableHeight - (showUptime ? UPTIME_ROW_HEIGHT + 8 : 0));
+
     return (
-      <SystemCharts
-        key={entry.integrationId}
-        integrationName={entry.integrationName}
-        items={history}
-        hasGpu={entry.healthInfo.gpu.length > 0}
-        memoryCapacityInBytes={entry.healthInfo.memAvailableInBytes + entry.healthInfo.memUsedInBytes}
-        options={options}
-        width={availableWidth}
-        height={availableHeight}
-        isAdvanced={isAdvanced}
-        showTitle={isAdvanced || data.length > 1}
-      />
+      <Stack key={entry.integrationId} gap={8} h="100%">
+        {showUptime && (
+          <Box h={UPTIME_ROW_HEIGHT}>
+            <SystemResourceUptimeCard uptimeInSeconds={uptimeInSeconds} labelDisplayMode={options.labelDisplayMode} />
+          </Box>
+        )}
+        <SystemCharts
+          integrationName={entry.integrationName}
+          items={history}
+          hasGpu={entry.healthInfo.gpu.length > 0}
+          memoryCapacityInBytes={entry.healthInfo.memAvailableInBytes + entry.healthInfo.memUsedInBytes}
+          options={options}
+          width={availableWidth}
+          height={chartHeight}
+          isAdvanced={isAdvanced}
+          showTitle={isAdvanced || data.length > 1}
+        />
+      </Stack>
     );
   };
 

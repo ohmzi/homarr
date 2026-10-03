@@ -19,6 +19,18 @@ import type { PlexResponse } from "./interface";
 
 const logger = createLogger({ module: "plexIntegration" });
 
+/** Bounds a library walk (see `checkLibraryNavigationAsync`) so a wedged server cannot hang it. */
+const NAVIGATION_TIMEOUT_MS = 15_000;
+/** How many movie pages to try opening per library before giving up on it. */
+const NAVIGATION_SAMPLE_SIZE = 3;
+
+/** What a successful library walk observed, for logging and for the caller's own assertions. */
+export interface PlexNavigationResult {
+  machineIdentifier: string;
+  /** Titles of the movie pages that opened with their file attached. */
+  openedMovies: string[];
+}
+
 function parseOptionalNumber(value: string | undefined): number | null {
   if (!value) {
     return null;
@@ -449,6 +461,87 @@ export class PlexIntegration extends Integration implements IMediaServerIntegrat
     return data.MediaContainer.machineIdentifier;
   }
 
+  private async getJsonAsync<TSchema extends z.ZodType>(path: `/${string}`, schema: TSchema) {
+    const token = super.getSecretValue("apiKey");
+    const response = await fetchWithTrustedCertificatesAsync(super.url(path), {
+      headers: {
+        "X-Plex-Token": token,
+        Accept: "application/json",
+      },
+      signal: AbortSignal.timeout(NAVIGATION_TIMEOUT_MS),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Plex answered ${response.status} for ${path}`);
+    }
+
+    return (await schema.parseAsync(await response.json())) as z.output<TSchema>;
+  }
+
+  /**
+   * Walks the library the way the web client does, to answer "is Plex actually usable" rather
+   * than "is the port open".
+   *
+   * `/identity` is deliberately reachable without a token, so on its own it stays green while the
+   * library behind it, the metadata, or the web client are broken. This opens real movie pages
+   * instead, and requires at least one to come back complete with its file still attached — a
+   * library row whose file has gone missing still lists, so the presence of a `Part` is what
+   * separates a page that works from one that only looks like it does.
+   */
+  public async checkLibraryNavigationAsync(): Promise<PlexNavigationResult> {
+    const { MediaContainer } = await this.getJsonAsync("/identity", identitySchema);
+    const machineIdentifier = MediaContainer.machineIdentifier;
+
+    const sections = await this.getJsonAsync("/library/sections", sectionsSchema);
+    const movieSections = (sections.MediaContainer.Directory ?? []).filter((section) => section.type === "movie");
+
+    if (movieSections.length === 0) {
+      throw new Error("Plex reports no movie library to open a page from");
+    }
+
+    const opened: string[] = [];
+
+    for (const section of movieSections) {
+      const items = await this.getJsonAsync(`/library/sections/${section.key}/all`, sectionItemsSchema);
+      const candidates = (items.MediaContainer.Metadata ?? []).slice(0, NAVIGATION_SAMPLE_SIZE);
+
+      for (const candidate of candidates) {
+        // A single unreadable item is not proof the library is broken, so each is judged on its
+        // own and the walk succeeds on the first page that opens properly.
+        const page = await this.getJsonAsync(`/library/metadata/${candidate.ratingKey}`, moviePageSchema).catch(
+          (error: unknown) => {
+            logger.debug(new Error("Failed to open a movie page", { cause: error }));
+            return null;
+          },
+        );
+
+        const movie = page?.MediaContainer.Metadata.at(0);
+        if (movie && movie.Media.some((media) => media.Part.length > 0)) {
+          opened.push(movie.title);
+        }
+      }
+
+      if (opened.length > 0) break;
+    }
+
+    if (opened.length === 0) {
+      throw new Error("no movie page opened with its file attached");
+    }
+
+    // The client bundle is served by the server itself, so it is worth confirming separately:
+    // the API can be perfectly healthy while the web client fails to load.
+    const shell = await fetchWithTrustedCertificatesAsync(super.url("/web/index.html"), {
+      headers: { "X-Plex-Token": super.getSecretValue("apiKey") },
+      signal: AbortSignal.timeout(NAVIGATION_TIMEOUT_MS),
+    });
+
+    if (!shell.ok) {
+      throw new Error(`Plex web client answered ${shell.status}`);
+    }
+
+    return { machineIdentifier, openedMovies: opened };
+  }
+
   protected async testingAsync(input: IntegrationTestingInput): Promise<TestingResult> {
     const token = super.getSecretValue("apiKey");
 
@@ -603,6 +696,50 @@ const recentlyAddedEpisodesSchema = z.object({
 const identitySchema = z.object({
   MediaContainer: z.object({
     machineIdentifier: z.string(),
+  }),
+});
+
+// https://plexapi.dev/api-reference/library/get-libraries
+const sectionsSchema = z.object({
+  MediaContainer: z.object({
+    Directory: z
+      .array(
+        z.object({
+          key: z.string(),
+          type: z.string(), // for example "movie", "show", "artist"
+          title: z.string().optional(),
+        }),
+      )
+      .optional(),
+  }),
+});
+
+// https://plexapi.dev/api-reference/library/get-all-items-in-a-library
+const sectionItemsSchema = z.object({
+  MediaContainer: z.object({
+    Metadata: z
+      .array(
+        z.object({
+          ratingKey: z.string(),
+          type: z.string(),
+          title: z.string(),
+        }),
+      )
+      .optional(),
+  }),
+});
+
+// https://plexapi.dev/api-reference/library/get-metadata-for-an-item
+const moviePageSchema = z.object({
+  MediaContainer: z.object({
+    Metadata: z.array(
+      z.object({
+        ratingKey: z.string(),
+        title: z.string(),
+        // Present only while the item still has a file behind it.
+        Media: z.array(z.object({ Part: z.array(z.unknown()) })),
+      }),
+    ),
   }),
 });
 
