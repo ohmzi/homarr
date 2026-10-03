@@ -5,7 +5,7 @@ import { optionsBuilder } from "../options";
 
 export const { definition, componentLoader } = createWidgetDefinition("tdayTasks", {
   icon: IconChecklist,
-  supportedIntegrations: ["tday"],
+  supportedIntegrations: ["tday", "mock"],
   integrationsRequired: true,
   createOptions() {
     return optionsBuilder.from((factory) => ({

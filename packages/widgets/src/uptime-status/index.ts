@@ -10,7 +10,7 @@ export const { definition, componentLoader } = createWidgetDefinition("uptimeSta
   // History only advances when the uptimeSync task runs, so there is nothing to gain
   // from polling faster than it writes.
   refetchInterval: 300,
-  supportedIntegrations: ["uptimeKuma"],
+  supportedIntegrations: ["uptimeKuma", "mock"],
   // The host row needs no integration, so the widget is useful with none selected.
   integrationsRequired: false,
   createOptions() {
