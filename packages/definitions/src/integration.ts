@@ -4,9 +4,16 @@ import { createDocumentationLink } from "./docs";
 import type { HomarrDocumentationPath } from "./docs/homarr-docs-sitemap";
 
 type IntegrationDocumentationPath = Extract<HomarrDocumentationPath, `/docs/integrations/${string}`>;
-type IntegrationDocumentationSlug = IntegrationDocumentationPath extends `/docs/integrations/${infer TSlug}`
-  ? TSlug
-  : never;
+/**
+ * Documentation slugs normally come from the generated sitemap, which is built from the deployed
+ * homarr.dev site. `tday` is a fork-local integration whose page is not published there, so its
+ * slug is declared explicitly rather than by editing the generated sitemap — that file is
+ * regenerated on install and would silently drop the entry.
+ */
+type ForkLocalIntegrationDocumentationSlug = "tday";
+type IntegrationDocumentationSlug =
+  | ForkLocalIntegrationDocumentationSlug
+  | (IntegrationDocumentationPath extends `/docs/integrations/${infer TSlug}` ? TSlug : never);
 
 export const integrationSecretKindObject = {
   apiKey: { isPublic: false, multiline: false },
@@ -998,7 +1005,7 @@ export const integrationDefs = {
     secretKinds: [["apiKey"]],
     iconUrl: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons@master/svg/homarr.svg",
     category: ["tasks"],
-    documentationSlug: null,
+    documentationSlug: "tday",
   },
   wud: {
     httpAuth: {
@@ -1099,7 +1106,9 @@ export const getIntegrationDocumentationSlug = (kind: IntegrationKind): Integrat
 export const getIntegrationDocumentationUrl = (kind: IntegrationKind): string | null => {
   const slug = getIntegrationDocumentationSlug(kind);
   if (slug === null) return null;
-  return createDocumentationLink(`/docs/integrations/${slug}`);
+  // Fork-local slugs are declared explicitly rather than derived from the generated sitemap, so
+  // the resulting path is not a member of HomarrDocumentationPath — hence the assertion.
+  return createDocumentationLink(`/docs/integrations/${slug}` as HomarrDocumentationPath);
 };
 
 export const getIntegrationDockerMetadata = (kind: IntegrationKind) => {

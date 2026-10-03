@@ -1,4 +1,5 @@
 // Mirrors tday-web/src/lib/listIcons.ts so widget list icons match the Tday app exactly.
+import type { LucideIcon } from "lucide-react";
 import {
   Activity,
   Archive,
@@ -36,7 +37,6 @@ import {
   Leaf,
   Lightbulb,
   List,
-  type LucideIcon,
   MessageCircle,
   Monitor,
   Music,

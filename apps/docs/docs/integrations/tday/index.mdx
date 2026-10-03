@@ -1,0 +1,33 @@
+---
+title: "Tday"
+description: "Tday is a self-hosted task manager."
+hide_title: true
+---
+
+import { IntegrationHeader } from "@site/src/components/integrations/header";
+import { AddingIntegration } from "@site/src/components/integrations/adding";
+import { IntegrationSecrets } from "@site/src/components/integrations/secrets";
+import { tdayIntegration } from ".";
+
+<IntegrationHeader integration={tdayIntegration} categories={["Tasks"]} />
+
+### Adding the integration
+
+<AddingIntegration />
+
+### Secrets
+
+<IntegrationSecrets
+  secrets={[
+    {
+      credentials: ["apiKey"],
+      steps: [
+        "Open your Tday instance and go to its API key settings",
+        'Create a key, e.g. "Homarr", and copy it',
+        "Paste the key into Homarr",
+      ],
+    },
+  ]}
+/>
+
+The Tday Tasks widget reads your tasks directly from the Tday API using this key.

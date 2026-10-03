@@ -18,7 +18,8 @@ import {
 import { DateTimePicker } from "@mantine/dates";
 import { IconCalendarEvent, IconCheck, IconPencil, IconPlus, IconTrash, IconX } from "@tabler/icons-react";
 import dayjs from "dayjs";
-import { CalendarClock, Clock3, Flag, Leaf, type LucideIcon, Moon, Sun } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { CalendarClock, Clock3, Flag, Leaf, Moon, Sun } from "lucide-react";
 
 import { clientApi } from "@homarr/api/client";
 import { useIntegrationsWithInteractAccess } from "@homarr/auth/client";
