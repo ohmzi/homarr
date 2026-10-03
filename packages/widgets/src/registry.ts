@@ -57,6 +57,7 @@ import type * as umami from "./umami";
 import type * as ups from "./ups";
 import type * as uptimeKuma from "./uptime-kuma";
 import type * as uptimeStatus from "./uptime-status";
+import type * as tdayTasks from "./tday-tasks";
 import type * as video from "./video";
 import type * as vpn from "./vpn";
 import type * as weather from "./weather";
@@ -123,6 +124,7 @@ export const widgetModuleLoaders = {
   speedtestTracker: () => import("./speedtest-tracker"),
   uptimeKuma: () => import("./uptime-kuma"),
   uptimeStatus: () => import("./uptime-status"),
+  tdayTasks: () => import("./tday-tasks"),
   audioStats: () => import("./audio-stats"),
   umami: () => import("./umami"),
   vpn: () => import("./vpn"),
@@ -196,6 +198,7 @@ export type WidgetImports = {
   speedtestTracker: typeof speedtestTracker;
   uptimeKuma: typeof uptimeKuma;
   uptimeStatus: typeof uptimeStatus;
+  tdayTasks: typeof tdayTasks;
   audioStats: typeof audioStats;
   umami: typeof umami;
   vpn: typeof vpn;
@@ -276,6 +279,7 @@ export const widgetComponentLoaders = {
   speedtestTracker: () => import("./speedtest-tracker/component"),
   uptimeKuma: () => import("./uptime-kuma/component"),
   uptimeStatus: () => import("./uptime-status/component"),
+  tdayTasks: () => import("./tday-tasks/component"),
   audioStats: () => import("./audio-stats/component"),
   umami: () => import("./umami/component"),
   vpn: () => import("./vpn/component"),

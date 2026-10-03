@@ -333,6 +333,7 @@ const integrationCreators = {
   navidrome: async (input: IntegrationInput) =>
     new (await import("../navidrome/navidrome-integration")).NavidromeIntegration(input),
   umami: async (input: IntegrationInput) => new (await import("../umami/umami-integration")).UmamiIntegration(input),
+  tday: async (input: IntegrationInput) => new (await import("../tday/tday-integration")).TdayIntegration(input),
   gluetun: async (input: IntegrationInput) =>
     new (await import("../gluetun/gluetun-integration")).GluetunIntegration(input),
   archiveTeamWarrior: async (input: IntegrationInput) =>

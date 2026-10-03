@@ -53,6 +53,10 @@ const cronExpressions = [
     value: "*/15 * * * *",
     label: (t: ScopedTranslationFunction<"management.page.tool.tasks">) => t("interval.minutes", { interval: 15 }),
   },
+  {
+    value: "*/30 * * * *",
+    label: (t: ScopedTranslationFunction<"management.page.tool.tasks">) => t("interval.minutes", { interval: 30 }),
+  },
   // Every hour
   {
     value: "0 * * * *",

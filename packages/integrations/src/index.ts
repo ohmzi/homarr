@@ -45,6 +45,7 @@ export { AudiobookshelfIntegration } from "./audiobookshelf/audiobookshelf-integ
 export { NavidromeIntegration } from "./navidrome/navidrome-integration";
 export { UptimeKumaIntegration } from "./uptime-kuma/uptime-kuma-integration";
 export { UmamiIntegration } from "./umami/umami-integration";
+export { TdayIntegration } from "./tday/tday-integration";
 export { PeaNutIntegration } from "./peanut/peanut-integration";
 export { BazarrIntegration } from "./bazarr/bazarr-integration";
 export { TraefikIntegration } from "./traefik/traefik-integration";
@@ -99,12 +100,24 @@ export type {
   ArchiveTeamWarriorItem,
   ArchiveTeamWarriorStatus,
 } from "./archive-team-warrior/archive-team-warrior-types";
+export type { TdayTask, TdayTaskKind, TdayTaskView, TdayList, TdayPriority } from "./tday/tday-types";
 export type { WudStats, WudContainerUpdate } from "./wud/wud-types";
 export type { LlamacppStats, LlamacppModel } from "./llama-cpp/llamacpp-types";
 
 // Schemas
 export { anchorNotesListInputSchema, anchorNoteUpdateInputSchema } from "./anchor/anchor-types";
 export { downloadClientItemSchema } from "./interfaces/downloads/download-client-items";
+export {
+  tdayTasksInputSchema,
+  tdayListsInputSchema,
+  tdayCompleteInputSchema,
+  tdayUncompleteInputSchema,
+  tdayDeleteInputSchema,
+  tdayUpdateInputSchema,
+  tdayQuickAddInputSchema,
+  tdayTaskViewSchema,
+  tdayPrioritySchema,
+} from "./tday/tday-types";
 
 // Helpers
 export { createIntegrationAsync } from "./base/creator";

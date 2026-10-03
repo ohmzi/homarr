@@ -47,6 +47,7 @@ export const widgetKinds = [
   "speedtestTracker",
   "uptimeKuma",
   "uptimeStatus",
+  "tdayTasks",
   "audioStats",
   "umami",
   "vpn",

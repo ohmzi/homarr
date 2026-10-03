@@ -19,4 +19,44 @@ Each task exposes:
 
 ![The scheduled Tasks management page](../img/tasks.png)
 
-Disabling a task stops scheduled runs but does not prevent a manual run.
+## Opening the tasks page
+
+Navigate to `Management` > `Tools` > `Tasks`.
+The page is only accessible to users with admin permission.
+
+## Changing interval
+
+In the column `Schedule interval` you can change the interval in which the task runs.
+Different intervals are available, such as `1 minute`, `5 minutes`, `10 minutes`, `30 minutes`, and `1 hour`.
+All intervals are cron expressions, which means it will run the next time the cron expression matches the current time.
+
+## Jobs
+
+| Job              | Default interval | Description                                                                                             |
+| ---------------- | ---------------- | ------------------------------------------------------------------------------------------------------- |
+| `Icons Updater`  | Weekly           | Refreshes the cached icon repositories.                                                                  |
+| `Analytics`      | Weekly           | Sends anonymous server analytics. Disabled when `NO_EXTERNAL_CONNECTION` is set.                        |
+| `Pings`          | 1 minute         | Simple reachability pings for apps that have status indicators enabled.                                  |
+| `Uptime Sync`    | 5 minutes        | Collects daily uptime history for Uptime Kuma monitors and this machine, for the Uptime Status widget.   |
+| `Ohmz AI Probe`  | 30 minutes       | Asks the configured instance a question and requires the model to have answered it, so the Uptime Status widget reflects the guest gate, sign-in, model load and inference rather than just an open port. Skipped when no model can be resolved. |
+| `Plex Probe`     | 30 minutes       | Opens movie pages on the local Plex server, so the Uptime Status widget reflects whether the library and the web client work rather than just whether the port answers. Skipped when no Plex integration is configured. |
+
+Both probes sample every six hours, retrying after 30 minutes if an attempt fails. A window whose
+three attempts all fail is recorded as downtime in full. Their interval is fixed because that
+retry policy is expressed in ticks.
+
+## Actions
+
+You can find different actions for each task on the right side of a task item.
+
+### Run Manually
+
+To run a task manually, click the "Play" button, which will execute the task immediately.
+During the exection the badge will show `Running`.
+
+### Disabling / Enabling
+
+You can disable a task by clicking the "Power" button, which will change it to a "Power-Off" button.
+When a task is disabled, it will not run automatically according to its schedule.
+You can enable it again by clicking the "Power-Off" button, which will change it back to a "Power" button.
+Running a task manually is still possible when it is disabled.
