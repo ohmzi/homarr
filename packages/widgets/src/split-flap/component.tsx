@@ -18,6 +18,7 @@ import { resolveClientSource, splitFlapContentRows } from "./sources";
 import { resolveFlapTheme } from "./theme-mode";
 import type { SplitFlapGlyphMode } from "./glyph-color";
 import type { SplitFlapSourceContext } from "./sources";
+import { SplitFlapMaintainer } from "./maintainer-value";
 import { Nothing, SplitFlapWidgetValue } from "./widget-value";
 import { isSplitFlapReadableKind } from "./widget-kinds";
 
@@ -118,8 +119,11 @@ export default function SplitFlapWidget({ options }: WidgetComponentProps<"split
     [reportWidgetText],
   );
 
+  // Widget-backed and maintainer rows report their text from the hidden adapters below.
   const rowTexts = rows.map((row, index) =>
-    row.source === "widget" ? (widgetTexts[index] ?? "") : (resolveClientSource(row.source, row.text, context) ?? ""),
+    row.source === "widget" || row.source === "maintainer"
+      ? (widgetTexts[index] ?? "")
+      : (resolveClientSource(row.source, row.text, context) ?? ""),
   );
 
   // Joined then split so the lines keep one identity while the text is unchanged: a poll
@@ -172,8 +176,18 @@ export default function SplitFlapWidget({ options }: WidgetComponentProps<"split
       */}
       <Box style={{ display: "none" }} aria-hidden>
         {rows.map((row, index) => {
-          if (row.source !== "widget") return null;
+          if (row.source !== "widget" && row.source !== "maintainer") return null;
           const report = reportForRow[index] ?? noop;
+          if (row.source === "maintainer") {
+            return (
+              <SplitFlapMaintainer
+                key={index}
+                metric={row.metric?.value ?? ""}
+                url={options.maintainerUrl}
+                onValue={report}
+              />
+            );
+          }
           const widgetId = row.widget?.value ?? null;
           const item = widgetId === null ? null : (board?.items.find((candidate) => candidate.id === widgetId) ?? null);
           if (item === null || !isSplitFlapReadableKind(item.kind)) {

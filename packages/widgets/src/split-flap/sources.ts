@@ -14,6 +14,7 @@ export const splitFlapRowSources = [
   "weekday",
   "text",
   "widget",
+  "maintainer",
 ] as const;
 
 export type SplitFlapRowSource = (typeof splitFlapRowSources)[number];
@@ -74,6 +75,8 @@ export const resolveClientSource = (
     case "weekday":
       return context.now === null ? "" : formatLocalizedDate(context.now, context.locale, { weekday: "long" });
     case "widget":
+    case "maintainer":
+      // Answered by a query instead — widget-value.tsx and maintainer-value.tsx.
       return null;
     default:
       return "";

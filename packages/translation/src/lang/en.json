@@ -2250,6 +2250,10 @@
       "label": "Live clock",
       "description": "Flip the time forward every minute instead of settling once when the page loads."
     },
+    "maintainerUrl": {
+      "label": "Maintainer service",
+      "description": "Where the maintainer status is read from. It must be on this host's loopback; anything else is refused and the row shows NO DATA."
+    },
     "source": {
       "label": "Row content",
       "options": {
@@ -2261,7 +2265,8 @@
         "time": "Time",
         "weekday": "Weekday",
         "text": "Your own text",
-        "widget": "A widget on this board"
+        "widget": "A widget on this board",
+        "maintainer": "Maintainer status"
       }
     },
     "row1Source": {
@@ -2347,7 +2352,10 @@
     "pending": "Pending requests",
     "approved": "Approved requests",
     "available": "Available requests",
-    "upcoming": "Upcoming releases"
+    "upcoming": "Upcoming releases",
+    "greeting": "Greeting",
+    "health": "System health",
+    "heaviest": "Heaviest application"
   }
 },
     "tdayTasks": {

@@ -6,6 +6,7 @@ import { useI18n } from "@homarr/translation/client";
 import { createWidgetDefinition } from "../definition";
 import { optionsBuilder } from "../options";
 import type { SelectOption } from "../_inputs/widget-select-input";
+import { splitFlapMaintainerMetrics } from "./maintainer";
 import { isSplitFlapReadableKind, getSplitFlapMetrics } from "./widget-kinds";
 import type { SplitFlapReadableKind } from "./widget-kinds";
 
@@ -35,9 +36,16 @@ const sourceOptions = [
     value: "widget",
     label: (t: (key: never) => string) => t("widget.splitFlap.option.source.options.widget" as never),
   },
+  {
+    value: "maintainer",
+    label: (t: (key: never) => string) => t("widget.splitFlap.option.source.options.maintainer" as never),
+  },
 ] satisfies SelectOption[];
 
 const isWidgetSource = (source: unknown) => source === "widget";
+const isMaintainerSource = (source: unknown) => source === "maintainer";
+// Both sources pick a figure from the row's second dropdown; they differ in where it comes from.
+const isFigureSource = (source: unknown) => isWidgetSource(source) || isMaintainerSource(source);
 
 export const { definition, componentLoader } = createWidgetDefinition("splitFlap", {
   icon: IconLayoutBoardSplit,
@@ -84,6 +92,7 @@ export const { definition, componentLoader } = createWidgetDefinition("splitFlap
           ],
         }),
         liveTime: factory.switch({ defaultValue: false, withDescription: true }),
+        maintainerUrl: factory.text({ defaultValue: "http://127.0.0.1:9111", withDescription: true }),
 
         row1Source: factory.select({ defaultValue: "boardName", options: sourceOptions }),
         row1Text: factory.text({ defaultValue: "" }),
@@ -103,7 +112,10 @@ export const { definition, componentLoader } = createWidgetDefinition("splitFlap
           useOptions(_query, _integrationIds, options) {
             const t = useI18n();
             const board = useOptionalBoard();
-            return { isPending: false, options: listMetrics(board?.items ?? [], options.row1Widget, t) };
+            return {
+              isPending: false,
+              options: listMetrics(board?.items ?? [], options.row1Source, options.row1Widget, t),
+            };
           },
         }),
 
@@ -122,7 +134,10 @@ export const { definition, componentLoader } = createWidgetDefinition("splitFlap
           useOptions(_query, _integrationIds, options) {
             const t = useI18n();
             const board = useOptionalBoard();
-            return { isPending: false, options: listMetrics(board?.items ?? [], options.row2Widget, t) };
+            return {
+              isPending: false,
+              options: listMetrics(board?.items ?? [], options.row2Source, options.row2Widget, t),
+            };
           },
         }),
 
@@ -141,7 +156,10 @@ export const { definition, componentLoader } = createWidgetDefinition("splitFlap
           useOptions(_query, _integrationIds, options) {
             const t = useI18n();
             const board = useOptionalBoard();
-            return { isPending: false, options: listMetrics(board?.items ?? [], options.row3Widget, t) };
+            return {
+              isPending: false,
+              options: listMetrics(board?.items ?? [], options.row3Source, options.row3Widget, t),
+            };
           },
         }),
       }),
@@ -149,15 +167,19 @@ export const { definition, componentLoader } = createWidgetDefinition("splitFlap
         customLightColor: { shouldHide: ({ theme }) => theme !== "customLight" },
         customDarkColor: { shouldHide: ({ theme }) => theme !== "customDark" },
         glyphColor: { shouldHide: ({ glyph }) => glyph !== "custom" },
+        maintainerUrl: {
+          shouldHide: ({ row1Source, row2Source, row3Source }) =>
+            ![row1Source, row2Source, row3Source].some(isMaintainerSource),
+        },
         row1Text: { shouldHide: ({ row1Source }) => row1Source !== "text" },
         row1Widget: { shouldHide: ({ row1Source }) => !isWidgetSource(row1Source) },
-        row1Value: { shouldHide: ({ row1Source }) => !isWidgetSource(row1Source) },
+        row1Value: { shouldHide: ({ row1Source }) => !isFigureSource(row1Source) },
         row2Text: { shouldHide: ({ row2Source }) => row2Source !== "text" },
         row2Widget: { shouldHide: ({ row2Source }) => !isWidgetSource(row2Source) },
-        row2Value: { shouldHide: ({ row2Source }) => !isWidgetSource(row2Source) },
+        row2Value: { shouldHide: ({ row2Source }) => !isFigureSource(row2Source) },
         row3Text: { shouldHide: ({ row3Source }) => row3Source !== "text" },
         row3Widget: { shouldHide: ({ row3Source }) => !isWidgetSource(row3Source) },
-        row3Value: { shouldHide: ({ row3Source }) => !isWidgetSource(row3Source) },
+        row3Value: { shouldHide: ({ row3Source }) => !isFigureSource(row3Source) },
       },
     );
   },
@@ -193,12 +215,20 @@ const listBoardWidgets = (
     .filter((option) => query.trim() === "" || option.label.toLowerCase().includes(query.trim().toLowerCase()));
 };
 
-/** The figures the picked widget can offer. Empty until a widget is picked. */
+/** The figures a row can print: the maintainer's three, or the picked widget's. */
 const listMetrics = (
   items: readonly BoardItem[],
+  source: unknown,
   selection: unknown,
   t: (key: never) => string,
 ): { value: string; label: string }[] => {
+  if (isMaintainerSource(source)) {
+    return splitFlapMaintainerMetrics.map((metric) => ({
+      value: metric,
+      label: t(`widget.splitFlap.metric.${metric}` as never),
+    }));
+  }
+  if (!isWidgetSource(source)) return [];
   const widgetId = readSelectedValue(selection);
   const item = widgetId === null ? undefined : items.find((candidate) => candidate.id === widgetId);
   if (!item || !isSplitFlapReadableKind(item.kind)) return [];

@@ -47,6 +47,7 @@ export const widgetRouter = createTRPCRouter({
   ups: lazy(() => import("./ups").then((mod) => mod.upsRouter)),
   traefik: lazy(() => import("./traefik").then((mod) => mod.traefikRouter)),
   customApi: lazy(() => import("./custom-api").then((mod) => mod.customApiRouter)),
+  splitFlap: lazy(() => import("./split-flap").then((mod) => mod.splitFlapRouter)),
   secrets: lazy(() => import("./widget-secrets").then((mod) => mod.widgetSecretsRouter)),
   wud: lazy(() => import("./wud").then((mod) => mod.wudRouter)),
   llamacpp: lazy(() => import("./llamacpp").then((mod) => mod.llamacppRouter)),

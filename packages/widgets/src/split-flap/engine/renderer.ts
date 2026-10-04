@@ -11,7 +11,7 @@
 import { centreLine } from "./center-line";
 import { buildRainbowPalette, isLightBoard, newRainbowSeed, rainbowColorFor } from "../glyph-color";
 import { parseHex, rgbToHsl, shade } from "../color-math";
-import { CHIPS, HALVES, cellChar, drumPath, textToCells } from "./charset";
+import { CHIPS, HALVES, STATUS_GLYPHS, cellChar, drumPath, isStatusGlyph, textToCells } from "./charset";
 
 export const GEOM = {
   tileW: 0.68, // flap width / H
@@ -222,6 +222,113 @@ const roundRect = (ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.roundRect(x, y, w, h, r);
 };
 
+// The heart, as a path: shared by the ♥ character and the green status heart.
+const heartPath = (ctx: CanvasRenderingContext2D, centerX: number, top: number, capHeight: number) => {
+  const halfWidth = capHeight * 0.54;
+  ctx.beginPath();
+  ctx.moveTo(centerX, top + capHeight);
+  ctx.bezierCurveTo(
+    centerX - halfWidth * 0.35,
+    top + capHeight * 0.72,
+    centerX - halfWidth,
+    top + capHeight * 0.52,
+    centerX - halfWidth,
+    top + capHeight * 0.26,
+  );
+  ctx.bezierCurveTo(
+    centerX - halfWidth,
+    top - capHeight * 0.02,
+    centerX - halfWidth * 0.25,
+    top - capHeight * 0.06,
+    centerX,
+    top + capHeight * 0.2,
+  );
+  ctx.bezierCurveTo(
+    centerX + halfWidth * 0.25,
+    top - capHeight * 0.06,
+    centerX + halfWidth,
+    top - capHeight * 0.02,
+    centerX + halfWidth,
+    top + capHeight * 0.26,
+  );
+  ctx.bezierCurveTo(
+    centerX + halfWidth,
+    top + capHeight * 0.52,
+    centerX + halfWidth * 0.35,
+    top + capHeight * 0.72,
+    centerX,
+    top + capHeight,
+  );
+};
+
+// A status glyph paints its shape in its own colour — not the board ink a letter uses —
+// so the maintainer readout reads at a glance. Shapes are drawn, never typeset, for the
+// same reason ♥ is: a fallback font would render an emoji.
+const paintStatusGlyph = (
+  ctx: CanvasRenderingContext2D,
+  glyph: { shape: "heart" | "pumpkin" | "alert"; color: string },
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+) => {
+  const capHeight = h * GEOM.capHeight;
+  const top = y + h * (GEOM.baseline - GEOM.capHeight);
+  const centerX = x + w / 2;
+  ctx.fillStyle = glyph.color;
+
+  if (glyph.shape === "heart") {
+    heartPath(ctx, centerX, top, capHeight);
+    ctx.fill();
+    return;
+  }
+
+  if (glyph.shape === "pumpkin") {
+    const bodyW = capHeight * 1.25;
+    const bodyH = capHeight * 0.9;
+    const cy = top + capHeight - bodyH / 2;
+    ctx.beginPath();
+    ctx.ellipse(centerX, cy, bodyW / 2, bodyH / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Stem and ridges are shaded over the body so they read on a solid shape.
+    ctx.fillStyle = "rgba(0,0,0,0.3)";
+    ctx.fillRect(
+      centerX - capHeight * 0.06,
+      top + capHeight - bodyH - capHeight * 0.15,
+      capHeight * 0.12,
+      capHeight * 0.18,
+    );
+    ctx.strokeStyle = "rgba(0,0,0,0.22)";
+    ctx.lineWidth = Math.max(1, capHeight * 0.06);
+    for (const lean of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(centerX + lean * bodyW * 0.1, cy, bodyW * 0.36, bodyH * 0.48, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    return;
+  }
+
+  // Alert light: a lamp on a base, with rays.
+  const domeR = capHeight * 0.32;
+  const baseY = top + capHeight;
+  ctx.beginPath();
+  ctx.arc(centerX, baseY - capHeight * 0.14, domeR, Math.PI, 0);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillRect(centerX - domeR * 1.2, baseY - capHeight * 0.14, domeR * 2.4, capHeight * 0.14);
+  ctx.strokeStyle = glyph.color;
+  ctx.lineWidth = Math.max(1, capHeight * 0.07);
+  const rayOriginY = baseY - capHeight * 0.14 - domeR - capHeight * 0.02;
+  for (const angle of [-0.75, 0, 0.75]) {
+    const innerX = centerX + Math.sin(angle) * domeR * 0.55;
+    const innerY = rayOriginY - Math.cos(angle) * capHeight * 0.03;
+    ctx.beginPath();
+    ctx.moveTo(innerX, innerY);
+    ctx.lineTo(centerX + Math.sin(angle) * (domeR + capHeight * 0.16), innerY - Math.cos(angle) * capHeight * 0.2);
+    ctx.stroke();
+  }
+};
+
 const paintFace = (
   ctx: CanvasRenderingContext2D,
   character: string,
@@ -273,48 +380,14 @@ const paintFace = (
     gradient.addColorStop(1, theme.faceLo);
     ctx.fillStyle = gradient;
     ctx.fillRect(x, y, w, h);
-    if (character === "♥") {
+    const status = isStatusGlyph(character) ? STATUS_GLYPHS[character] : undefined;
+    if (status) {
+      paintStatusGlyph(ctx, status, x, y, w, h);
+    } else if (character === "♥") {
       // Drawn as a shape: the board faces may not carry the glyph, and a fallback font
       // would draw an emoji. Cap height tall, in the glyph color.
-      const capHeight = h * GEOM.capHeight;
-      const top = y + h * (GEOM.baseline - GEOM.capHeight);
-      const centerX = x + w / 2;
-      const halfWidth = capHeight * 0.54;
       ctx.fillStyle = ink;
-      ctx.beginPath();
-      ctx.moveTo(centerX, top + capHeight);
-      ctx.bezierCurveTo(
-        centerX - halfWidth * 0.35,
-        top + capHeight * 0.72,
-        centerX - halfWidth,
-        top + capHeight * 0.52,
-        centerX - halfWidth,
-        top + capHeight * 0.26,
-      );
-      ctx.bezierCurveTo(
-        centerX - halfWidth,
-        top - capHeight * 0.02,
-        centerX - halfWidth * 0.25,
-        top - capHeight * 0.06,
-        centerX,
-        top + capHeight * 0.2,
-      );
-      ctx.bezierCurveTo(
-        centerX + halfWidth * 0.25,
-        top - capHeight * 0.06,
-        centerX + halfWidth,
-        top - capHeight * 0.02,
-        centerX + halfWidth,
-        top + capHeight * 0.26,
-      );
-      ctx.bezierCurveTo(
-        centerX + halfWidth,
-        top + capHeight * 0.52,
-        centerX + halfWidth * 0.35,
-        top + capHeight * 0.72,
-        centerX,
-        top + capHeight,
-      );
+      heartPath(ctx, x + w / 2, y + h * (GEOM.baseline - GEOM.capHeight), h * GEOM.capHeight);
       ctx.fill();
     } else if (character !== " ") {
       const fontSize = (h * GEOM.capHeight) / theme.capRatio;

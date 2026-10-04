@@ -39,10 +39,28 @@ export const HALVES: Record<string, readonly [ChipKey, "top" | "bottom"]> = {
 
 export const isHalf = (ch: unknown): boolean => typeof ch === "string" && Object.hasOwn(HALVES, ch);
 
+// Status glyphs: a heart, a pumpkin and an alert light, drawn by the renderer as shapes
+// (the way ♥ already is) so each carries its own colour rather than the board's ink. They
+// are private-use characters after the halves, one UTF-16 unit each, so the drum order for
+// everything before them is unchanged.
+export const STATUS_GLYPHS: Record<string, { shape: "heart" | "pumpkin" | "alert"; color: string }> = {
+  "": { shape: "heart", color: "#2C9A5A" }, // green
+  "": { shape: "pumpkin", color: "#EE7D22" }, // orange
+  "": { shape: "alert", color: "#D5352B" }, // red
+};
+
+export const STATUS_GLYPH_KEYS = Object.keys(STATUS_GLYPHS);
+
+/** The glyph a maintainer level prints: healthy, warning, critical. */
+export const HEALTH_GLYPHS = { ok: "", warn: "", crit: "" } as const;
+
+export const isStatusGlyph = (ch: unknown): boolean => typeof ch === "string" && Object.hasOwn(STATUS_GLYPHS, ch);
+
 export const DRUM =
   " ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖÆØÜÉ0123456789.,:;!?'\"-+/&%#@()=$°♥" +
   CHIP_KEYS.join("") +
-  Object.keys(HALVES).join("");
+  Object.keys(HALVES).join("") +
+  STATUS_GLYPH_KEYS.join("");
 
 const DRUM_IDX = new Map<string, number>([...DRUM].map((character, index) => [character, index]));
 
@@ -196,7 +214,7 @@ const preFold = (value: string): string => String(value || "").replace(/[οΟ][�
 
 // A stored cell to a drum entry. Chips pass through; everything else is cleaned.
 export const cellChar = (ch: unknown): string => {
-  if (isChip(ch)) return ch as string;
+  if (isChip(ch) || isStatusGlyph(ch)) return ch as string;
   const folded = fold(ch);
   return folded != null && folded.length === 1 ? folded : " ";
 };
