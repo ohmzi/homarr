@@ -18,7 +18,8 @@ import {
 import { DateTimePicker } from "@mantine/dates";
 import { IconCalendarEvent, IconCheck, IconPencil, IconPlus, IconTrash, IconX } from "@tabler/icons-react";
 import dayjs from "dayjs";
-import { CalendarClock, Clock3, Flag, Leaf, type LucideIcon, Moon, Sun } from "lucide-react";
+import { CalendarClock, Clock3, Flag, Leaf, Moon, Sun } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 import { clientApi } from "@homarr/api/client";
 import { useIntegrationsWithInteractAccess } from "@homarr/auth/client";
@@ -174,6 +175,12 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
       setDraft("");
       setAddError(null);
       setAdding(false);
+      // The next composer starts clean rather than inheriting this task's list,
+      // priority and due (issue: "creating a new task keeps the previous
+      // selection of list and priority").
+      setPriority("Low");
+      setListId(null);
+      setAddDue(null);
     },
     onError: (error) => setAddError(error.message || "Failed to add tasks"),
   });
@@ -249,11 +256,28 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
     setAdding(false);
     setDraft("");
     setAddError(null);
+    // The composer is a fresh sheet each time it opens: a list, priority or due
+    // left over from the previous task must not become the next one's.
+    setPriority("Low");
+    setListId(null);
     setAddDue(null);
   };
 
   const normalizePriority = (value: string): "Low" | "Medium" | "High" =>
     value === "Medium" || value === "High" ? value : "Low";
+
+  /**
+   * Picking a list in the add composer also picks that list's default priority —
+   * the same rule the app's own create sheet follows, so a widget-added task
+   * lands at the urgency the list asked for instead of the composer's last
+   * value. A list with no default settles on Low. The widget offers no Lowest
+   * tier, so a Lowest default narrows to Low. Clearing the list leaves Low.
+   */
+  const handleAddListChange = (next: string | null) => {
+    setListId(next);
+    const listDefault = next ? (listById.get(next)?.defaultPriority ?? null) : null;
+    setPriority(normalizePriority(listDefault ?? "Low"));
+  };
 
   const startEdit = (task: TdayTask) => {
     cancelAdd();
@@ -581,7 +605,7 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
             />
             <div className="tday-composer-controls">
               {prioritySelect(priority, setPriority, quickAddMutation.isPending)}
-              {listSelect(listId, setListId, quickAddMutation.isPending)}
+              {listSelect(listId, handleAddListChange, quickAddMutation.isPending)}
               {view !== "floater" && duePicker(addDue, setAddDue, quickAddMutation.isPending)}
             </div>
             {addError && (
@@ -829,10 +853,10 @@ const toTdayDue = (value: string | null): string | null => (value ? value.replac
 
 const sortTasks = (tasks: TdayTask[], sort: string): TdayTask[] => {
   if (sort === "priority") {
-    return [...tasks].sort((a, b) => (PRIORITY_RANK[a.priority] ?? 9) - (PRIORITY_RANK[b.priority] ?? 9));
+    return [...tasks].toSorted((a, b) => (PRIORITY_RANK[a.priority] ?? 9) - (PRIORITY_RANK[b.priority] ?? 9));
   }
   if (sort === "due") {
-    return [...tasks].sort((a, b) => (a.due ?? "~").localeCompare(b.due ?? "~"));
+    return [...tasks].toSorted((a, b) => (a.due ?? "~").localeCompare(b.due ?? "~"));
   }
   return tasks;
 };

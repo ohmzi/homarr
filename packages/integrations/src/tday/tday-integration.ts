@@ -63,7 +63,15 @@ export class TdayIntegration extends Integration {
         }));
     }
 
-    const mapTodo = (todo: { id: string; title: string; priority: string; due?: string | null; instanceDate?: string | null; completed: boolean; listID?: string | null }) => ({
+    const mapTodo = (todo: {
+      id: string;
+      title: string;
+      priority: string;
+      due?: string | null;
+      instanceDate?: string | null;
+      completed: boolean;
+      listID?: string | null;
+    }) => ({
       id: todo.id,
       title: todo.title,
       priority: todo.priority,
@@ -105,6 +113,7 @@ export class TdayIntegration extends Integration {
       name: list.name,
       iconKey: list.iconKey ?? null,
       color: list.color ?? null,
+      defaultPriority: list.defaultPriority ?? null,
     }));
   }
 
@@ -180,7 +189,10 @@ export class TdayIntegration extends Integration {
       titles.map((title) =>
         view === "floater"
           ? this.requestAsync("/api/floater", { method: "POST", body: { title, priority, ...listField } })
-          : this.requestAsync("/api/todo", { method: "POST", body: { title, priority, due: resolvedDue, ...listField } }),
+          : this.requestAsync("/api/todo", {
+              method: "POST",
+              body: { title, priority, due: resolvedDue, ...listField },
+            }),
       ),
     );
 
