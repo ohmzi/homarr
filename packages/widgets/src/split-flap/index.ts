@@ -93,6 +93,7 @@ export const { definition, componentLoader } = createWidgetDefinition("splitFlap
         }),
         liveTime: factory.switch({ defaultValue: false, withDescription: true }),
         maintainerUrl: factory.text({ defaultValue: "http://127.0.0.1:9111", withDescription: true }),
+        maintainerName: factory.text({ defaultValue: "", withDescription: true }),
 
         row1Source: factory.select({ defaultValue: "boardName", options: sourceOptions }),
         row1Text: factory.text({ defaultValue: "" }),
@@ -168,6 +169,10 @@ export const { definition, componentLoader } = createWidgetDefinition("splitFlap
         customDarkColor: { shouldHide: ({ theme }) => theme !== "customDark" },
         glyphColor: { shouldHide: ({ glyph }) => glyph !== "custom" },
         maintainerUrl: {
+          shouldHide: ({ row1Source, row2Source, row3Source }) =>
+            ![row1Source, row2Source, row3Source].some(isMaintainerSource),
+        },
+        maintainerName: {
           shouldHide: ({ row1Source, row2Source, row3Source }) =>
             ![row1Source, row2Source, row3Source].some(isMaintainerSource),
         },

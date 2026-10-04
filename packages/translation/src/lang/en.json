@@ -2254,6 +2254,10 @@
       "label": "Maintainer service",
       "description": "Where the maintainer status is read from. It must be on this host's loopback; anything else is refused and the row shows NO DATA."
     },
+    "maintainerName": {
+      "label": "Greeting name",
+      "description": "The name the greeting prints. Leave empty to greet the signed-in user."
+    },
     "source": {
       "label": "Row content",
       "options": {

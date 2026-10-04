@@ -184,6 +184,7 @@ export default function SplitFlapWidget({ options }: WidgetComponentProps<"split
                 key={index}
                 metric={row.metric?.value ?? ""}
                 url={options.maintainerUrl}
+                name={options.maintainerName}
                 onValue={report}
               />
             );

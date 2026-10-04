@@ -16,10 +16,12 @@ import { greetingText, healthText, heaviestText } from "./maintainer";
 export interface SplitFlapMaintainerProps {
   metric: string;
   url: string;
+  /** Overrides the signed-in user's name when set, so the board can greet a fixed name. */
+  name: string;
   onValue: (text: string) => void;
 }
 
-export const SplitFlapMaintainer = ({ metric, url, onValue }: SplitFlapMaintainerProps) => {
+export const SplitFlapMaintainer = ({ metric, url, name, onValue }: SplitFlapMaintainerProps) => {
   const now = useWidgetNow("minute");
   const session = useSession();
   const needsService = metric === "health" || metric === "heaviest";
@@ -27,7 +29,7 @@ export const SplitFlapMaintainer = ({ metric, url, onValue }: SplitFlapMaintaine
 
   let text: string | null = null;
   if (metric === "greeting") {
-    text = greetingText(now, session.data?.user?.name ?? null);
+    text = greetingText(now, name.trim() === "" ? (session.data?.user?.name ?? null) : name);
   } else if (metric === "health") {
     // Blank while the first answer is in flight; NO DATA once it has failed or omitted a level.
     text = isPending ? null : healthText(data?.level ?? null);
