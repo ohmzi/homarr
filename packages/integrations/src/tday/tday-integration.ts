@@ -153,7 +153,8 @@ export class TdayIntegration extends Integration {
   }
 
   /** Lists the user's lists for the view: floater-lists for "floater", todo-lists otherwise. */
-  public async getListsAsync(view: TdayTaskView): Promise<TdayList[]> {    const path = view === "floater" ? "/api/floaterList" : "/api/list";
+  public async getListsAsync(view: TdayTaskView): Promise<TdayList[]> {
+    const path = view === "floater" ? "/api/floaterList" : "/api/list";
     const { lists } = tdayListsResponseSchema.parse(await this.requestAsync(path));
     return lists.map((list) => ({
       id: list.id,
@@ -170,10 +171,7 @@ export class TdayIntegration extends Integration {
    * tables and an id from one means nothing in the other.
    */
   public async getListOptionsAsync(): Promise<TdayListOption[]> {
-    const [todoLists, floaterLists] = await Promise.all([
-      this.getListsAsync("today"),
-      this.getListsAsync("floater"),
-    ]);
+    const [todoLists, floaterLists] = await Promise.all([this.getListsAsync("today"), this.getListsAsync("floater")]);
     return [
       ...todoLists.map((list) => ({
         value: encodeTdayListSelection({ kind: "todo" as const, id: list.id }),
