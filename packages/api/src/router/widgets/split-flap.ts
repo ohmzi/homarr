@@ -16,14 +16,16 @@ const maintainerInput = z.object({
 
 const readRouteAsync = async (url: string, path: string) => {
   try {
+    // The executor validates its target with `new URL`, so it must be absolute: the route is
+    // resolved against the configured service first.
+    const target = new URL(path, url).toString();
     const response = await executeCustomWidgetRequest({
-      baseUrl: url,
-      targetUrl: path,
+      baseUrl: target,
       method: "GET",
       kind: "query",
       networkScope: "loopback",
       // Shared across boards, so a wall of boards costs one fetch per window, not one each.
-      cacheKey: `split-flap-maintainer:${url}:${path}`,
+      cacheKey: `split-flap-maintainer:${target}`,
       cacheTtlSeconds: 10,
     });
     return response.ok ? response.data : null;
