@@ -1729,6 +1729,10 @@
             }
           }
         },
+        "list": {
+          "label": "List",
+          "description": "Optional: show one of your lists instead of the view above."
+        },
         "sort": {
           "label": "Sort by",
           "option": {
