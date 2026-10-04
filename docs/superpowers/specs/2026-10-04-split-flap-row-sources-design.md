@@ -166,3 +166,30 @@ Derived boards are cached by family and color, so the same pick returns the same
 the widget rebuilds its canvas when the theme identity changes, and a fresh object each
 render would rebuild it constantly. The `id` includes the color, so the render cache cannot
 collide between two custom boards.
+
+### The built-in boards paint from the brand palette (2026-10-04)
+
+The light and dark boards take their colors from the ohmz brand tokens in
+`apps/nextjs/src/styles/ohmz-brand.scss` (source of truth: `ai-stack/branding/ohmz.css`),
+so a board sits in the dashboard rather than beside it:
+
+| Role             | Dark             | Light               |
+| ---------------- | ---------------- | ------------------- |
+| flap face        | `--ohmz-panel`   | `--ohmz-l-panel`    |
+| lit top half     | `--ohmz-raise`   | `--ohmz-off-white`  |
+| shadowed halves  | `--ohmz-canvas`, `--ohmz-code` | `--ohmz-l-line` down |
+| frame            | `--ohmz-code`    | `--ohmz-l-line`     |
+| frame edge       | `--ohmz-line`    | `--ohmz-off-white`  |
+| peeking edges    | `--ohmz-hover`   | `--ohmz-l-line`     |
+| ink              | `--ohmz-text`    | `--ohmz-l-text`     |
+| backdrop         | panel → code     | `--ohmz-l-canvas` → line |
+
+The brand names no role for the recess behind the flaps or the crease across them, so
+those are mixed *down* from the darkest token of the family with `color-math.shade`
+rather than set to a neutral black — the recesses keep the brand's warmth.
+
+`brand-palette.spec.ts` pins every one of these mappings, so the boards cannot drift off
+the palette without someone deciding to.
+
+The custom board pickers now start at the brand's own surfaces (`#f0edea` light,
+`#211f1d` dark), so "your own board" begins as the brand board and is tinted from there.

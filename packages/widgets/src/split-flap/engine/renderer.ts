@@ -10,6 +10,7 @@
 
 import { centreLine } from "./center-line";
 import { buildRainbowPalette, isLightBoard, newRainbowSeed, rainbowColorFor } from "../glyph-color";
+import { parseHex, rgbToHsl, shade } from "../color-math";
 import { CHIPS, HALVES, cellChar, drumPath, textToCells } from "./charset";
 
 export const GEOM = {
@@ -63,68 +64,97 @@ export interface FlapTheme {
   filled: string;
 }
 
+// The board palette is painted from the ohmz brand tokens in
+// apps/nextjs/src/styles/ohmz-brand.scss, whose source of truth is
+// ai-stack/branding/ohmz.css. Roles the brand does not name — the recess behind the flaps
+// and the crease across them — are mixed down from the darkest token of the same family,
+// so the whole ramp stays on the brand's warm ramp rather than falling to neutral black.
+const brandDark = {
+  canvas: "#1a1917",
+  panel: "#211f1d",
+  raise: "#262421",
+  hover: "#2d2a26",
+  line: "#3a3733",
+  lineSoft: "#302d2a",
+  text: "#f0edea",
+  secondary: "#cbc5be",
+  muted: "#8b857e",
+  code: "#131211",
+} as const;
+
+const brandLight = {
+  canvas: "#faf9f7",
+  panel: "#f0edea",
+  line: "#ddd7d0",
+  text: "#1a1917",
+  offWhite: "#f6f4f2",
+  muted: "#8b857e",
+} as const;
+
+/** Mixes down from a token, so a shade is still on the brand's ramp. */
+const below = (hex: string, amount: number): string => {
+  const parsed = parseHex(hex);
+  return parsed === null ? hex : shade(rgbToHsl(parsed), amount);
+};
+
 export const flapThemes: Record<"black" | "white" | "solari", FlapTheme> = {
   black: {
     id: "black",
-    // Face, frame and backdrop follow the app's warm dark ramp (packages/ui/src/theme.ts)
-    // rather than Vestaboard's cool greys, so the board sits in the board it is placed on.
-    face: "#211f1d",
-    faceHi: "#302d2a",
-    faceB: "#1a1917",
-    faceLo: "#131211",
-    housing: "#0d0c0b",
-    crease: "#0d0c0b",
+    face: brandDark.panel,
+    faceHi: brandDark.raise,
+    faceB: brandDark.canvas,
+    faceLo: brandDark.code,
+    housing: below(brandDark.code, -0.35),
+    crease: below(brandDark.code, -0.55),
     lip: "rgba(255,255,255,0.06)",
-    stack: "#302d2a",
-    pin: "#4d4944",
-    glyph: "#f0edea",
+    stack: brandDark.hover,
+    pin: brandDark.line,
+    glyph: brandDark.text,
     font: '"IBM Plex Mono"',
     weight: 500,
     capRatio: 0.7,
-    frame: "#131211",
-    frameEdge: "#3a3733",
-    frameShade: "#0d0c0b",
+    frame: brandDark.code,
+    frameEdge: brandDark.line,
+    frameShade: below(brandDark.code, -0.25),
     framePad: 0.5,
     frameRadius: 0.12,
-    backdrop: ["#211f1d", "#131211"],
+    backdrop: [brandDark.panel, brandDark.code],
     shadow: 0.6,
     occl: 0.28,
     cast: 0.35,
     fallDark: 0.55,
     riseLight: 0.1,
-    edge: "#4d4944",
-    filled: "#f0edea",
+    edge: brandDark.line,
+    filled: brandDark.text,
   },
   white: {
     id: "white",
-    // The light half of the same warm ramp (ohmzGray), so a light board and a dark board
-    // are recognisably the same product.
-    face: "#f0edea",
-    faceHi: "#f7f5f3",
-    faceB: "#e2ddd8",
-    faceLo: "#cbc5be",
-    housing: "#cbc5be",
-    crease: "#8b857e",
+    face: brandLight.panel,
+    faceHi: brandLight.offWhite,
+    faceB: brandLight.line,
+    faceLo: below(brandLight.line, -0.25),
+    housing: below(brandLight.line, -0.45),
+    crease: below(brandLight.line, -0.62),
     lip: "rgba(255,255,255,0.7)",
-    stack: "#e2ddd8",
-    pin: "#8b857e",
-    glyph: "#1a1917",
+    stack: brandLight.line,
+    pin: brandLight.muted,
+    glyph: brandLight.text,
     font: '"IBM Plex Mono"',
     weight: 500,
     capRatio: 0.7,
-    frame: "#e2ddd8",
-    frameEdge: "#f7f5f3",
-    frameShade: "#cbc5be",
+    frame: brandLight.line,
+    frameEdge: brandLight.offWhite,
+    frameShade: below(brandLight.line, -0.38),
     framePad: 0.5,
     frameRadius: 0.12,
-    backdrop: ["#f0edea", "#e2ddd8"],
+    backdrop: [brandLight.canvas, brandLight.line],
     shadow: 0.28,
     occl: 0.16,
     cast: 0.22,
     fallDark: 0.3,
     riseLight: 0.18,
-    edge: "#f7f5f3",
-    filled: "#1a1917",
+    edge: brandLight.offWhite,
+    filled: brandLight.text,
   },
   solari: {
     id: "solari",

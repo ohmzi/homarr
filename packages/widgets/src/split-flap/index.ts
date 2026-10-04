@@ -56,8 +56,8 @@ export const { definition, componentLoader } = createWidgetDefinition("splitFlap
             { value: "customDark", label: (t) => t("widget.splitFlap.option.theme.options.customDark") },
           ],
         }),
-        customLightColor: factory.color({ defaultValue: "#dfe6ef", withDescription: true }),
-        customDarkColor: factory.color({ defaultValue: "#232a33", withDescription: true }),
+        customLightColor: factory.color({ defaultValue: "#f0edea", withDescription: true }),
+        customDarkColor: factory.color({ defaultValue: "#211f1d", withDescription: true }),
         glyph: factory.select({
           defaultValue: "standard",
           withDescription: true,
