@@ -743,7 +743,7 @@ const moviePageSchema = z.object({
   }),
 });
 
-const mapType = (type: string): "movie" | "tv" | "unknown" => {
+const mapType = (type: string): "movie" | "tv" | "music" | "unknown" => {
   switch (type) {
     case "movie":
       return "movie";
@@ -751,6 +751,10 @@ const mapType = (type: string): "movie" | "tv" | "unknown" => {
     case "season":
     case "episode":
       return "tv";
+    case "album":
+    case "artist":
+    case "track":
+      return "music";
     default:
       return "unknown";
   }
