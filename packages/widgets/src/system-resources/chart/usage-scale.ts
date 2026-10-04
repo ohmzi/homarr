@@ -34,6 +34,30 @@ export const usageColorNames = {
   critical: [6, "red"],
 } as const;
 
+export interface UsageScale extends UsageThresholds {
+  domain: [number, number];
+}
+
+/**
+ * The link's ceilings in bytes per second: 1.2 Gbps down, 40 Mbps up.
+ *
+ * Unlike CPU and memory, a network has no ceiling it can discover, and the charts used to
+ * fit their axis to whatever the window peaked at. That is left alone, the colour cannot
+ * work: the gradient is positioned in the plot's own coordinates, so the axis and the
+ * thresholds have to agree or a spike nowhere near saturation would still paint red.
+ */
+export const networkCeilings = {
+  down: 1_200_000_000 / 8,
+  up: 40_000_000 / 8,
+} as const;
+
+/** Thresholds at a share of a known ceiling, with the axis reading as that share. */
+export const buildCeilingUsageScale = (ceiling: number): UsageScale => ({
+  caution: ceiling * 0.7,
+  critical: ceiling * 0.9,
+  domain: [0, ceiling],
+});
+
 /** Recharts insets the plot by this much on every side when both axes are hidden. */
 const chartMargin = 5;
 

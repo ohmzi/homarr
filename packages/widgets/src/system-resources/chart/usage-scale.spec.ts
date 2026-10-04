@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { buildUsageGradientStops, plotAreaFor, valueToOffset } from "./usage-scale";
+import {
+  buildCeilingUsageScale,
+  buildUsageGradientStops,
+  networkCeilings,
+  plotAreaFor,
+  valueToOffset,
+} from "./usage-scale";
 
 const colors = { ok: "#12b886", caution: "#fd7e14", critical: "#fa5252" };
 
@@ -77,5 +83,29 @@ describe("plotAreaFor", () => {
 
   it("never inverts on a chart too short to inset", () => {
     expect(plotAreaFor(8).y2).toBeGreaterThan(plotAreaFor(8).y1);
+  });
+});
+
+describe("buildCeilingUsageScale", () => {
+  it("puts the thresholds at 70% and 90% of the ceiling", () => {
+    expect(buildCeilingUsageScale(1_000)).toEqual({ caution: 700, critical: 900, domain: [0, 1_000] });
+  });
+
+  it("scales the axis to the ceiling, so the colors mean the same as the axis", () => {
+    // If these disagreed, a spike far below saturation would still read as red.
+    const scale = buildCeilingUsageScale(networkCeilings.down);
+
+    expect(scale.domain[1]).toBe(networkCeilings.down);
+    expect(valueToOffset(networkCeilings.down * 0.9, scale.domain)).toBeCloseTo(0.1);
+    expect(valueToOffset(networkCeilings.down * 0.7, scale.domain)).toBeCloseTo(0.3);
+  });
+
+  it("reads the ceilings as the link speeds they came from", () => {
+    expect(networkCeilings.down * 8).toBe(1_200_000_000);
+    expect(networkCeilings.up * 8).toBe(40_000_000);
+  });
+
+  it("has a lower ceiling for up than down", () => {
+    expect(networkCeilings.up).toBeLessThan(networkCeilings.down);
   });
 });
