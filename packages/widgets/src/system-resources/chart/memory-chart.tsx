@@ -53,6 +53,12 @@ export const SystemResourceMemoryChart = ({
       labelDisplayMode={labelDisplayMode}
       advanced={advanced}
       yAxisProps={{ domain: [0, totalCapacityInBytes] }}
+      // This axis is in bytes rather than percent, so the thresholds are a share of it.
+      usageScale={{
+        caution: totalCapacityInBytes * 0.7,
+        critical: totalCapacityInBytes * 0.9,
+        domain: [0, totalCapacityInBytes],
+      }}
       lastValue={percentageUsed !== undefined ? `${Math.round(percentageUsed * 100)}%` : undefined}
       chartType={hasShadow ? "area" : "line"}
       tooltipLabel={tooltipLabel}

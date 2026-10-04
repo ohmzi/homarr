@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { AreaChartSeries } from "@mantine/charts";
 import { AreaChart, LineChart } from "@mantine/charts";
 import { Card, Center, Group, Stack, Text, Tooltip, useComputedColorScheme, useMantineTheme } from "@mantine/core";
@@ -12,6 +12,8 @@ import { zoomCompensatedSize } from "@homarr/ui";
 import type { TablerIcon } from "@homarr/ui";
 
 import type { LabelDisplayModeOption } from "..";
+import type { UsageThresholds } from "./usage-scale";
+import { buildUsageGradientStops, plotAreaFor, usageColorNames } from "./usage-scale";
 
 export const CommonChart = ({
   data,
@@ -25,6 +27,7 @@ export const CommonChart = ({
   lastValue,
   chartType = "line",
   advanced = false,
+  usageScale,
 }: {
   data: Record<string, any>[];
   dataKey: string;
@@ -40,6 +43,9 @@ export const CommonChart = ({
   lastValue?: string;
   chartType?: "line" | "area";
   advanced?: boolean;
+  // Colour the line by its value: green below the caution threshold, orange up to the
+  // critical one, red above. Only the parts that climb past a threshold change colour.
+  usageScale?: UsageThresholds & { series?: string; domain: readonly [number, number] };
 }) => {
   const { ref: elementSizeRef, height } = useElementSize();
   const theme = useMantineTheme();
@@ -69,6 +75,16 @@ export const CommonChart = ({
   // Track which data point the cursor is over so the tooltip can reflect that point
   // instead of always showing the latest value while scrubbing across the chart.
   const [hoveredIndex, setHoveredIndex] = useState(data.length - 1);
+
+  // The gradient is positioned in the SVG's own coordinates, so it needs the height the
+  // chart actually rendered at rather than the card's.
+  const chartAreaRef = useRef<HTMLDivElement>(null);
+  const [svgHeight, setSvgHeight] = useState<number | null>(null);
+  useEffect(() => {
+    const measured = chartAreaRef.current?.querySelector("svg")?.getBoundingClientRect().height ?? 0;
+    setSvgHeight(measured > 0 ? measured : null);
+  }, [height, data]);
+  const gradientId = useId().replace(/:/g, "");
   const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (data.length <= 1) return;
     const rect = event.currentTarget.getBoundingClientRect();
@@ -77,6 +93,28 @@ export const CommonChart = ({
     const index = Math.round(ratio * (data.length - 1));
     setHoveredIndex(Math.min(data.length - 1, Math.max(0, index)));
   };
+
+  const usageSeriesName = usageScale?.series ?? series[0]?.name;
+  const usageGradient =
+    usageScale && svgHeight !== null
+      ? {
+          id: gradientId,
+          area: plotAreaFor(svgHeight),
+          // Read through the theme so a themed palette is respected; the stops need real
+          // colors, not CSS variable references.
+          stops: buildUsageGradientStops(usageScale, usageScale.domain, {
+            ok: theme.colors[usageColorNames.ok[1]][usageColorNames.ok[0]],
+            caution: theme.colors[usageColorNames.caution[1]][usageColorNames.caution[0]],
+            critical: theme.colors[usageColorNames.critical[1]][usageColorNames.critical[0]],
+          }),
+        }
+      : null;
+  const paintedSeries =
+    usageGradient === null
+      ? series
+      : series.map((entry) =>
+          entry.name === usageSeriesName ? { ...entry, color: `url(#${usageGradient.id})` } : entry,
+        );
 
   // Clamp on read rather than syncing via an effect - handles data growing/shrinking
   // between renders (e.g. history resetting on integration change) without ever
@@ -159,10 +197,11 @@ export const CommonChart = ({
           </Center>
         ) : (
           <ChartComponent
+            ref={chartAreaRef}
             data={data}
             dataKey={dataKey}
             h={"100%"}
-            series={series}
+            series={paintedSeries}
             curveType="monotone"
             tickLine="none"
             gridAxis="none"
@@ -174,7 +213,24 @@ export const CommonChart = ({
             withTooltip={false}
             yAxisProps={yAxisProps}
             fillOpacity={chartType === "area" ? 0.3 : undefined}
-          />
+          >
+            {usageGradient && (
+              <defs>
+                <linearGradient
+                  id={usageGradient.id}
+                  gradientUnits="userSpaceOnUse"
+                  x1={0}
+                  x2={0}
+                  y1={usageGradient.area.y1}
+                  y2={usageGradient.area.y2}
+                >
+                  {usageGradient.stops.map((stop, index) => (
+                    <stop key={index} offset={stop.offset} stopColor={stop.color} />
+                  ))}
+                </linearGradient>
+              </defs>
+            )}
+          </ChartComponent>
         )}
       </Card>
     </Tooltip.Floating>
