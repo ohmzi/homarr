@@ -58,7 +58,9 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
   const view = options.view;
 
   const [tasks, { refetch }] = clientApi.widget.tday.getTasks.useSuspenseQuery(
-    { integrationId, view },
+    // A chosen list wins over the view; the view still decides the sort's default and what the
+    // "+" creates when the composer has no list of its own selected.
+    { integrationId, view, listId: options.list?.value ?? null },
     {
       // Near real-time: background poll + on focus (Tday has no push channel reachable here).
       refetchOnMount: false,

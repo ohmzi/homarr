@@ -18,9 +18,18 @@ export const tdayRouter = createTRPCRouter({
     .concat(createOneIntegrationMiddleware("query", "tday"))
     .input(tdayTasksInputSchema)
     .query(async ({ ctx, input }) => {
-      const handler = tdayTasksRequestHandler.handler(ctx.integration, { view: input.view });
+      const handler = tdayTasksRequestHandler.handler(ctx.integration, {
+        view: input.view,
+        listId: input.listId ?? null,
+      });
       const { data } = await handler.getDataAsync();
       return data;
+    }),
+  getListOptions: publicProcedure
+    .concat(createOneIntegrationMiddleware("query", "tday"))
+    .query(async ({ ctx }) => {
+      const instance = await createIntegrationAsync(ctx.integration);
+      return instance.getListOptionsAsync();
     }),
   getLists: publicProcedure
     .concat(createOneIntegrationMiddleware("query", "tday"))

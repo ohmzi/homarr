@@ -74,8 +74,46 @@ const tdayListDtoSchema = z.object({
 });
 export const tdayListsResponseSchema = z.object({ lists: z.array(tdayListDtoSchema) });
 
-export const tdayTasksInputSchema = z.object({ view: tdayTaskViewSchema });
+export const tdayTasksInputSchema = z.object({
+  view: tdayTaskViewSchema,
+  /**
+   * A custom list to scope the widget to, or null for the view's own bucket. Encoded with
+   * [encodeTdayListSelection] rather than sent as an object, so the widget option's single string
+   * value and the request input are the same thing.
+   */
+  listId: z.string().nullable().optional(),
+});
 export type TdayTasksInput = z.infer<typeof tdayTasksInputSchema>;
+
+/** Which kind of list a selection names — the API keeps scheduled and floater lists apart. */
+export const tdayListSelectionSchema = z.object({
+  kind: z.enum(["todo", "floater"]),
+  id: z.string(),
+});
+export type TdayListSelection = z.infer<typeof tdayListSelectionSchema>;
+
+/** `"todo:abc123"` — what a widget option stores and a request input carries. */
+export function encodeTdayListSelection(selection: TdayListSelection): string {
+  return `${selection.kind}:${selection.id}`;
+}
+
+/** Reads [encodeTdayListSelection]'s output back, or null for anything that is not one. */
+export function parseTdayListSelection(value: string | null | undefined): TdayListSelection | null {
+  if (!value) return null;
+  const separator = value.indexOf(":");
+  if (separator < 1) return null;
+  const kind = value.slice(0, separator);
+  const id = value.slice(separator + 1);
+  if ((kind !== "todo" && kind !== "floater") || id.length === 0) return null;
+  return { kind, id };
+}
+
+/** One entry of the widget's list picker: both namespaces, so any list can be chosen. */
+export const tdayListOptionSchema = z.object({
+  value: z.string(),
+  label: z.string(),
+});
+export type TdayListOption = z.infer<typeof tdayListOptionSchema>;
 
 export const tdayListsInputSchema = z.object({ view: tdayTaskViewSchema });
 export type TdayListsInput = z.infer<typeof tdayListsInputSchema>;
