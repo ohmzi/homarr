@@ -18,7 +18,8 @@ import {
 import { DateTimePicker } from "@mantine/dates";
 import { IconCalendarEvent, IconCheck, IconPencil, IconPlus, IconTrash, IconX } from "@tabler/icons-react";
 import dayjs from "dayjs";
-import { CalendarClock, Clock3, Flag, Leaf, type LucideIcon, Moon, Sun } from "lucide-react";
+import { CalendarClock, Clock3, Flag, Leaf, Moon, Sun } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 import { clientApi } from "@homarr/api/client";
 import { useIntegrationsWithInteractAccess } from "@homarr/auth/client";
@@ -274,7 +275,7 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
    */
   const handleAddListChange = (next: string | null) => {
     setListId(next);
-    const listDefault = next ? listById.get(next)?.defaultPriority ?? null : null;
+    const listDefault = next ? (listById.get(next)?.defaultPriority ?? null) : null;
     setPriority(normalizePriority(listDefault ?? "Low"));
   };
 
@@ -852,10 +853,10 @@ const toTdayDue = (value: string | null): string | null => (value ? value.replac
 
 const sortTasks = (tasks: TdayTask[], sort: string): TdayTask[] => {
   if (sort === "priority") {
-    return [...tasks].sort((a, b) => (PRIORITY_RANK[a.priority] ?? 9) - (PRIORITY_RANK[b.priority] ?? 9));
+    return [...tasks].toSorted((a, b) => (PRIORITY_RANK[a.priority] ?? 9) - (PRIORITY_RANK[b.priority] ?? 9));
   }
   if (sort === "due") {
-    return [...tasks].sort((a, b) => (a.due ?? "~").localeCompare(b.due ?? "~"));
+    return [...tasks].toSorted((a, b) => (a.due ?? "~").localeCompare(b.due ?? "~"));
   }
   return tasks;
 };
