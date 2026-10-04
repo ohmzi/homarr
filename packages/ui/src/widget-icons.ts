@@ -32,6 +32,7 @@ import {
   IconHeartbeat,
   IconHourglass,
   IconLayoutGrid,
+  IconLayoutBoardSplit,
   IconMessage,
   IconMovie,
   IconNotes,
@@ -137,4 +138,5 @@ export const widgetCatalogIcons: Record<WidgetKind, TablerIcon> = {
   wazuhVulnerabilities: IconBug,
   wazuhFim: IconFileAlert,
   wazuhAuthFailures: IconLockExclamation,
+  splitFlap: IconLayoutBoardSplit,
 };

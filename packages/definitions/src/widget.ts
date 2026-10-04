@@ -70,6 +70,7 @@ export const widgetKinds = [
   "wazuhVulnerabilities",
   "wazuhFim",
   "wazuhAuthFailures",
+  "splitFlap",
 ] as const;
 
 export type WidgetKind = (typeof widgetKinds)[number];
@@ -104,4 +105,5 @@ export const widgetDefaultSizes: Partial<Record<WidgetKind, { width: number; hei
   wazuhVulnerabilities: { width: 4, height: 4 },
   wazuhFim: { width: 4, height: 3 },
   wazuhAuthFailures: { width: 4, height: 3 },
+  splitFlap: { width: 3, height: 2 },
 };

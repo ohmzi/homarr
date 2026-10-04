@@ -71,6 +71,7 @@ import type * as wazuhTopList from "./wazuh-top-list";
 import type * as wazuhVulnerabilities from "./wazuh-vulnerabilities";
 import type * as wazuhFim from "./wazuh-fim";
 import type * as wazuhAuthFailures from "./wazuh-auth-failures";
+import type * as splitFlap from "./split-flap";
 
 // Keep these imports explicit so Next.js and Turbopack can discover every widget
 // module without loading any widget definition or component eagerly.
@@ -146,6 +147,7 @@ export const widgetModuleLoaders = {
   wazuhVulnerabilities: () => import("./wazuh-vulnerabilities"),
   wazuhFim: () => import("./wazuh-fim"),
   wazuhAuthFailures: () => import("./wazuh-auth-failures"),
+  splitFlap: () => import("./split-flap"),
 } satisfies { [TKind in WidgetKind]: () => Promise<WidgetImports[TKind]> };
 
 export type WidgetImports = {
@@ -220,6 +222,7 @@ export type WidgetImports = {
   wazuhVulnerabilities: typeof wazuhVulnerabilities;
   wazuhFim: typeof wazuhFim;
   wazuhAuthFailures: typeof wazuhAuthFailures;
+  splitFlap: typeof splitFlap;
 };
 
 type WidgetComponentLoaders = {
@@ -301,6 +304,7 @@ export const widgetComponentLoaders = {
   wazuhVulnerabilities: () => import("./wazuh-vulnerabilities/component"),
   wazuhFim: () => import("./wazuh-fim/component"),
   wazuhAuthFailures: () => import("./wazuh-auth-failures/component"),
+  splitFlap: () => import("./split-flap/component"),
 } satisfies WidgetComponentLoaders;
 
 export type WidgetImportKey = keyof WidgetImports;

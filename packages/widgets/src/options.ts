@@ -168,6 +168,11 @@ const optionsFactory = {
     withDescription: input?.withDescription ?? false,
     validate: input?.validate,
   }),
+  color: (input?: CommonInput<string>) => ({
+    type: "color" as const,
+    defaultValue: input?.defaultValue ?? "#ffffff",
+    withDescription: input?.withDescription ?? false,
+  }),
   anchorNote: (input?: AnchorNoteInput) => ({
     type: "anchorNote" as const,
     defaultValue: input?.defaultValue ?? "",

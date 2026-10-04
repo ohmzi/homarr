@@ -2215,6 +2215,141 @@
     }
   },
   "widget": {
+    "splitFlap": {
+  "name": "Split-flap board",
+  "description": "Rolls a split-flap display over on load and settles on three rows you choose: Homarr values, your own text, or a figure read from another widget on this board.",
+  "option": {
+    "theme": {
+      "label": "Background",
+      "description": "The board itself: its flaps, housing and frame. Auto follows the light or dark mode Homarr is showing.",
+      "options": {
+        "auto": "Match Homarr",
+        "light": "Light board",
+        "dark": "Dark board",
+        "solari": "Solari amber",
+        "customLight": "Your own light board",
+        "customDark": "Your own dark board"
+      }
+    },
+    "speed": {
+      "label": "Flip speed",
+      "options": {
+        "authentic": "Authentic - every flap of the drum",
+        "fast": "Fast - a short spin",
+        "gentle": "Gentle - a slow short spin"
+      }
+    },
+    "timeFormat": {
+      "label": "Time format",
+      "options": {
+        "12h": "12-hour",
+        "24h": "24-hour"
+      }
+    },
+    "liveTime": {
+      "label": "Live clock",
+      "description": "Flip the time forward every minute instead of settling once when the page loads."
+    },
+    "source": {
+      "label": "Row content",
+      "options": {
+        "blank": "Nothing",
+        "boardName": "Board name",
+        "boardLayout": "Layout name",
+        "userName": "User name",
+        "date": "Date",
+        "time": "Time",
+        "weekday": "Weekday",
+        "text": "Your own text",
+        "widget": "A widget on this board"
+      }
+    },
+    "row1Source": {
+      "label": "Top row"
+    },
+    "row1Text": {
+      "label": "Top row text"
+    },
+    "row1Widget": {
+      "label": "Top row widget",
+      "description": "A widget already on this board. Its own settings and integration are used, so there is nothing to configure here."
+    },
+    "row1Value": {
+      "label": "Top row figure",
+      "description": "Which figure to print. Pick a widget first."
+    },
+    "row2Source": {
+      "label": "Middle row"
+    },
+    "row2Text": {
+      "label": "Middle row text"
+    },
+    "row2Widget": {
+      "label": "Middle row widget",
+      "description": "A widget already on this board. Its own settings and integration are used, so there is nothing to configure here."
+    },
+    "row2Value": {
+      "label": "Middle row figure",
+      "description": "Which figure to print. Pick a widget first."
+    },
+    "row3Source": {
+      "label": "Bottom row"
+    },
+    "row3Text": {
+      "label": "Bottom row text"
+    },
+    "row3Widget": {
+      "label": "Bottom row widget",
+      "description": "A widget already on this board. Its own settings and integration are used, so there is nothing to configure here."
+    },
+    "row3Value": {
+      "label": "Bottom row figure",
+      "description": "Which figure to print. Pick a widget first."
+    },
+    "glyph": {
+      "label": "Text colour",
+      "description": "Rainbow gives every flap its own colour, shaded to stay readable on this board.",
+      "options": {
+        "standard": "Standard",
+        "rainbow": "Rainbow",
+        "custom": "Your own colour"
+      }
+    },
+    "glyphColor": {
+      "label": "Text colour picker"
+    },
+    "customLightColor": {
+      "label": "Light board color",
+      "description": "Every highlight, shadow, frame and housing shade is mixed from this one color to keep the flaps looking three-dimensional."
+    },
+    "customDarkColor": {
+      "label": "Dark board color",
+      "description": "Every highlight, shadow, frame and housing shade is mixed from this one color to keep the flaps looking three-dimensional."
+    }
+  },
+  "metric": {
+    "cpu": "CPU",
+    "memory": "Memory",
+    "load": "Load average",
+    "uptime": "Uptime",
+    "temperature": "Temperature",
+    "feelsLike": "Feels like",
+    "humidity": "Humidity",
+    "wind": "Wind",
+    "condition": "Conditions",
+    "monitorsUp": "Monitors up",
+    "monitorsDown": "Monitors down",
+    "uptimePercent": "Uptime",
+    "active": "Downloading",
+    "completed": "Completed",
+    "downSpeed": "Download speed",
+    "streams": "Streams",
+    "pending": "Pending requests",
+    "approved": "Approved requests",
+    "available": "Available requests",
+    "upcoming": "Upcoming releases"
+  }
+},
     "tdayTasks": {
       "name": "Tday Tasks",
       "description": "Displays your Tday tasks for a chosen view and lets you complete or add tasks.",

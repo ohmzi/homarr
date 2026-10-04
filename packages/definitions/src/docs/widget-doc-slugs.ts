@@ -72,4 +72,5 @@ export const widgetDocSlugs = {
   wazuhVulnerabilities: null,
   wazuhFim: null,
   wazuhAuthFailures: null,
+  splitFlap: null,
 } satisfies Record<WidgetKind, string | null>;
