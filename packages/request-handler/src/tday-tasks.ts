@@ -1,5 +1,5 @@
 import type { TdayTask, TdayTaskView } from "@homarr/integrations";
-import { createIntegrationAsync, parseTdayListSelection } from "@homarr/integrations";
+import { createIntegrationAsync } from "@homarr/integrations";
 
 import { createIntegrationRequestHandler } from "./lib/integration-request-handler";
 
@@ -10,8 +10,8 @@ export const tdayTasksRequestHandler = createIntegrationRequestHandler<
 >({
   async requestAsync(integration, input) {
     const instance = await createIntegrationAsync(integration);
-    // `listId` is the widget option's encoded selection; an unreadable one simply falls back to
-    // the view rather than failing the widget.
-    return instance.getTasksAsync(input.view, parseTdayListSelection(input.listId));
+    // `listId` is the widget option's encoded selection; the integration reads it back, and an
+    // unreadable one falls back to the view rather than failing the widget.
+    return instance.getTasksAsync(input.view, input.listId);
   },
 });

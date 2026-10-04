@@ -8,6 +8,7 @@ import { TestConnectionError } from "../base/test-connection/test-connection-err
 import type { TestingResult } from "../base/test-connection/test-connection-service";
 import {
   encodeTdayListSelection,
+  parseTdayListSelection,
   tdayFloatersResponseSchema,
   tdayListsResponseSchema,
   tdaySessionResponseSchema,
@@ -16,7 +17,6 @@ import {
 import type {
   TdayList,
   TdayListOption,
-  TdayListSelection,
   TdayPriority,
   TdayTask,
   TdayTaskKind,
@@ -44,11 +44,14 @@ export class TdayIntegration extends Integration {
    * - overdue: dated todos whose due time has passed
    * - floater: incomplete floaters (no due date)
    *
-   * With a [selection], the view is set aside and the whole of that one list is returned instead —
-   * every open task in it, whatever day each is due, which is what a widget pointed at "Groceries"
-   * is asking for. The list's own kind decides which namespace to read.
+   * With a [listId] — an encoded selection (`"todo:<id>"`, see [encodeTdayListSelection]) — the
+   * view is set aside and the whole of that one list is returned instead, because that is what a
+   * widget pointed at "Groceries" is asking for: every open task in it, whatever day each is due.
+   * The list's own kind decides which namespace to read. An unreadable value falls back to the
+   * view rather than failing the widget.
    */
-  public async getTasksAsync(view: TdayTaskView, selection?: TdayListSelection | null): Promise<TdayTask[]> {
+  public async getTasksAsync(view: TdayTaskView, listId?: string | null): Promise<TdayTask[]> {
+    const selection = parseTdayListSelection(listId);
     // A selection's lists come from its own kind's namespace, not the view's.
     const listNamespace: TdayTaskView = selection ? (selection.kind === "floater" ? "floater" : "today") : view;
     const listMetaById = new Map((await this.getListsAsync(listNamespace)).map((list) => [list.id, list]));
@@ -111,15 +114,7 @@ export class TdayIntegration extends Integration {
         }));
     }
 
-    const mapTodo = (todo: {
-      id: string;
-      title: string;
-      priority: string;
-      due?: string | null;
-      instanceDate?: string | null;
-      completed: boolean;
-      listID?: string | null;
-    }) => ({
+    const mapTodo = (todo: { id: string; title: string; priority: string; due?: string | null; instanceDate?: string | null; completed: boolean; listID?: string | null }) => ({
       id: todo.id,
       title: todo.title,
       priority: todo.priority,
@@ -258,10 +253,7 @@ export class TdayIntegration extends Integration {
       titles.map((title) =>
         view === "floater"
           ? this.requestAsync("/api/floater", { method: "POST", body: { title, priority, ...listField } })
-          : this.requestAsync("/api/todo", {
-              method: "POST",
-              body: { title, priority, due: resolvedDue, ...listField },
-            }),
+          : this.requestAsync("/api/todo", { method: "POST", body: { title, priority, due: resolvedDue, ...listField } }),
       ),
     );
 
