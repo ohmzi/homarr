@@ -129,8 +129,13 @@ export default function SplitFlapWidget({ options }: WidgetComponentProps<"split
   // Joined then split so the lines keep one identity while the text is unchanged: a poll
   // returning the same figure must not re-run the board effect.
   const rowTextsKey = rowTexts.join("\u0000");
-  const columns = useMemo(() => getSplitFlapColumns(rowTextsKey.split("\u0000")), [rowTextsKey]);
-  const lines = useMemo(() => buildSplitFlapContent(rowTextsKey.split("\u0000")), [rowTextsKey]);
+  // Measured from the built board lines, not the raw rows: the third row may carry several
+  // lines, and measuring the whole run as one would size the board for a line that is never
+  // printed on its own.
+  const { lines, columns } = useMemo(() => {
+    const built = buildSplitFlapContent(rowTextsKey.split("\u0000"));
+    return { lines: built, columns: getSplitFlapColumns(built) };
+  }, [rowTextsKey]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const boardRef = useRef<FlapBoard | null>(null);
