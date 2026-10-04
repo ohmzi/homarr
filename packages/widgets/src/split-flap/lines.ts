@@ -5,8 +5,15 @@
 
 import { textToCells } from "./engine/charset";
 
-/** The board always shows five rows of flaps: content, blank, content, blank, content. */
-export const splitFlapRows = 5;
+/**
+ * Board lines the third row may fill: a fun line when all is well, or the three heaviest
+ * consumers when it is not. The area keeps its height either way, so the board does not
+ * change shape between the two.
+ */
+export const splitFlapAreaLines = 3;
+
+/** The board lines, in order: two rows with a blank between, a blank, then the area. */
+export const splitFlapRows = 4 + splitFlapAreaLines;
 export const splitFlapGridRows = splitFlapRows + 2;
 export const splitFlapMinColumns = 12;
 export const splitFlapMaxColumns = 40;
@@ -14,11 +21,16 @@ export const splitFlapMaxColumns = 40;
 const linePadding = 2;
 
 /**
- * The five rows, unpadded: the content rows with a blank between each. The board centres
- * them and fills the rest of the grid with blanks.
+ * The board lines: the first two rows with a blank between them, a blank, then the third
+ * row's lines. A row may carry several lines separated by "\n"; the area keeps its height
+ * whatever it holds, so a one-line fun row leaves the rest blank rather than shifting the
+ * rows above it.
  */
-export const buildSplitFlapContent = (rows: readonly string[]): string[] =>
-  rows.flatMap((row, index) => (index === 0 ? [row] : ["", row]));
+export const buildSplitFlapContent = (rows: readonly string[]): string[] => {
+  const [first = "", second = "", ...rest] = rows;
+  const area = rest.flatMap((row) => row.split("\n")).slice(0, splitFlapAreaLines);
+  return [first, "", second, "", ...Array.from({ length: splitFlapAreaLines }, (_, index) => area[index] ?? "")];
+};
 
 /** The narrowest board the content fits on, so nothing is cut. */
 export const getSplitFlapColumns = (rows: readonly string[]): number => {

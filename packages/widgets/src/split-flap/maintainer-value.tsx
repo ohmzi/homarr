@@ -1,17 +1,17 @@
 "use client";
 
-// Answers one maintainer row: the greeting needs only the client, the health and heaviest
-// rows read the maintainer service through one shared query, so both rows cost a single
-// request. Like the widget-backed adapters it renders nothing and reports its text up.
+// Answers one maintainer row: the greeting needs only the client, the status and the fun
+// row read the maintainer service through one shared query, so they cost a single request.
+// Like the widget-backed adapters it renders nothing and reports its text up.
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 import { clientApi } from "@homarr/api/client";
 import { useSession } from "@homarr/auth/client";
 
 import { useWidgetNow } from "../common/use-widget-now";
 import { splitFlapMaxColumns } from "./lines";
-import { greetingText, healthText, heaviestText } from "./maintainer";
+import { funText, greetingText, healthText, pickQuote } from "./maintainer";
 
 export interface SplitFlapMaintainerProps {
   metric: string;
@@ -24,8 +24,11 @@ export interface SplitFlapMaintainerProps {
 export const SplitFlapMaintainer = ({ metric, url, name, onValue }: SplitFlapMaintainerProps) => {
   const now = useWidgetNow("minute");
   const session = useSession();
-  const needsService = metric === "health" || metric === "heaviest";
+  const needsService = metric === "health" || metric === "fun";
   const { data, isPending } = clientApi.widget.splitFlap.getMaintainer.useQuery({ url }, { enabled: needsService });
+  // Drawn once per mount, so the fun line changes when the board is opened and not on
+  // every poll, which would spin the flaps for no reason.
+  const quote = useMemo(() => pickQuote(), []);
 
   let text: string | null = null;
   if (metric === "greeting") {
@@ -33,8 +36,8 @@ export const SplitFlapMaintainer = ({ metric, url, name, onValue }: SplitFlapMai
   } else if (metric === "health") {
     // Blank while the first answer is in flight; NO DATA once it has failed or omitted a level.
     text = isPending ? null : healthText(data?.level ?? null);
-  } else if (metric === "heaviest") {
-    text = isPending ? null : heaviestText(data?.topName ?? null, data?.topSize ?? null, splitFlapMaxColumns);
+  } else if (metric === "fun") {
+    text = isPending ? null : funText(data?.level ?? null, data?.tops ?? [], quote, splitFlapMaxColumns);
   }
 
   useEffect(() => {

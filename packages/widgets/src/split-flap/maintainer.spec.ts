@@ -1,7 +1,16 @@
 import { describe, expect, test } from "vitest";
 
-import { HEALTH_GLYPHS, STATUS_GLYPHS, textToCells } from "./engine/charset";
-import { greetingText, healthText, heaviestText, splitFlapNoData } from "./maintainer";
+import { HEALTH_GLYPHS, STATUS_GLYPHS, boardText, textToCells } from "./engine/charset";
+import { splitFlapMaxColumns } from "./lines";
+import {
+  funText,
+  greetingText,
+  healthText,
+  pickQuote,
+  rankedHeaviestText,
+  splitFlapNoData,
+  splitFlapQuotes,
+} from "./maintainer";
 
 const at = (hour: number) => new Date(2026, 0, 1, hour, 30);
 
@@ -43,22 +52,60 @@ describe("healthText", () => {
   });
 });
 
-describe("heaviestText", () => {
-  test("prints the name, uppercased, with the size when both fit", () => {
-    expect(heaviestText("comfyui", "8.5 GiB", 40)).toBe("COMFYUI 8.5 GIB");
+describe("rankedHeaviestText", () => {
+  const tops = [
+    { name: "comfyui", size: "7.9 GiB" },
+    { name: "immich_machine_learning", size: "1.2 GiB" },
+    { name: "tunarr-host-net", size: "1.1 GiB" },
+  ];
+
+  test("numbers the consumers, heaviest first, one line each", () => {
+    expect(rankedHeaviestText(tops, splitFlapMaxColumns)).toBe(
+      "1 COMFYUI 7.9 GIB\n2 IMMICH_MACHINE_LEARNING 1.2 GIB\n3 TUNARR-HOST-NET 1.1 GIB",
+    );
   });
 
-  test("drops the size when the pair would not fit the board", () => {
-    expect(heaviestText("a-very-long-container-name", "8.5 GiB", 12)).toBe("A-VERY-LONG-CONTAINER-NAME");
+  test("drops the size from a line that would not fit the board", () => {
+    expect(rankedHeaviestText(tops, 18)).toBe("1 COMFYUI 7.9 GIB\n2 IMMICH_MACHINE_LEARNING\n3 TUNARR-HOST-NET");
   });
 
-  test("prints the name alone when no size came back", () => {
-    expect(heaviestText("comfyui", null, 40)).toBe("COMFYUI");
+  test("skips a consumer with no name", () => {
+    expect(rankedHeaviestText([{ name: null, size: "1 GIB" }], splitFlapMaxColumns)).toBe("");
+  });
+});
+
+describe("funText", () => {
+  const tops = [{ name: "comfyui", size: "7.9 GiB" }];
+
+  test("prints the fun line when healthy", () => {
+    expect(funText("ok", tops, "SHIP IT", splitFlapMaxColumns)).toBe("SHIP IT");
   });
 
-  test("falls back to NO DATA without a name", () => {
-    expect(heaviestText("", "8.5 GiB", 40)).toBe(splitFlapNoData);
-    expect(heaviestText(undefined, undefined, 40)).toBe(splitFlapNoData);
+  test("lists the heaviest consumers when not healthy", () => {
+    expect(funText("warn", tops, "SHIP IT", splitFlapMaxColumns)).toBe("1 COMFYUI 7.9 GIB");
+    expect(funText("crit", tops, "SHIP IT", splitFlapMaxColumns)).toBe("1 COMFYUI 7.9 GIB");
+  });
+
+  test("falls back to NO DATA when the level is unknown or nothing is heavy", () => {
+    expect(funText("ok", [], "SHIP IT", splitFlapMaxColumns)).toBe("SHIP IT");
+    expect(funText("warn", [], "SHIP IT", splitFlapMaxColumns)).toBe(splitFlapNoData);
+    expect(funText(undefined, tops, "SHIP IT", splitFlapMaxColumns)).toBe("1 COMFYUI 7.9 GIB");
+  });
+});
+
+describe("pickQuote", () => {
+  test("draws within the pool", () => {
+    expect(pickQuote(() => 0)).toBe(splitFlapQuotes[0]);
+    expect(pickQuote(() => 0.999)).toBe(splitFlapQuotes.at(-1));
+  });
+
+  test("every fun line prints whole and fits the board", () => {
+    for (const quote of splitFlapQuotes) {
+      // boardText folds anything the drum cannot carry to a blank, so an exact match means
+      // every character prints; the board pads by two, and forty is the widest it goes.
+      expect(boardText(quote)).toBe(quote);
+      expect(textToCells(quote).length).toBeLessThanOrEqual(splitFlapMaxColumns - 2);
+    }
   });
 });
 

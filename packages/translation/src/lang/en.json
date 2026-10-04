@@ -2358,8 +2358,8 @@
     "available": "Available requests",
     "upcoming": "Upcoming releases",
     "greeting": "Greeting",
-    "health": "System health",
-    "heaviest": "Heaviest application"
+    "health": "Status line",
+    "fun": "Fun line"
   }
 },
     "tdayTasks": {

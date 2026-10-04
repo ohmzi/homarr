@@ -5,7 +5,7 @@
 
 import { HEALTH_GLYPHS, textToCells } from "./engine/charset";
 
-export const splitFlapMaintainerMetrics = ["greeting", "health", "heaviest"] as const;
+export const splitFlapMaintainerMetrics = ["greeting", "health", "fun"] as const;
 export type SplitFlapMaintainerMetric = (typeof splitFlapMaintainerMetrics)[number];
 
 export const isMaintainerMetric = (value: unknown): value is SplitFlapMaintainerMetric =>
@@ -15,6 +15,11 @@ const healthWords: Record<string, string> = { ok: "HEALTHY", warn: "WARNING", cr
 
 /** What a row prints when the service has nothing to say. */
 export const splitFlapNoData = "NO DATA";
+
+export interface SplitFlapTopConsumer {
+  name: string | null;
+  size: string | null;
+}
 
 /** Good morning / afternoon / evening, with the viewer's name when there is one. */
 export const greetingText = (now: Date | null, name: string | null): string => {
@@ -33,12 +38,65 @@ export const healthText = (level: unknown): string => {
   return glyph === undefined || word === undefined ? splitFlapNoData : `${glyph} ${word}`;
 };
 
-/** The heaviest consumer's name, with its size when both fit the board. */
-export const heaviestText = (name: unknown, size: unknown, maxColumns: number): string => {
-  const trimmed = typeof name === "string" ? name.trim() : "";
-  if (trimmed === "") return splitFlapNoData;
-  const base = trimmed.toUpperCase();
-  const suffix = typeof size === "string" ? size.trim().toUpperCase() : "";
-  if (suffix !== "" && textToCells(`${base} ${suffix}`).length <= maxColumns) return `${base} ${suffix}`;
-  return base;
+// Fun lines for a healthy board: server-flavoured, motivational, or a film line. All are
+// uppercase and within the drum's character set, so they print rather than blank out.
+export const splitFlapQuotes = [
+  "MAY THE FORCE BE WITH YOU",
+  "I'LL BE BACK",
+  "TO INFINITY AND BEYOND",
+  "LIVE LONG AND PROSPER",
+  "DO OR DO NOT, THERE IS NO TRY",
+  "TURN IT OFF AND ON AGAIN",
+  "PLOT TWIST: IT WAS DNS",
+  "IT WORKS ON MY MACHINE",
+  "KEEP CALM AND CARRY ON",
+  "ALL SYSTEMS NOMINAL",
+  "ZERO DOWNTIME, ZERO DRAMA",
+  "THE CAKE IS A LIE",
+  "WINTER IS COMING",
+  "CACHE ME IF YOU CAN",
+  "HOUSTON, WE HAVE UPTIME",
+  "SHIP IT",
+  "GOOD VIBES ONLY",
+  "STAY CURIOUS",
+  "TALK IS CHEAP, SHOW ME THE CODE",
+  "NO PLACE LIKE 127.0.0.1",
+  "THE SERVER IS CALM TODAY",
+  "SLEEP IS FOR THE WEAK",
+] as const;
+
+/** Draws one fun line. Called once per board load, so the board settles on a single line. */
+export const pickQuote = (random: () => number = Math.random): string =>
+  splitFlapQuotes[Math.floor(random() * splitFlapQuotes.length)] ?? splitFlapQuotes[0];
+
+const rankedLine = (top: SplitFlapTopConsumer, rank: number, maxColumns: number): string | null => {
+  const name = typeof top.name === "string" ? top.name.trim().toUpperCase() : "";
+  if (name === "") return null;
+  const prefix = `${rank} `;
+  const size = typeof top.size === "string" ? top.size.trim().toUpperCase() : "";
+  const withSize = size === "" ? null : `${prefix}${name} ${size}`;
+  if (withSize !== null && textToCells(withSize).length <= maxColumns) return withSize;
+  return `${prefix}${name}`;
+};
+
+/** The heaviest consumers as board lines, heaviest first, one line each. */
+export const rankedHeaviestText = (tops: readonly SplitFlapTopConsumer[], maxColumns: number): string =>
+  tops
+    .map((top, index) => rankedLine(top, index + 1, maxColumns))
+    .filter((line): line is string => line !== null)
+    .join("\n");
+
+/**
+ * The third row: a fun line when the system is healthy, and the heaviest consumers when it
+ * is not, so a warning or critical board says what is actually carrying the load.
+ */
+export const funText = (
+  level: unknown,
+  tops: readonly SplitFlapTopConsumer[],
+  quote: string,
+  maxColumns: number,
+): string => {
+  if (level === "ok") return quote;
+  const ranked = rankedHeaviestText(tops, maxColumns);
+  return ranked === "" ? splitFlapNoData : ranked;
 };

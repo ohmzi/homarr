@@ -49,11 +49,13 @@ export const splitFlapRouter = createTRPCRouter({
       readRouteAsync(input.url, "/guard"),
     ]);
 
-    const top = isRecord(guard) && Array.isArray(guard.top) ? guard.top[0] : null;
-    return {
-      level: readString(overview, "level"),
-      topName: readString(top, "n"),
-      topSize: readString(top, "h"),
-    };
+    // The three heaviest, heaviest first: the board prints them under the status.
+    const list = isRecord(guard) && Array.isArray(guard.top) ? guard.top : [];
+    const tops = list
+      .filter(isRecord)
+      .slice(0, 3)
+      .map((entry) => ({ name: readString(entry, "n"), size: readString(entry, "h") }));
+
+    return { level: readString(overview, "level"), tops };
   }),
 });
