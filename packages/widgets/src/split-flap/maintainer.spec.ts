@@ -59,14 +59,14 @@ describe("rankedHeaviestText", () => {
     { name: "tunarr-host-net", size: "1.1 GiB" },
   ];
 
-  test("numbers the consumers, heaviest first, one line each", () => {
+  test("lists the consumers heaviest first, one line each, with no rank number", () => {
     expect(rankedHeaviestText(tops, splitFlapMaxColumns)).toBe(
-      "1 COMFYUI 7.9 GIB\n2 IMMICH_MACHINE_LEARNING 1.2 GIB\n3 TUNARR-HOST-NET 1.1 GIB",
+      "COMFYUI 7.9 GIB\nIMMICH_MACHINE_LEARNING 1.2 GIB\nTUNARR-HOST-NET 1.1 GIB",
     );
   });
 
   test("drops the size from a line that would not fit the board", () => {
-    expect(rankedHeaviestText(tops, 18)).toBe("1 COMFYUI 7.9 GIB\n2 IMMICH_MACHINE_LEARNING\n3 TUNARR-HOST-NET");
+    expect(rankedHeaviestText(tops, 18)).toBe("COMFYUI 7.9 GIB\nIMMICH_MACHINE_LEARNING\nTUNARR-HOST-NET");
   });
 
   test("skips a consumer with no name", () => {
@@ -82,14 +82,14 @@ describe("funText", () => {
   });
 
   test("lists the heaviest consumers when not healthy", () => {
-    expect(funText("warn", tops, "SHIP IT", splitFlapMaxColumns)).toBe("1 COMFYUI 7.9 GIB");
-    expect(funText("crit", tops, "SHIP IT", splitFlapMaxColumns)).toBe("1 COMFYUI 7.9 GIB");
+    expect(funText("warn", tops, "SHIP IT", splitFlapMaxColumns)).toBe("COMFYUI 7.9 GIB");
+    expect(funText("crit", tops, "SHIP IT", splitFlapMaxColumns)).toBe("COMFYUI 7.9 GIB");
   });
 
   test("falls back to NO DATA when the level is unknown or nothing is heavy", () => {
     expect(funText("ok", [], "SHIP IT", splitFlapMaxColumns)).toBe("SHIP IT");
     expect(funText("warn", [], "SHIP IT", splitFlapMaxColumns)).toBe(splitFlapNoData);
-    expect(funText(undefined, tops, "SHIP IT", splitFlapMaxColumns)).toBe("1 COMFYUI 7.9 GIB");
+    expect(funText(undefined, tops, "SHIP IT", splitFlapMaxColumns)).toBe("COMFYUI 7.9 GIB");
   });
 });
 

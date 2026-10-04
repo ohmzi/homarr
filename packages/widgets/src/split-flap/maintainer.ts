@@ -188,20 +188,21 @@ export const splitFlapQuotes = [
 export const pickQuote = (random: () => number = Math.random): string =>
   splitFlapQuotes[Math.floor(random() * splitFlapQuotes.length)] ?? splitFlapQuotes[0];
 
-const rankedLine = (top: SplitFlapTopConsumer, rank: number, maxColumns: number): string | null => {
+// No rank number: the order already says which is heaviest, and the prefix cost a flap on
+// every line.
+const rankedLine = (top: SplitFlapTopConsumer, maxColumns: number): string | null => {
   const name = typeof top.name === "string" ? top.name.trim().toUpperCase() : "";
   if (name === "") return null;
-  const prefix = `${rank} `;
   const size = typeof top.size === "string" ? top.size.trim().toUpperCase() : "";
-  const withSize = size === "" ? null : `${prefix}${name} ${size}`;
+  const withSize = size === "" ? null : `${name} ${size}`;
   if (withSize !== null && textToCells(withSize).length <= maxColumns) return withSize;
-  return `${prefix}${name}`;
+  return name;
 };
 
 /** The heaviest consumers as board lines, heaviest first, one line each. */
 export const rankedHeaviestText = (tops: readonly SplitFlapTopConsumer[], maxColumns: number): string =>
   tops
-    .map((top, index) => rankedLine(top, index + 1, maxColumns))
+    .map((top) => rankedLine(top, maxColumns))
     .filter((line): line is string => line !== null)
     .join("\n");
 
