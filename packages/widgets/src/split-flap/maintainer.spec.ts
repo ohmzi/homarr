@@ -99,6 +99,10 @@ describe("pickQuote", () => {
     expect(pickQuote(() => 0.999)).toBe(splitFlapQuotes.at(-1));
   });
 
+  test("has no duplicates", () => {
+    expect(new Set(splitFlapQuotes).size).toBe(splitFlapQuotes.length);
+  });
+
   test("every fun line prints whole and fits the board", () => {
     for (const quote of splitFlapQuotes) {
       // boardText folds anything the drum cannot carry to a blank, so an exact match means
