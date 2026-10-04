@@ -105,6 +105,7 @@ export class TdayIntegration extends Integration {
       name: list.name,
       iconKey: list.iconKey ?? null,
       color: list.color ?? null,
+      defaultPriority: list.defaultPriority ?? null,
     }));
   }
 
