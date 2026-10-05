@@ -61,12 +61,22 @@ describe("rankedHeaviestText", () => {
 
   test("lists the consumers heaviest first, one line each, with no rank number", () => {
     expect(rankedHeaviestText(tops, splitFlapMaxColumns)).toBe(
-      "COMFYUI 7.9 GIB\nIMMICH_MACHINE_LEARNING 1.2 GIB\nTUNARR-HOST-NET 1.1 GIB",
+      "COMFYUI 7.9 GIB\nIMMICH MACHINE 1.2 GIB\nTUNARR HOST 1.1 GIB",
     );
   });
 
+  test("keeps only the first two words of a name", () => {
+    // immich_machine_learning is the reason: three words is more than the board needs to name the app.
+    expect(rankedHeaviestText([{ name: "immich_machine_learning", size: null }], splitFlapMaxColumns)).toBe(
+      "IMMICH MACHINE",
+    );
+    expect(rankedHeaviestText([{ name: "a-b-c-d", size: null }], splitFlapMaxColumns)).toBe("A B");
+    expect(rankedHeaviestText([{ name: "solo", size: null }], splitFlapMaxColumns)).toBe("SOLO");
+    expect(rankedHeaviestText([{ name: "  spaced___out  ", size: null }], splitFlapMaxColumns)).toBe("SPACED OUT");
+  });
+
   test("drops the size from a line that would not fit the board", () => {
-    expect(rankedHeaviestText(tops, 18)).toBe("COMFYUI 7.9 GIB\nIMMICH_MACHINE_LEARNING\nTUNARR-HOST-NET");
+    expect(rankedHeaviestText(tops, 18)).toBe("COMFYUI 7.9 GIB\nIMMICH MACHINE\nTUNARR HOST");
   });
 
   test("skips a consumer with no name", () => {

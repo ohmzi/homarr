@@ -187,10 +187,20 @@ export const splitFlapQuotes = [
 export const pickQuote = (random: () => number = Math.random): string =>
   splitFlapQuotes[Math.floor(random() * splitFlapQuotes.length)] ?? splitFlapQuotes[0];
 
+// Enough of a container's name to recognise it: immich_machine_learning prints as IMMICH MACHINE. The separators
+// become spaces — the drum carries no underscore, so they would print as blanks anyway — and two words is what
+// fits before a name starts costing the board its width.
+const shortName = (name: string): string =>
+  name
+    .split(/[\s_-]+/)
+    .filter((part) => part !== "")
+    .slice(0, 2)
+    .join(" ");
+
 // No rank number: the order already says which is heaviest, and the prefix cost a flap on
 // every line.
 const rankedLine = (top: SplitFlapTopConsumer, maxColumns: number): string | null => {
-  const name = typeof top.name === "string" ? top.name.trim().toUpperCase() : "";
+  const name = typeof top.name === "string" ? shortName(top.name.trim().toUpperCase()) : "";
   if (name === "") return null;
   const size = typeof top.size === "string" ? top.size.trim().toUpperCase() : "";
   const withSize = size === "" ? null : `${name} ${size}`;
