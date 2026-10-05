@@ -7,9 +7,9 @@ import {
   greetingText,
   healthText,
   pickQuote,
-  rankedHeaviestText,
   splitFlapNoData,
   splitFlapQuotes,
+  unhealthyText,
 } from "./maintainer";
 
 const at = (hour: number) => new Date(2026, 0, 1, hour, 30);
@@ -39,67 +39,52 @@ describe("greetingText", () => {
 });
 
 describe("healthText", () => {
-  test("maps each level to its glyph and word", () => {
+  test("maps each pipeline level to its glyph and word", () => {
     expect(healthText("ok")).toBe(`${HEALTH_GLYPHS.ok} HEALTHY`);
-    expect(healthText("warn")).toBe(`${HEALTH_GLYPHS.warn} WARNING`);
-    expect(healthText("crit")).toBe(`${HEALTH_GLYPHS.crit} CRITICAL`);
+    expect(healthText("degraded")).toBe(`${HEALTH_GLYPHS.degraded} DEGRADED`);
+    expect(healthText("down")).toBe(`${HEALTH_GLYPHS.down} DOWN`);
   });
 
   test("falls back to NO DATA for anything else", () => {
-    expect(healthText("paused")).toBe(splitFlapNoData);
+    expect(healthText("warn")).toBe(splitFlapNoData); // the host's own level, not the pipeline's
     expect(healthText(undefined)).toBe(splitFlapNoData);
     expect(healthText(null)).toBe(splitFlapNoData);
   });
 });
 
-describe("rankedHeaviestText", () => {
-  const tops = [
-    { name: "comfyui", size: "7.9 GiB" },
-    { name: "immich_machine_learning", size: "1.2 GiB" },
-    { name: "tunarr-host-net", size: "1.1 GiB" },
+describe("unhealthyText", () => {
+  const parts = [
+    { title: "Runner (check tier)", state: "degraded" },
+    { title: "Live monitor", state: "down" },
   ];
 
-  test("lists the consumers heaviest first, one line each, with no rank number", () => {
-    expect(rankedHeaviestText(tops, splitFlapMaxColumns)).toBe(
-      "COMFYUI 7.9 GIB\nIMMICH MACHINE 1.2 GIB\nTUNARR HOST 1.1 GIB",
-    );
+  test("names the parts that are not healthy, one board line each", () => {
+    // The maintainer's own titles, upper-cased for the drum; parentheses are on it.
+    expect(unhealthyText(parts)).toBe("RUNNER (CHECK TIER)\nLIVE MONITOR");
   });
 
-  test("keeps only the first two words of a name", () => {
-    // immich_machine_learning is the reason: three words is more than the board needs to name the app.
-    expect(rankedHeaviestText([{ name: "immich_machine_learning", size: null }], splitFlapMaxColumns)).toBe(
-      "IMMICH MACHINE",
-    );
-    expect(rankedHeaviestText([{ name: "a-b-c-d", size: null }], splitFlapMaxColumns)).toBe("A B");
-    expect(rankedHeaviestText([{ name: "solo", size: null }], splitFlapMaxColumns)).toBe("SOLO");
-    expect(rankedHeaviestText([{ name: "  spaced___out  ", size: null }], splitFlapMaxColumns)).toBe("SPACED OUT");
-  });
-
-  test("drops the size from a line that would not fit the board", () => {
-    expect(rankedHeaviestText(tops, 18)).toBe("COMFYUI 7.9 GIB\nIMMICH MACHINE\nTUNARR HOST");
-  });
-
-  test("skips a consumer with no name", () => {
-    expect(rankedHeaviestText([{ name: null, size: "1 GIB" }], splitFlapMaxColumns)).toBe("");
+  test("skips a part with no title", () => {
+    expect(unhealthyText([{ title: null, state: "down" }])).toBe("");
   });
 });
 
 describe("funText", () => {
-  const tops = [{ name: "comfyui", size: "7.9 GiB" }];
+  const parts = [{ title: "Runner (check tier)", state: "degraded" }];
 
-  test("prints the fun line when healthy", () => {
-    expect(funText("ok", tops, "SHIP IT", splitFlapMaxColumns)).toBe("SHIP IT");
+  test("prints the fun line while the pipeline is healthy", () => {
+    expect(funText("ok", parts, [], "SHIP IT")).toBe("SHIP IT");
+    expect(funText("ok", [], [], "SHIP IT")).toBe("SHIP IT");
   });
 
-  test("lists the heaviest consumers when not healthy", () => {
-    expect(funText("warn", tops, "SHIP IT", splitFlapMaxColumns)).toBe("COMFYUI 7.9 GIB");
-    expect(funText("crit", tops, "SHIP IT", splitFlapMaxColumns)).toBe("COMFYUI 7.9 GIB");
+  test("names the unhealthy parts when it is not healthy", () => {
+    expect(funText("degraded", parts, [], "SHIP IT")).toBe("RUNNER (CHECK TIER)");
+    expect(funText("down", parts, [], "SHIP IT")).toBe("RUNNER (CHECK TIER)");
   });
 
-  test("falls back to NO DATA when the level is unknown or nothing is heavy", () => {
-    expect(funText("ok", [], "SHIP IT", splitFlapMaxColumns)).toBe("SHIP IT");
-    expect(funText("warn", [], "SHIP IT", splitFlapMaxColumns)).toBe(splitFlapNoData);
-    expect(funText(undefined, tops, "SHIP IT", splitFlapMaxColumns)).toBe("COMFYUI 7.9 GIB");
+  test("falls back to the verdict's reason, then NO DATA", () => {
+    expect(funText("degraded", [], ["self-health data is 1 h old"], "SHIP IT")).toBe("SELF-HEALTH DATA IS 1 H OLD");
+    expect(funText("degraded", [], [], "SHIP IT")).toBe(splitFlapNoData);
+    expect(funText(undefined, [], [], "SHIP IT")).toBe(splitFlapNoData);
   });
 });
 

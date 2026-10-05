@@ -51,8 +51,8 @@ export const STATUS_GLYPHS: Record<string, { shape: "heart" | "pumpkin" | "alert
 
 export const STATUS_GLYPH_KEYS = Object.keys(STATUS_GLYPHS);
 
-/** The glyph a maintainer level prints: healthy, warning, critical. */
-export const HEALTH_GLYPHS = { ok: "", warn: "", crit: "" } as const;
+/** The glyph a monitoring-pipeline level prints: healthy, degraded, down (tasks/self_health's vocabulary). */
+export const HEALTH_GLYPHS = { ok: "", degraded: "", down: "" } as const;
 
 export const isStatusGlyph = (ch: unknown): boolean => typeof ch === "string" && Object.hasOwn(STATUS_GLYPHS, ch);
 

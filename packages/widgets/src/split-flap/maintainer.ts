@@ -3,7 +3,7 @@
 // deliberately literal English, like the other data sources: the drum only carries Latin
 // capitals, so a translated word would print blank on a non-Latin locale.
 
-import { HEALTH_GLYPHS, textToCells } from "./engine/charset";
+import { HEALTH_GLYPHS } from "./engine/charset";
 
 export const splitFlapMaintainerMetrics = ["greeting", "health", "fun"] as const;
 export type SplitFlapMaintainerMetric = (typeof splitFlapMaintainerMetrics)[number];
@@ -11,14 +11,16 @@ export type SplitFlapMaintainerMetric = (typeof splitFlapMaintainerMetrics)[numb
 export const isMaintainerMetric = (value: unknown): value is SplitFlapMaintainerMetric =>
   typeof value === "string" && (splitFlapMaintainerMetrics as readonly string[]).includes(value);
 
-const healthWords: Record<string, string> = { ok: "HEALTHY", warn: "WARNING", crit: "CRITICAL" };
+// The monitoring pipeline's own vocabulary (tasks/self_health): ok | degraded | down.
+const healthWords: Record<string, string> = { ok: "HEALTHY", degraded: "DEGRADED", down: "DOWN" };
 
 /** What a row prints when the service has nothing to say. */
 export const splitFlapNoData = "NO DATA";
 
-export interface SplitFlapTopConsumer {
-  name: string | null;
-  size: string | null;
+/** One part of the monitoring pipeline that is not healthy. */
+export interface SplitFlapPipelinePart {
+  title: string | null;
+  state: string | null;
 }
 
 /** Good morning / afternoon / evening, with the viewer's name when there is one. */
@@ -187,45 +189,33 @@ export const splitFlapQuotes = [
 export const pickQuote = (random: () => number = Math.random): string =>
   splitFlapQuotes[Math.floor(random() * splitFlapQuotes.length)] ?? splitFlapQuotes[0];
 
-// Enough of a container's name to recognise it: immich_machine_learning prints as IMMICH MACHINE. The separators
-// become spaces — the drum carries no underscore, so they would print as blanks anyway — and two words is what
-// fits before a name starts costing the board its width.
-const shortName = (name: string): string =>
-  name
-    .split(/[\s_-]+/)
-    .filter((part) => part !== "")
-    .slice(0, 2)
-    .join(" ");
+const asLine = (value: string): string => value.trim().toUpperCase();
 
-// No rank number: the order already says which is heaviest, and the prefix cost a flap on
-// every line.
-const rankedLine = (top: SplitFlapTopConsumer, maxColumns: number): string | null => {
-  const name = typeof top.name === "string" ? shortName(top.name.trim().toUpperCase()) : "";
-  if (name === "") return null;
-  const size = typeof top.size === "string" ? top.size.trim().toUpperCase() : "";
-  const withSize = size === "" ? null : `${name} ${size}`;
-  if (withSize !== null && textToCells(withSize).length <= maxColumns) return withSize;
-  return name;
-};
-
-/** The heaviest consumers as board lines, heaviest first, one line each. */
-export const rankedHeaviestText = (tops: readonly SplitFlapTopConsumer[], maxColumns: number): string =>
-  tops
-    .map((top) => rankedLine(top, maxColumns))
-    .filter((line): line is string => line !== null)
+/**
+ * The parts of the monitoring pipeline that are not healthy, worst first, one board line each. The maintainer sends
+ * them in its own order and already leaves out anything that is `ok` or `info`; the board's third row holds three
+ * lines, and anything beyond that is on the maintainer's own page.
+ */
+export const unhealthyText = (parts: readonly SplitFlapPipelinePart[]): string =>
+  parts
+    .map((part) => (typeof part.title === "string" ? asLine(part.title) : ""))
+    .filter((line) => line !== "")
     .join("\n");
 
 /**
- * The third row: a fun line when the system is healthy, and the heaviest consumers when it
- * is not, so a warning or critical board says what is actually carrying the load.
+ * The third row: a fun line while the monitoring pipeline is healthy, and the parts that are not when it is not — so a
+ * degraded board names the stage that is broken instead of only saying that something is.
  */
 export const funText = (
   level: unknown,
-  tops: readonly SplitFlapTopConsumer[],
+  parts: readonly SplitFlapPipelinePart[],
+  reasons: readonly string[],
   quote: string,
-  maxColumns: number,
 ): string => {
   if (level === "ok") return quote;
-  const ranked = rankedHeaviestText(tops, maxColumns);
-  return ranked === "" ? splitFlapNoData : ranked;
+  const named = unhealthyText(parts);
+  if (named !== "") return named;
+  // Degraded with no part to name (a stale document, say): the verdict's own reason is the only thing there is.
+  const reason = reasons.find((entry) => entry.trim() !== "");
+  return reason === undefined ? splitFlapNoData : asLine(reason);
 };

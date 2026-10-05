@@ -10,7 +10,6 @@ import { clientApi } from "@homarr/api/client";
 import { useSession } from "@homarr/auth/client";
 
 import { useWidgetNow } from "../common/use-widget-now";
-import { splitFlapMaxColumns } from "./lines";
 import { funText, greetingText, healthText, pickQuote } from "./maintainer";
 
 export interface SplitFlapMaintainerProps {
@@ -25,7 +24,7 @@ export const SplitFlapMaintainer = ({ metric, url, name, onValue }: SplitFlapMai
   const now = useWidgetNow("minute");
   const session = useSession();
   const needsService = metric === "health" || metric === "fun";
-  const { data, isPending } = clientApi.widget.splitFlap.getMaintainer.useQuery({ url }, { enabled: needsService });
+  const { data, isPending } = clientApi.widget.splitFlap.getPipeline.useQuery({ url }, { enabled: needsService });
   // Drawn once per mount, so the fun line changes when the board is opened and not on
   // every poll, which would spin the flaps for no reason.
   const quote = useMemo(() => pickQuote(), []);
@@ -37,7 +36,7 @@ export const SplitFlapMaintainer = ({ metric, url, name, onValue }: SplitFlapMai
     // Blank while the first answer is in flight; NO DATA once it has failed or omitted a level.
     text = isPending ? null : healthText(data?.level ?? null);
   } else if (metric === "fun") {
-    text = isPending ? null : funText(data?.level ?? null, data?.tops ?? [], quote, splitFlapMaxColumns);
+    text = isPending ? null : funText(data?.level ?? null, data?.unhealthy ?? [], data?.reasons ?? [], quote);
   }
 
   useEffect(() => {
