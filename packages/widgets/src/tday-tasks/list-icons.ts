@@ -36,7 +36,6 @@ import {
   Leaf,
   Lightbulb,
   List,
-  type LucideIcon,
   MessageCircle,
   Monitor,
   Music,
@@ -63,6 +62,7 @@ import {
   WalletCards,
   Wine,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 const DEFAULT_LIST_ICON_KEY = "inbox";
 
@@ -153,4 +153,5 @@ const normalizeListIconKey = (iconKey?: string | null) => {
   return listIconMap.has(normalized) ? normalized : DEFAULT_LIST_ICON_KEY;
 };
 
-export const getListIcon = (iconKey?: string | null): LucideIcon => listIconMap.get(normalizeListIconKey(iconKey)) ?? Inbox;
+export const getListIcon = (iconKey?: string | null): LucideIcon =>
+  listIconMap.get(normalizeListIconKey(iconKey)) ?? Inbox;

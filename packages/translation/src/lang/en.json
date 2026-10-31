@@ -1771,6 +1771,7 @@
       "quickAddShortcutHint": "One per line · Ctrl/⌘ + Enter",
       "addPartialFailed": "Failed to add {count} task(s)",
       "priority": "Priority",
+      "priorityLowest": "Low",
       "priorityNormal": "Normal",
       "priorityImportant": "Important",
       "priorityUrgent": "Urgent",
