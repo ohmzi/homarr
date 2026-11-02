@@ -15,10 +15,12 @@ import { SystemResourceCPUChart } from "./chart/cpu-chart";
 import { SystemResourceGPUChart } from "./chart/gpu-chart";
 import { SystemResourceMemoryChart } from "./chart/memory-chart";
 import { NetworkTrafficChart } from "./chart/network-traffic";
+import { SystemResourceUptimeCard } from "./chart/uptime-card";
 
 const COMPACT_HISTORY_SIZE = 15;
 const ADVANCED_HISTORY_SIZE = 60;
 const ALL_SYSTEM_CHARTS = ["cpu", "memory", "gpu", "network"] as const;
+const UPTIME_ROW_HEIGHT = 30;
 
 const ADVANCED_CHART_COLUMN_BREAKPOINTS = [
   { minWidth: 1100, columns: 4 },
@@ -146,6 +148,7 @@ export default function SystemResources({
         integrationName={entry.integrationName}
         items={history}
         hasGpu={entry.healthInfo.gpu.length > 0}
+        uptimeInSeconds={entry.healthInfo.uptime}
         memoryCapacityInBytes={entry.healthInfo.memAvailableInBytes + entry.healthInfo.memUsedInBytes}
         options={options}
         width={availableWidth}
@@ -202,6 +205,7 @@ interface SystemChartsProps {
   integrationName: string;
   items: ChartItem[];
   hasGpu: boolean;
+  uptimeInSeconds: number | undefined;
   memoryCapacityInBytes: number;
   options: WidgetComponentProps<"systemResources">["options"];
   width: number;
@@ -214,6 +218,7 @@ const SystemCharts = ({
   integrationName,
   items,
   hasGpu,
+  uptimeInSeconds,
   memoryCapacityInBytes,
   options,
   width,
@@ -247,6 +252,12 @@ const SystemCharts = ({
         <Text size="sm" fw={600} truncate="end">
           {integrationName}
         </Text>
+      )}
+      {options.showUptime && uptimeInSeconds !== undefined && (
+        // Fixed-height row: the grid below takes the remaining height via flex, so no reservation is needed.
+        <Box h={UPTIME_ROW_HEIGHT} style={{ flexShrink: 0 }}>
+          <SystemResourceUptimeCard uptimeInSeconds={uptimeInSeconds} labelDisplayMode={labelDisplayMode} />
+        </Box>
       )}
       {/* Divide the available height evenly across however many rows chartColumns wraps the
           charts into via CSS grid-auto-rows: 1fr, rather than computing a per-chart pixel height

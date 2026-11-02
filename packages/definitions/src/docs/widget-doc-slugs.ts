@@ -52,6 +52,7 @@ export const widgetDocSlugs = {
   tracearr: "tracearr",
   speedtestTracker: "speedtest-tracker",
   uptimeKuma: "uptime-kuma",
+  uptimeStatus: "uptime-status",
   audioStats: "audio-stats",
   umami: "umami",
   tdayTasks: null,

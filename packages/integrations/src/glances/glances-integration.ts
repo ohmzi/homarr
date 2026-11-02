@@ -52,7 +52,10 @@ export class GlancesIntegration extends Integration implements ISystemHealthMoni
       availablePkgUpdates: 0,
       version: session.version,
       fileSystem: stats.fs.map((fileSystem) => ({
-        deviceName: fileSystem.device_name,
+        // Prefer a human-readable name: the alias set in glances.conf, else the
+        // mount point. Falls back to the raw device, whose /dev/sdX letters are
+        // not stable across reboots.
+        deviceName: fileSystem.alias ?? fileSystem.mnt_point ?? fileSystem.device_name,
         used: `${fileSystem.used}`,
         available: `${fileSystem.free}`,
         percentage: fileSystem.percent,
@@ -165,13 +168,20 @@ const allSchema = z.object({
   }),
   network: z.array(
     z.object({
-      bytes_sent_rate_per_sec: z.number().min(0),
-      bytes_recv_rate_per_sec: z.number().min(0),
+      // A host with heavy container churn constantly gains and loses veth/br-
+      // interfaces. On the first poll after one appears Glances has no rate for
+      // it yet (missing or null), and a strict schema would reject the entire
+      // payload - blanking every widget fed by this integration. Treat an
+      // unusable rate as 0 rather than failing the whole response.
+      bytes_sent_rate_per_sec: z.number().min(0).catch(0),
+      bytes_recv_rate_per_sec: z.number().min(0).catch(0),
     }),
   ),
   fs: z.array(
     z.object({
       device_name: z.string(),
+      mnt_point: z.string(),
+      alias: z.string().optional(),
       used: z.number().min(0),
       free: z.number().min(0),
       percent: z.number().min(0).max(100),

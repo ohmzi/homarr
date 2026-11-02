@@ -20,3 +20,5 @@ Each task exposes:
 ![The scheduled Tasks management page](../img/tasks.png)
 
 Disabling a task stops scheduled runs but does not prevent a manual run.
+
+The **Uptime Sync** task (every 5 minutes) and the **OpenWebUI Probe** task (daily) collect the history shown by the [Uptime Status](../../widgets/uptime-status) widget. The probe does nothing until `OPENWEBUI_EMAIL` and `OPENWEBUI_PASSWORD` are set.

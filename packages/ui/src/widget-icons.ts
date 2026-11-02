@@ -116,6 +116,7 @@ export const widgetCatalogIcons: Record<WidgetKind, TablerIcon> = {
   tracearr: IconActivityHeartbeat,
   speedtestTracker: IconSpeedboat,
   uptimeKuma: IconHeartbeat,
+  uptimeStatus: IconActivityHeartbeat,
   audioStats: IconHeadphones,
   umami: IconChartBar,
   vpn: IconShieldLock,
