@@ -28,6 +28,7 @@ import { useI18n } from "@homarr/translation/client";
 
 import type { WidgetComponentProps } from "../definition";
 import { getListIcon } from "./list-icons";
+import { parseTdayWidgetSelection } from "./selection";
 
 import "./tday-tasks.css";
 
@@ -55,16 +56,18 @@ interface TdayTasksContentProps {
 
 const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => {
   const t = useI18n("widget.tdayTasks");
-  const view = options.view;
-  const scoped = parseScopedList(options.list?.value ?? null);
+  const selection = parseTdayWidgetSelection(options.list?.value);
+  const scoped = selection.type === "list" ? { kind: selection.kind, id: selection.id } : null;
+  // A list borrows its kind's identity: floater lists look like Floater, scheduled lists like Scheduled.
+  const view: TdayTaskView =
+    selection.type === "view" ? selection.view : selection.kind === "floater" ? "floater" : "scheduled";
   // A scoped list decides where new tasks go: a floater list takes floaters, a todo list takes
   // scheduled tasks. Without one, the view does.
   const composerView: TdayTaskView = scoped ? (scoped.kind === "floater" ? "floater" : "today") : view;
 
   const [tasks, { refetch }] = clientApi.widget.tday.getTasks.useSuspenseQuery(
-    // A chosen list wins over the view; the view still decides the sort's default and what the
-    // "+" creates when the composer has no list of its own selected.
-    { integrationId, view, listId: options.list?.value ?? null },
+    // A list selection reads the whole list; a view selection reads that view's bucket.
+    { integrationId, view, listId: selection.type === "list" ? selection.encoded : null },
     {
       // Near real-time: background poll + on focus (Tday has no push channel reachable here).
       refetchOnMount: false,
@@ -517,7 +520,9 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
             aria-hidden
           />
           <Text size="sm" fw={600} truncate className="tday-header-title">
-            {t(`option.view.option.${view}.title`)}
+            {scoped
+              ? (scopedList?.name ?? options.list?.label ?? t(`option.list.option.${view}.title`))
+              : t(`option.list.option.${view}.title`)}
           </Text>
           <span className="tday-count">{sortedTasks.length}</span>
         </Group>
@@ -899,20 +904,6 @@ const PRIORITY_VALUES: readonly TdayPriority[] = ["Lowest", "Low", "Medium", "Hi
 /** Any value the API or a select might hand back, as a priority the widget can show. Unknown means Low. */
 const normalizePriority = (value: string | null | undefined): TdayPriority =>
   PRIORITY_VALUES.find((priority) => priority === value) ?? "Low";
-
-/**
- * The widget's `list` option is an encoded selection (`"todo:<id>"` or `"floater:<id>"`, written by
- * the integration). It is parsed here rather than imported: the integrations barrel is server code.
- */
-const parseScopedList = (value: string | null): { kind: "todo" | "floater"; id: string } | null => {
-  if (!value) return null;
-  const separator = value.indexOf(":");
-  if (separator < 1) return null;
-  const kind = value.slice(0, separator);
-  const id = value.slice(separator + 1);
-  if ((kind !== "todo" && kind !== "floater") || id.length === 0) return null;
-  return { kind, id };
-};
 
 // Mantine date pickers emit "YYYY-MM-DD HH:mm"; Tday expects an ISO local datetime ("…THH:mm").
 const toTdayDue = (value: string | null): string | null => (value ? value.replace(" ", "T") : null);

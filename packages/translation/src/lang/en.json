@@ -2462,8 +2462,9 @@
       "name": "Tday Tasks",
       "description": "Displays your Tday tasks for a chosen view and lets you complete or add tasks.",
       "option": {
-        "view": {
-          "label": "View",
+        "list": {
+          "label": "List",
+          "placeholder": "Choose a view or one of your lists",
           "option": {
             "today": {
               "label": "Today's tasks",
@@ -2482,10 +2483,6 @@
               "title": "Floater"
             }
           }
-        },
-        "list": {
-          "label": "List",
-          "description": "Optional: show one of your lists instead of the view above."
         },
         "sort": {
           "label": "Sort by",
