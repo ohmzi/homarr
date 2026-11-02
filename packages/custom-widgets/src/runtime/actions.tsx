@@ -85,6 +85,10 @@ export interface ActionButtonProps {
   children?: ReactNode;
   color?: string;
   variant?: string;
+  /** Variant used while `active` is true, so the current selection reads as pressed. */
+  activeVariant?: string;
+  /** Marks this button as the current selection; the template derives it from its own data. */
+  active?: boolean | string;
   size?: string;
   confirmMessage?: string;
   successMessage?: string;
@@ -99,6 +103,7 @@ export function ActionButton(props: ActionButtonProps) {
   const params = normalizeParams(props.params);
   const title = props.label ?? (typeof props.children === "string" ? props.children : props.requestId) ?? "Action";
   const Icon = props.icon ? ICON_MAP[props.icon.toLowerCase()] : undefined;
+  const isActive = parseBool(props.active);
   const capability = runtime.requestCapabilities.find(
     (candidate) => candidate.id === props.requestId && candidate.kind === "action",
   );
@@ -150,11 +155,11 @@ export function ActionButton(props: ActionButtonProps) {
   return (
     <Button
       color={props.color ?? "blue"}
-      variant={(props.variant ?? "filled") as never}
+      variant={(isActive ? (props.activeVariant ?? "filled") : (props.variant ?? "filled")) as never}
       size={(props.size ?? "sm") as never}
       onClick={() => void click()}
       loading={mutation.isPending}
-      leftSection={Icon ? <Icon size={16} /> : undefined}
+      leftSection={isActive ? <IconCheck size={16} stroke={3} /> : Icon ? <Icon size={16} /> : undefined}
       disabled={
         parseBool(props.disabled) || runtime.isEditMode || (!runtime.itemId && !runtime.previewSessionId) || !params
       }
