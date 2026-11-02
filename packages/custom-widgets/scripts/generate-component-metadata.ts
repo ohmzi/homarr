@@ -662,6 +662,7 @@ const HOMARR_COMPONENT_PROPS: Readonly<Record<string, Readonly<Record<string, Ho
     requestId: optionalProp("string", undefined, "Identifier of the named Custom Widget action."),
     params: optionalProp("Record<string, string | number | boolean>"),
     label: optionalProp("string"),
+    sublabel: optionalProp("string"),
     color: optionalProp("string"),
     variant: optionalProp("string"),
     activeVariant: optionalProp("string"),
