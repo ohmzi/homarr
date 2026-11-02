@@ -180,7 +180,7 @@ const allSchema = z.object({
   fs: z.array(
     z.object({
       device_name: z.string(),
-      mnt_point: z.string(),
+      mnt_point: z.string().optional(),
       alias: z.string().optional(),
       used: z.number().min(0),
       free: z.number().min(0),

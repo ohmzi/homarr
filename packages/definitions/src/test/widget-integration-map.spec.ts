@@ -27,8 +27,9 @@ describe("widget integration config", () => {
   });
 
   test("supports the mock integration for every integration-backed widget", () => {
-    // Fork-only widgets talk to a service upstream's mock integration knows nothing about.
-    const forkOnlyWidgets = new Set(["tdayTasks"]);
+    // Fork-only widgets: tdayTasks talks to a service upstream's mock knows nothing about, and
+    // uptimeStatus records its own history rather than reading live integration data.
+    const forkOnlyWidgets = new Set(["tdayTasks", "uptimeStatus"]);
     for (const [kind, config] of Object.entries(widgetIntegrationConfigs)) {
       if (forkOnlyWidgets.has(kind)) continue;
       expect(config.supportedIntegrations).toContain("mock");
@@ -36,7 +37,7 @@ describe("widget integration config", () => {
   });
 
   test("derives optional connections and server selection limits", () => {
-    expect(widgetKindsWithOptionalIntegrations).toEqual(new Set(["calendar", "releases"]));
+    expect(widgetKindsWithOptionalIntegrations).toEqual(new Set(["calendar", "releases", "uptimeStatus"]));
     expect(widgetIntegrationLimits).toEqual({
       "smartHome-entityState": 1,
       "smartHome-executeAutomation": 1,

@@ -48,6 +48,52 @@ import { composeWrappers } from "./compose";
 
 const logger = createLogger({ module: "rootLayout" });
 
+export const generateMetadata = async (): Promise<Metadata> => {
+  const [serverSettings, colorScheme, t] = await Promise.all([
+    getRscServerSettingsAsync(),
+    getCurrentColorSchemeAsync(),
+    getI18n("metadata"),
+  ]);
+  const { appName, faviconImageUrl, logoImageUrl } = serverSettings.branding;
+  const logo = logoImageUrl ?? "/logo/logo.png";
+  const description = t("description");
+
+  return {
+    title: {
+      default: appName,
+      template: `%s • ${appName}`,
+    },
+    description,
+    openGraph: {
+      title: t("dashboardTitle", { appName }),
+      description,
+      url: env.HOMARR_WEBSITE_URL,
+      siteName: appName,
+    },
+    // Without a custom favicon, declare the Ohmz set explicitly and in preference order so
+    // browsers never fall back to a generated letter tile. The filled amber square is
+    // deliberate: a tab favicon sits on the browser's own chrome, where a transparent glyph
+    // would vanish.
+    icons: faviconImageUrl
+      ? { icon: faviconImageUrl, apple: logo }
+      : {
+          icon: [
+            { url: "/logo/favicon.svg", type: "image/svg+xml" },
+            { url: "/logo/favicon-96x96.png", type: "image/png", sizes: "96x96" },
+            { url: "/favicon.ico", sizes: "any" },
+          ],
+          shortcut: "/favicon.ico",
+          apple: logoImageUrl ?? "/logo/apple-touch-icon.png",
+        },
+    appleWebApp: {
+      title: appName,
+      capable: true,
+      startupImage: { url: logo },
+      statusBarStyle: colorScheme === "dark" ? "black-translucent" : "default",
+    },
+  };
+};
+
 export const generateViewport = async (): Promise<Viewport> => {
   const serverSettings = await getRscServerSettingsAsync();
   return {

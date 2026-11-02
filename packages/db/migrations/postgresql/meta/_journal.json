@@ -148,6 +148,13 @@
       "when": 1793534400002,
       "tag": "0020_add_uptime_daily",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793534401003,
+      "tag": "0021_ohmz_branding_defaults",
+      "breakpoints": true
     }
   ]
 }

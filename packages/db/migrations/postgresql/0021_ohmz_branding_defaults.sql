@@ -1,0 +1,5 @@
+-- Ohmz HomeLab fork: 0046/0014 seed the branding row with upstream Homarr defaults, which would
+-- override this fork's branding defaults on every install. Swap the row to the fork defaults, but
+-- only while it is still the untouched upstream seed, so an admin's own branding is never replaced.
+UPDATE "serverSetting" SET "value" = '{"json":{"appName":"Ohmz HomeLab","greeting":"","logoImageUrl":null,"faviconImageUrl":null,"primaryColor":"#e0913f","secondaryColor":"#c87c31","lockPrimaryColor":false,"signInBackgroundImageUrl":null,"signInBackgroundOverlay":0.55,"authBranding":{"showAppName":true,"showLogo":true,"showGreeting":true},"defaultRadius":"md"}}'
+WHERE "setting_key" = 'branding' AND "value" = '{"json":{"appName":"Homarr","greeting":"","logoImageUrl":null,"faviconImageUrl":null,"primaryColor":"#fa5252","secondaryColor":"#fd7e14","lockPrimaryColor":false,"signInBackgroundImageUrl":null,"signInBackgroundOverlay":0.55,"authBranding":{"showAppName":true,"showLogo":true,"showGreeting":true},"defaultRadius":"md"}}';
