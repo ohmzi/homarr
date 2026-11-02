@@ -664,6 +664,12 @@ const HOMARR_COMPONENT_PROPS: Readonly<Record<string, Readonly<Record<string, Ho
     label: optionalProp("string"),
     color: optionalProp("string"),
     variant: optionalProp("string"),
+    activeVariant: optionalProp("string"),
+    active: optionalProp(
+      "boolean | string",
+      undefined,
+      "Marks the button as the current selection: it renders activeVariant with a check icon.",
+    ),
     size: optionalProp("string"),
     confirmMessage: optionalProp("string"),
     successMessage: optionalProp("string"),
