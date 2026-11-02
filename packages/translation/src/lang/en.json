@@ -5407,6 +5407,9 @@
             "network": "Network"
           }
         },
+        "showUptime": {
+          "label": "Show uptime"
+        },
         "labelDisplayMode": {
           "label": "Label display mode",
           "option": {
@@ -5422,7 +5425,8 @@
         "network": "NET",
         "up": "UP",
         "down": "DOWN",
-        "memoryTooltip": "{used} / {available} ({percent}%)"
+        "memoryTooltip": "{used} / {available} ({percent}%)",
+        "uptime": "UPTIME"
       }
     },
     "systemDisks": {
