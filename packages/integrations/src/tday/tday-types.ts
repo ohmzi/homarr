@@ -47,7 +47,8 @@ export const tdaySessionResponseSchema = z.object({
   user: z.object({ timeZone: z.string().nullable().optional() }),
 });
 
-export const tdayPrioritySchema = z.enum(["Low", "Medium", "High"]);
+// Lowest is the T'Day tier labelled "Low" in the web app; Low is labelled "Normal".
+export const tdayPrioritySchema = z.enum(["Lowest", "Low", "Medium", "High"]);
 export type TdayPriority = z.infer<typeof tdayPrioritySchema>;
 
 export const tdayListPrioritySchema = z.enum(["Lowest", "Low", "Medium", "High"]);
@@ -59,8 +60,7 @@ export const tdayListSchema = z.object({
   iconKey: z.string().nullable(),
   color: z.string().nullable(),
   // The priority a task created in this list starts at. Nullable — "no default"
-  // is a real choice. Lowest is accepted so the T'Day side round-trips; the widget
-  // narrows it when it uses it, since its own priority control offers no Lowest.
+  // is a real choice.
   defaultPriority: tdayListPrioritySchema.nullable().optional(),
 });
 export type TdayList = z.infer<typeof tdayListSchema>;

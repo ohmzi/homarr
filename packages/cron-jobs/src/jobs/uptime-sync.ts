@@ -1,4 +1,3 @@
-import { decryptSecret } from "@homarr/common/server";
 import { EVERY_5_MINUTES } from "@homarr/cron-jobs-core/expressions";
 import { createLogger } from "@homarr/core/infrastructure/logs";
 import { ErrorWithMetadata } from "@homarr/core/infrastructure/logs/error";
@@ -8,6 +7,7 @@ import { createIntegrationAsync } from "@homarr/integrations";
 import { uptimeKumaHeartbeatStatus } from "@homarr/integrations/types";
 
 import { createCronJob } from "../lib";
+import { isLocalUrl, toIntegrationInput } from "../lib/integrations";
 import { addRangeAsync, addToDayAsync, getAnchorAsync, RETENTION_DAYS, toDateKey } from "../lib/uptime-daily";
 
 const logger = createLogger({ module: "uptimeSyncJob" });
@@ -26,17 +26,6 @@ const loadGlancesIntegrationsAsync = () =>
   db.query.integrations.findMany({ where: eq(integrations.kind, "glances"), with: { secrets: true } });
 
 type IntegrationWithSecrets = Awaited<ReturnType<typeof loadKumaIntegrationsAsync>>[number];
-
-const toIntegrationInput = (integration: IntegrationWithSecrets) => ({
-  id: integration.id,
-  name: integration.name,
-  url: integration.url,
-  externalUrl: null,
-  decryptedSecrets: integration.secrets.map((secret) => ({
-    kind: secret.kind,
-    value: decryptSecret(secret.value),
-  })),
-});
 
 /**
  * Uptime Kuma stores heartbeat times as UTC and returns them as "YYYY-MM-DD HH:mm:ss.SSS".
@@ -99,9 +88,6 @@ const syncIntegrationAsync = async (integration: IntegrationWithSecrets) => {
     }
   }
 };
-
-/** Prefer a Glances pointed at this machine; a homelab can easily have several. */
-const isLocalUrl = (url: string) => /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:|\/|$)/.test(url);
 
 /** Host boot time derived from Glances' uptime counter. */
 const getHostBootTimeAsync = async () => {

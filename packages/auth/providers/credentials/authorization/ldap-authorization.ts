@@ -1,4 +1,5 @@
 import { CredentialsSignin } from "@auth/core/errors";
+import { EqualityFilter } from "ldapts";
 import type { z } from "zod/v4";
 
 import { createId } from "@homarr/common";
@@ -17,13 +18,14 @@ const logger = createLogger({ module: "ldapAuthorization" });
 export const authorizeWithLdapCredentialsAsync = async (
   db: Database,
   credentials: z.infer<typeof ldapSignInSchema>,
+  ipAddress: string,
 ) => {
   logger.info("User is trying to log in using LDAP. Connecting to LDAP server...", { userName: credentials.name });
   const client = new LdapClient();
   await client
     .bindAsync({
-      distinguishedName: env.AUTH_LDAP_BIND_DN,
-      password: env.AUTH_LDAP_BIND_PASSWORD,
+      distinguishedName: env.AUTH_LDAP_BIND_DN ?? "",
+      password: env.AUTH_LDAP_BIND_PASSWORD ?? "",
     })
     .catch((error) => {
       throw new CredentialsSignin("Failed to connect to LDAP server", { cause: error });
@@ -37,7 +39,13 @@ export const authorizeWithLdapCredentialsAsync = async (
       options: {
         filter: createLdapUserFilter(credentials.name),
         scope: env.AUTH_LDAP_SEARCH_SCOPE,
-        attributes: [env.AUTH_LDAP_USERNAME_ATTRIBUTE, env.AUTH_LDAP_USER_MAIL_ATTRIBUTE],
+        attributes: [
+          ...new Set([
+            env.AUTH_LDAP_USERNAME_ATTRIBUTE,
+            env.AUTH_LDAP_USER_MAIL_ATTRIBUTE,
+            env.AUTH_LDAP_GROUP_MEMBER_USER_ATTRIBUTE,
+          ]),
+        ],
       },
     })
     .then((entries) => {
@@ -50,6 +58,7 @@ export const authorizeWithLdapCredentialsAsync = async (
     });
 
   if (!ldapUser) {
+    logger.warn("User not found", { userName: credentials.name, ipAddress });
     throw new CredentialsSignin(`User not found in LDAP username="${credentials.name}"`);
   }
 
@@ -73,21 +82,24 @@ export const authorizeWithLdapCredentialsAsync = async (
       password: credentials.password,
     })
     .catch(() => {
-      logger.warn("Wrong credentials for user", { userName: credentials.name });
+      logger.warn("Wrong credentials for user", { userName: credentials.name, ipAddress });
       throw new CredentialsSignin();
     });
   await userClient.disconnectAsync();
 
   logger.info("User credentials are correct. Retrieving user groups...", { userName: credentials.name });
 
+  const groupClassFilter = new EqualityFilter({ attribute: "objectClass", value: env.AUTH_LDAP_GROUP_CLASS });
+  const groupMemberFilter = new EqualityFilter({
+    attribute: env.AUTH_LDAP_GROUP_MEMBER_ATTRIBUTE,
+    value: ldapUser[env.AUTH_LDAP_GROUP_MEMBER_USER_ATTRIBUTE],
+  });
   const userGroups = await client
     .searchAsync({
       base: env.AUTH_LDAP_BASE,
       options: {
         // For example, if the user is doejohn, the filter will be (&(objectClass=group)(uid=doejohn)) or (&(objectClass=group)(uid=doejohn)(sAMAccountType=1234))
-        filter: `(&(objectClass=${env.AUTH_LDAP_GROUP_CLASS})(${
-          env.AUTH_LDAP_GROUP_MEMBER_ATTRIBUTE
-        }=${ldapUser[env.AUTH_LDAP_GROUP_MEMBER_USER_ATTRIBUTE]})${env.AUTH_LDAP_GROUP_FILTER_EXTRA_ARG ?? ""})`,
+        filter: `(&${groupClassFilter.toString()}${groupMemberFilter.toString()}${env.AUTH_LDAP_GROUP_FILTER_EXTRA_ARG ?? ""})`,
         scope: env.AUTH_LDAP_SEARCH_SCOPE,
         attributes: ["cn"],
       },
@@ -139,11 +151,12 @@ export const authorizeWithLdapCredentialsAsync = async (
 };
 
 const createLdapUserFilter = (username: string) => {
+  const userFilter = new EqualityFilter({ attribute: env.AUTH_LDAP_USERNAME_ATTRIBUTE, value: username }).toString();
   if (env.AUTH_LDAP_USERNAME_FILTER_EXTRA_ARG) {
     // For example, if the username is doejohn and the extra arg is (sAMAccountType=1234), the filter will be (&(uid=doejohn)(sAMAccountType=1234))
-    return `(&(${env.AUTH_LDAP_USERNAME_ATTRIBUTE}=${username})${env.AUTH_LDAP_USERNAME_FILTER_EXTRA_ARG})`;
+    return `(&${userFilter}${env.AUTH_LDAP_USERNAME_FILTER_EXTRA_ARG})`;
   }
 
   // For example, if the username is doejohn, the filter will be (uid=doejohn)
-  return `(${env.AUTH_LDAP_USERNAME_ATTRIBUTE}=${username})`;
+  return userFilter;
 };

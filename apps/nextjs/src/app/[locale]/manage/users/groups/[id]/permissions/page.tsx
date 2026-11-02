@@ -1,15 +1,21 @@
-import React from "react";
 import { notFound } from "next/navigation";
-import { Card, CardSection, Divider, Group, Stack, Text, Title } from "@mantine/core";
+import { Stack, Title } from "@mantine/core";
 
 import { api } from "@homarr/api/server";
 import { auth } from "@homarr/auth/next";
 import { objectKeys } from "@homarr/common";
 import type { GroupPermissionKey } from "@homarr/definitions";
 import { groupPermissions } from "@homarr/definitions";
-import { getI18n, getScopedI18n } from "@homarr/translation/server";
+import { getI18n } from "@homarr/translation/server";
 
-import { PermissionForm, PermissionSwitch, SaveAffix } from "./_group-permission-form";
+import type { PermissionLabels } from "./_group-permission-form";
+import {
+  EffectivePermissionPreview,
+  PermissionForm,
+  PermissionMatrix,
+  PresetButtons,
+  SaveAffix,
+} from "./_group-permission-form";
 
 interface GroupPermissionsPageProps {
   params: Promise<{
@@ -25,28 +31,23 @@ export default async function GroupPermissionsPage(props: GroupPermissionsPagePr
     notFound();
   }
 
-  const group = await api.group.getById({ id: params.id });
-  const tPermissions = await getScopedI18n("group.permission");
-  const t = await getI18n();
+  const [group, tPermissionsPage, { permissionLabels, permissionDescriptions }] = await Promise.all([
+    api.group.getById({ id: params.id }),
+    getI18n("management.page.group.setting.permissions"),
+    buildPermissionTextsAsync(),
+  ]);
 
   return (
     <Stack>
-      <Title>{t("management.page.group.setting.permissions.title")}</Title>
+      <Title>{tPermissionsPage("title")}</Title>
 
       <PermissionForm initialPermissions={group.permissions}>
         <Stack pos="relative">
-          {objectKeys(groupPermissions).map((group) => {
-            const isDanger = group === "admin";
+          <PresetButtons />
 
-            return (
-              <Stack key={group} gap="sm">
-                <Title order={2} c={isDanger ? "red.8" : undefined}>
-                  {tPermissions(`${group}.title`)}
-                </Title>
-                <PermissionCard isDanger={isDanger} group={group} />
-              </Stack>
-            );
-          })}
+          <PermissionMatrix permissionLabels={permissionLabels} permissionDescriptions={permissionDescriptions} />
+
+          <EffectivePermissionPreview permissionLabels={permissionLabels} />
 
           <SaveAffix groupId={group.id} />
         </Stack>
@@ -55,66 +56,25 @@ export default async function GroupPermissionsPage(props: GroupPermissionsPagePr
   );
 }
 
-interface PermissionCardProps {
-  group: keyof typeof groupPermissions;
-  isDanger: boolean;
-}
+const buildPermissionTextsAsync = async () => {
+  const permissionLabels: PermissionLabels = {};
+  const permissionDescriptions: PermissionLabels = {};
 
-const PermissionCard = async ({ group, isDanger }: PermissionCardProps) => {
-  const t = await getScopedI18n(`group.permission.${group}.item`);
-  const item = groupPermissions[group];
-  const permissions = typeof item !== "boolean" ? item : ([group] as "admin"[]);
-
-  return (
-    <Card
-      p="md"
-      style={{
-        borderColor: isDanger ? "var(--mantine-color-red-8)" : undefined,
-      }}
-    >
-      <Stack gap="sm">
-        {permissions.map((permission, index) => (
-          <React.Fragment key={permission}>
-            <PermissionRow
-              name={createGroupPermissionKey(group, permission)}
-              label={t(`${permission}.label`)}
-              description={t(`${permission}.description`)}
-            />
-
-            {index < permissions.length - 1 && (
-              <CardSection>
-                <Divider />
-              </CardSection>
-            )}
-          </React.Fragment>
-        ))}
-      </Stack>
-    </Card>
+  const categories = objectKeys(groupPermissions);
+  const translators = await Promise.all(
+    categories.map(async (category) => ({ category, tItem: await getI18n(`group.permission.${category}.item`) })),
   );
-};
 
-const createGroupPermissionKey = (group: keyof typeof groupPermissions, permission: string): GroupPermissionKey => {
-  if (typeof groupPermissions[group] === "boolean") {
-    return group as GroupPermissionKey;
-  }
+  translators.forEach(({ category, tItem }) => {
+    const item = groupPermissions[category];
+    const suffixes = typeof item !== "boolean" ? item : (["admin"] as const);
 
-  return `${group}-${permission}` as GroupPermissionKey;
-};
+    suffixes.forEach((suffix) => {
+      const key = (typeof item !== "boolean" ? `${category}-${suffix}` : "admin") as GroupPermissionKey;
+      permissionLabels[key] = tItem(`${suffix}.label`);
+      permissionDescriptions[key] = tItem(`${suffix}.description`);
+    });
+  });
 
-interface PermissionRowProps {
-  name: GroupPermissionKey;
-  label: string;
-  description: string;
-}
-
-const PermissionRow = ({ name, label, description }: PermissionRowProps) => {
-  return (
-    <Group justify="space-between" align="center" wrap="nowrap">
-      <Stack gap={0}>
-        <Text fw={500}>{label}</Text>
-        <Text c="gray.5">{description}</Text>
-      </Stack>
-      <PermissionSwitch name={name} />
-    </Group>
-  );
+  return { permissionLabels, permissionDescriptions };
 };

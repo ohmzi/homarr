@@ -2,15 +2,24 @@ import { z } from "zod/v4";
 
 import { fetchWithTrustedCertificatesAsync } from "@homarr/core/infrastructure/http";
 
+import type { IntegrationHttpAuthentication } from "../http-auth";
+import { apiKeyAuth } from "../http-auth";
 import type { IntegrationTestingInput } from "../base/integration";
 import { Integration } from "../base/integration";
 import { TestConnectionError } from "../base/test-connection/test-connection-error";
 import type { TestingResult } from "../base/test-connection/test-connection-service";
+import { fetchServarrServiceVersionAsync } from "../base/servarr-service-version";
 import type { IIndexerManagerIntegration } from "../interfaces/indexer-manager/indexer-manager-integration";
 import type { Indexer } from "../interfaces/indexer-manager/indexer-manager-types";
+import type { IServiceVersionIntegration } from "../interfaces/service-version/service-version-integration";
+import type { ServiceVersion } from "../interfaces/service-version/service-version-types";
 import { indexerResponseSchema, statusResponseSchema } from "./prowlarr-types";
 
-export class ProwlarrIntegration extends Integration implements IIndexerManagerIntegration {
+export class ProwlarrIntegration extends Integration implements IIndexerManagerIntegration, IServiceVersionIntegration {
+  public async getHttpAuthenticationAsync(): Promise<IntegrationHttpAuthentication> {
+    return apiKeyAuth(this.integration);
+  }
+
   public async getIndexersAsync(): Promise<Indexer[]> {
     const apiKey = super.getSecretValue("apiKey");
 
@@ -68,6 +77,7 @@ export class ProwlarrIntegration extends Integration implements IIndexerManagerI
   public async testAllAsync(): Promise<void> {
     const apiKey = super.getSecretValue("apiKey");
     const response = await fetchWithTrustedCertificatesAsync(this.url("/api/v1/indexer/testall"), {
+      method: "POST",
       headers: {
         "X-Api-Key": apiKey,
       },
@@ -78,6 +88,13 @@ export class ProwlarrIntegration extends Integration implements IIndexerManagerI
         `Failed to test all indexers for ${this.integration.name} (${this.integration.id}): ${response.statusText}`,
       );
     }
+  }
+
+  public async getServiceVersionAsync(): Promise<ServiceVersion> {
+    return await fetchServarrServiceVersionAsync(
+      this.url("/api/v1/system/status"),
+      (await this.getHttpAuthenticationAsync()).headers,
+    );
   }
 
   protected async testingAsync(input: IntegrationTestingInput): Promise<TestingResult> {

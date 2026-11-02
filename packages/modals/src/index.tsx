@@ -1,7 +1,7 @@
 "use client";
 
 import type { PropsWithChildren } from "react";
-import { createContext, useCallback, useContext, useEffect, useReducer, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState } from "react";
 import { getDefaultZIndex, Modal } from "@mantine/core";
 import { randomId } from "@mantine/hooks";
 
@@ -14,6 +14,8 @@ import { ConfirmModal } from "./confirm-modal";
 import type { ModalsState, ModalStateWithReference } from "./reducer";
 import { modalReducer } from "./reducer";
 import type { inferInnerProps, ModalDefinition } from "./type";
+import presentationClasses from "./modal-presentation.module.css";
+import { getModalPresentationClassNames } from "./modal-presentation";
 
 interface ModalContextProps {
   openModalInner: <TModal extends ModalDefinition>(props: {
@@ -31,8 +33,6 @@ export const ModalProvider = ({ children }: PropsWithChildren) => {
     modals: [],
     current: null,
   });
-  const stateRef = useRef(state);
-  stateRef.current = state;
 
   const closeModal = useCallback(
     (id: string, canceled?: boolean) => {
@@ -66,9 +66,10 @@ export const ModalProvider = ({ children }: PropsWithChildren) => {
   const handleCloseModal = useCallback(() => state.current && closeModal(state.current.id), [closeModal, state]);
 
   const activeModals = state.modals.filter((modal) => modal.id === state.current?.id || modal.props.keepMounted);
+  const contextValue = useMemo(() => ({ openModalInner, closeModal }), [openModalInner, closeModal]);
 
   return (
-    <ModalContext.Provider value={{ openModalInner, closeModal }}>
+    <ModalContext.Provider value={contextValue}>
       {activeModals.map((modal) => (
         <ActiveModal key={modal.id} modal={modal} state={state} handleCloseModal={handleCloseModal} />
       ))}
@@ -94,7 +95,18 @@ const ActiveModal = ({ modal, state, handleCloseModal }: ActiveModalProps) => {
     setTimeout(() => setOpened(true), 0);
   }, []);
 
-  const { defaultTitle: _ignored, ...otherModalProps } = modal.reference.modalProps;
+  const { defaultTitle: _ignored, presentation, ...otherModalProps } = modal.reference.modalProps;
+  const presentationClassNames = getModalPresentationClassNames(presentation, {
+    inner: presentationClasses.inspectorInner,
+    content: presentationClasses.inspectorContent,
+  });
+
+  const handleClose = useCallback(() => {
+    const canClose = modal.reference.onCloseRequest ? modal.reference.onCloseRequest() : true;
+    if (canClose) {
+      handleCloseModal();
+    }
+  }, [handleCloseModal, modal.reference]);
 
   return (
     <Modal
@@ -113,10 +125,11 @@ const ActiveModal = ({ modal, state, handleCloseModal }: ActiveModalProps) => {
         },
       }}
       trapFocus={modal.id === state.current?.id}
+      classNames={presentationClassNames}
       {...otherModalProps}
       title={translateIfNecessary(t, modal.props.defaultTitle)}
       opened={opened}
-      onClose={handleCloseModal}
+      onClose={handleClose}
     >
       {modal.reference.content}
     </Modal>
@@ -125,6 +138,7 @@ const ActiveModal = ({ modal, state, handleCloseModal }: ActiveModalProps) => {
 
 interface OpenModalOptions {
   keepMounted?: boolean;
+  onClose?: () => void;
   title?: stringOrTranslation;
 }
 
@@ -136,7 +150,6 @@ export const useModalAction = <TModal extends ModalDefinition>(modal: TModal) =>
   return {
     openModal: (innerProps: inferInnerProps<TModal>, options: OpenModalOptions | void) => {
       // void actually is undefined
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       context.openModalInner({ modal, innerProps, options: options ?? {} });
     },
   };
@@ -146,6 +159,7 @@ export const useConfirmModal = () => {
   const { openModal } = useModalAction(ConfirmModal);
 
   return {
-    openConfirmModal: (props: ConfirmModalProps) => openModal(props, { title: props.title }),
+    openConfirmModal: (props: ConfirmModalProps, options?: Pick<OpenModalOptions, "onClose">) =>
+      openModal(props, { title: props.title, onClose: options?.onClose }),
   };
 };

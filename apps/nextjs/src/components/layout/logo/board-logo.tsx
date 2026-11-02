@@ -1,8 +1,9 @@
 "use client";
 
 import { useRequiredBoard } from "@homarr/boards/context";
+import { useSettings } from "@homarr/settings";
 
-import { BrandWordmark, homarrLogoPath } from "./homarr-logo";
+import { homarrLogoPath } from "./constants";
 import type { LogoWithTitleProps } from "./logo";
 import { Logo, LogoWithTitle } from "./logo";
 
@@ -12,8 +13,9 @@ interface LogoProps {
 
 const useImageOptions = () => {
   const board = useRequiredBoard();
+  const { branding } = useSettings();
   return {
-    src: board.logoImageUrl ?? homarrLogoPath,
+    src: board.logoImageUrl?.trim() || branding.logoImageUrl?.trim() || homarrLogoPath,
     alt: "Board logo",
     shouldUseNextImage: false,
   };
@@ -31,14 +33,13 @@ interface CommonLogoWithTitleProps {
 
 export const BoardLogoWithTitle = ({ size, hideTitleOnMobile }: CommonLogoWithTitleProps) => {
   const board = useRequiredBoard();
+  const { branding } = useSettings();
   const imageOptions = useImageOptions();
   return (
     <LogoWithTitle
       size={size}
       hideTitleOnMobile={hideTitleOnMobile}
-      // A board's own page title is user content and stays as typed; only the
-      // fallback gets the two-tone brand lockup.
-      title={board.pageTitle ?? <BrandWordmark />}
+      title={board.pageTitle ?? branding.appName}
       image={imageOptions}
     />
   );

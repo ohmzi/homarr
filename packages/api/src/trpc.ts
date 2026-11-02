@@ -8,19 +8,22 @@
  */
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
-import type { McpMeta } from "trpc-to-mcp";
 import type { OpenApiMeta } from "trpc-to-openapi";
 import { ZodError } from "zod/v4";
 
 import type { Session } from "@homarr/auth";
-import { FlattenError } from "@homarr/common";
-import { userAgent } from "@homarr/common/server";
+import { extractBaseUrlFromHeaders, FlattenError } from "@homarr/common";
+import { resolveRequestIdentity, userAgent } from "@homarr/common/server";
+import type { DeviceType, RequestIdentity } from "@homarr/common/server";
 import { createLogger } from "@homarr/core/infrastructure/logs";
 import { db } from "@homarr/db";
 import type { GroupPermissionKey, OnboardingStep } from "@homarr/definitions";
+import { BoardLayoutBoundsError } from "@homarr/validation/board-layout-bounds-error";
 
 import { env } from "./env";
+import { getOnboardingClaimTokenFromCookieHeader, isClaimOnlyOnboardingAccessAllowedAsync } from "./onboarding-claim";
 import { getOnboardingOrFallbackAsync } from "./router/onboard/onboard-queries";
+import type { McpMeta } from "./mcp-tools";
 
 const logger = createLogger({ module: "trpc" });
 
@@ -36,7 +39,16 @@ const logger = createLogger({ module: "trpc" });
  *
  * @see https://trpc.io/docs/server/context
  */
-export const createTRPCContext = (opts: { headers: Headers; session: Session | null }) => {
+interface ApiContext {
+  session: Session | null;
+  deviceType: DeviceType;
+  baseUrl?: `${string}://${string}`;
+  onboardingClaimToken?: string;
+  requestIdentity?: RequestIdentity;
+  db: typeof db;
+}
+
+export const createTRPCContext = (opts: { headers: Headers; session: Session | null }): ApiContext => {
   const session = opts.session;
   const source = opts.headers.get("x-trpc-source") ?? "unknown";
 
@@ -49,6 +61,9 @@ export const createTRPCContext = (opts: { headers: Headers; session: Session | n
   return {
     session,
     deviceType: userAgent(opts.headers).device.type,
+    baseUrl: extractBaseUrlFromHeaders(opts.headers),
+    onboardingClaimToken: getOnboardingClaimTokenFromCookieHeader(opts.headers.get("cookie")),
+    requestIdentity: resolveRequestIdentity(opts.headers),
     db,
   };
 };
@@ -70,6 +85,7 @@ const t = initTRPC
         ...shape.data,
         zodError: error.cause instanceof ZodError ? error.cause.flatten() : null,
         error: error.cause instanceof FlattenError ? error.cause.flatten() : null,
+        isBoardLayoutBoundsError: error.cause instanceof BoardLayoutBoundsError,
       },
     }),
   });
@@ -120,6 +136,19 @@ const baseProcedure = isDemoReadOnly ? t.procedure.use(enforceDemoModeReadOnly) 
  */
 export const publicProcedure = baseProcedure;
 
+const enforceOnboardingAccess = t.middleware(async ({ ctx, next }) => {
+  const isAdmin = ctx.session?.user.permissions.includes("admin") ?? false;
+  if (!isAdmin) {
+    const hasValidClaim = await isClaimOnlyOnboardingAccessAllowedAsync(ctx.db, ctx.onboardingClaimToken);
+    if (!hasValidClaim) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "This onboarding session is not claimed." });
+    }
+  }
+  return next({ ctx });
+});
+
+export const onboardingClaimedProcedure = baseProcedure.use(enforceOnboardingAccess);
+
 export const internalProcedure = t.procedure;
 
 const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
@@ -143,6 +172,8 @@ const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
  * @see https://trpc.io/docs/procedures
  */
 export const protectedProcedure = baseProcedure.use(enforceUserIsAuthed);
+
+export const demoWritableProtectedProcedure = t.procedure.use(enforceUserIsAuthed);
 
 /**
  * Procedure that requires a specific permission
@@ -168,7 +199,7 @@ export const permissionRequiredProcedure = {
 
 export const onboardingProcedure = {
   requiresStep: (step: OnboardingStep) => {
-    return publicProcedure.use(async ({ ctx, input, next }) => {
+    return onboardingClaimedProcedure.use(async ({ ctx, input, next }) => {
       const currentStep = await getOnboardingOrFallbackAsync(ctx.db).then(({ current }) => current);
       if (currentStep !== step) {
         throw new TRPCError({

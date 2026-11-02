@@ -3,7 +3,7 @@ import { Group, Stack, Tabs } from "@mantine/core";
 import { IconUser, IconUserDown, IconUsersGroup } from "@tabler/icons-react";
 
 import type { GroupPermissionKey } from "@homarr/definitions";
-import { useScopedI18n } from "@homarr/translation/client";
+import { useI18n } from "@homarr/translation/client";
 import type { TablerIcon } from "@homarr/ui";
 import { CountBadge } from "@homarr/ui";
 
@@ -67,7 +67,6 @@ interface Props<TPermission extends string> {
       id: string;
       name: string | null;
       image: string | null;
-      email: string | null;
     } | null;
   };
   translate: (key: TPermission) => string;
@@ -178,7 +177,7 @@ interface TabItemProps {
 }
 
 const TabItem = ({ value, icon: Icon, count }: TabItemProps) => {
-  const t = useScopedI18n("permission");
+  const t = useI18n("permission");
 
   return (
     <Tabs.Tab value={value} leftSection={<Icon stroke={1.5} size={16} />}>

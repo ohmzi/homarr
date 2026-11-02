@@ -15,12 +15,31 @@ import { optionsBuilder } from "../options";
 
 export const { definition, componentLoader } = createWidgetDefinition("app", {
   icon: IconApps,
-  queryKeys: [[["app", "byId"]], [["widget", "app"]]],
+  supportsAdvancedFocus: false,
+  queryKeys: [[["app", "byId"]], [["widget", "app", "ping"]]],
   createOptions(settings) {
     return optionsBuilder.from(
       (factory) => ({
         appId: factory.app(),
-        openInNewTab: factory.switch({ defaultValue: true }),
+        openIn: factory.select({
+          options: [
+            {
+              value: "currentTab",
+              label: (t) => t("widget.app.option.openIn.option.currentTab"),
+            },
+            {
+              value: "newTab",
+              label: (t) => t("widget.app.option.openIn.option.newTab"),
+            },
+            {
+              value: "newWindow",
+              label: (t) => t("widget.app.option.openIn.option.newWindow"),
+            },
+          ],
+          defaultValue: "newTab",
+          allowDeselect: false,
+          withDescription: true,
+        }),
         showTitle: factory.switch({ defaultValue: true }),
         descriptionDisplayMode: factory.select({
           options: [
@@ -54,7 +73,7 @@ export const { definition, componentLoader } = createWidgetDefinition("app", {
           options: [
             {
               label(t) {
-                return t("widget.app.option.layout.option.column");
+                return t("widget.common.layout.option.vertical");
               },
               value: "column",
               icon: IconLayoutNavbarExpand,
@@ -68,7 +87,7 @@ export const { definition, componentLoader } = createWidgetDefinition("app", {
             },
             {
               label(t) {
-                return t("widget.app.option.layout.option.row");
+                return t("widget.common.layout.option.horizontal");
               },
               value: "row",
               icon: IconLayoutSidebarLeftExpand,

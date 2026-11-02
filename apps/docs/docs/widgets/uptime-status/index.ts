@@ -4,33 +4,40 @@ import { IconActivityHeartbeat } from "@tabler/icons-react";
 export const uptimeStatusWidget: WidgetDefinition = {
   icon: IconActivityHeartbeat,
   name: "Uptime Status",
-  description: "Daily uptime history for Uptime Kuma monitors and the machine Homarr runs on.",
+  description:
+    "Displays a daily uptime history for Uptime Kuma monitors, this machine, and the Ohmz AI and Plex probes.",
   path: "../../widgets/uptime-status",
   configuration: {
     items: [
       {
-        name: "Show server power",
-        description: "Include the machine Homarr runs on, reconstructed from its Glances uptime counter",
+        name: "Include this machine",
+        description: "Shows the uptime of the machine Homarr itself runs on",
         values: { type: "boolean" },
         defaultValue: "yes",
       },
       {
-        name: "Show OpenWebUI",
-        description: "Include the OpenWebUI probe, which logs in and asks the model a question once a day",
+        name: "Include Ohmz AI",
+        description: "Shows the Ohmz AI probe row",
         values: { type: "boolean" },
         defaultValue: "yes",
       },
       {
-        name: "Show uptime",
-        description: "Display the uptime percentage across the visible days",
+        name: "Include Plex",
+        description: "Shows the Plex probe row",
         values: { type: "boolean" },
         defaultValue: "yes",
       },
       {
-        name: "Maximum days",
-        description: "Upper limit on the bar's length. The bar grows one segment per day of history, up to this",
-        values: "A whole number between 7 and 90.",
-        defaultValue: "90",
+        name: "Show uptime percentage",
+        description: "Displays each row's uptime percentage next to its history",
+        values: { type: "boolean" },
+        defaultValue: "yes",
+      },
+      {
+        name: "Visible days",
+        description: "How many days of history the widget shows",
+        values: { type: "select", options: ["7 days", "30 days", "90 days"] },
+        defaultValue: "90 days",
       },
     ],
   },

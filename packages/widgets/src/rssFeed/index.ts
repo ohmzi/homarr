@@ -1,7 +1,7 @@
-import { IconRss } from "@tabler/icons-react";
+import { IconRss, IconServerOff } from "@tabler/icons-react";
 import { z } from "zod/v4";
 
-import { createWidgetDefinition } from "../definition";
+import { createWidgetDefinition, widgetQueryInputMatches } from "../definition";
 import { optionsBuilder } from "../options";
 
 /**
@@ -11,8 +11,22 @@ import { optionsBuilder } from "../options";
  * - https://www.jsonfeed.org/version/1.1/
  */
 export const { definition, componentLoader } = createWidgetDefinition("rssFeed", {
+  supportsAdvancedFocus: true,
   icon: IconRss,
+  queryKey: [["widget", "rssFeed", "getFeeds"]],
+  queryMatcher: ({ input }, scope) =>
+    widgetQueryInputMatches(input, {
+      urls: scope.options.feedUrls,
+      maximumAmountPosts: scope.options.maximumAmountPosts,
+      descriptionMaxLength: scope.options.descriptionMaxLength,
+    }),
   refetchInterval: null,
+  errors: {
+    BAD_GATEWAY: {
+      icon: IconServerOff,
+      message: (t) => t("widget.rssFeed.error.allFeedsFailed"),
+    },
+  },
   createOptions() {
     return optionsBuilder.from((factory) => ({
       feedUrls: factory.multiText({
@@ -25,6 +39,10 @@ export const { definition, componentLoader } = createWidgetDefinition("rssFeed",
       textLinesClamp: factory.number({
         defaultValue: 5,
         validate: z.number().min(1).max(50),
+      }),
+      descriptionMaxLength: factory.number({
+        defaultValue: 250,
+        validate: z.number().int().min(1).max(5000),
       }),
       maximumAmountPosts: factory.number({
         defaultValue: 100,

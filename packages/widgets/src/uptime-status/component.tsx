@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { Box, Group, Stack, Text, Tooltip, useComputedColorScheme } from "@mantine/core";
 import type { RouterOutputs } from "@homarr/api";
 import { clientApi } from "@homarr/api/client";
-import { useScopedI18n } from "@homarr/translation/client";
+import { useI18n } from "@homarr/translation/client";
 
 import type { WidgetComponentProps } from "../definition";
 import { buildDaySlots } from "./day-slots";
@@ -27,13 +27,14 @@ const getDayState = (day: DaySlot): DayState => {
 const formatPercent = (value: number) => `${value >= 99.995 ? "100" : value.toFixed(value >= 99.95 ? 1 : 2)}%`;
 
 export default function UptimeStatusWidget({ options, integrationIds }: WidgetComponentProps<"uptimeStatus">) {
-  const t = useScopedI18n("widget.uptimeStatus");
+  const t = useI18n("widget.uptimeStatus");
   const colorScheme = useComputedColorScheme("light");
 
   const { data } = clientApi.widget.uptimeStatus.getHistory.useQuery({
     integrationIds,
     includeHost: options.includeHost,
-    includeOpenWebUi: options.includeOpenWebUi,
+    includeOhmzAi: options.includeOhmzAi,
+    includePlex: options.includePlex,
     days: options.visibleDays,
   });
 

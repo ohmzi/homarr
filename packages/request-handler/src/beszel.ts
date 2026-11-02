@@ -1,5 +1,7 @@
 import { createLogger } from "@homarr/core/infrastructure/logs";
-import { createIntegrationAsync } from "@homarr/integrations";
+import type { BeszelTimePeriod } from "@homarr/definitions/beszel";
+import { beszelTimePeriodSchema } from "@homarr/definitions/beszel";
+import { createIntegrationAsync } from "@homarr/integrations/factory";
 import type {
   BeszelAlert,
   BeszelAlertHistory,
@@ -13,6 +15,7 @@ import type {
 import { createIntegrationRequestHandler } from "./lib/integration-request-handler";
 
 const logger = createLogger({ module: "beszelRequestHandler" });
+const MEBIBYTE = 1024 ** 2;
 
 export type { BeszelSystemRow } from "@homarr/integrations/types";
 
@@ -22,7 +25,7 @@ export type { BeszelSystemRow } from "@homarr/integrations/types";
  *
  * BeszelSystemInfo uses short field names (see beszel-types.ts for full docs):
  * cpu=CPU%, mp=memory%, dp=disk%, g=GPU%, la=loadAvg, u=uptime(s), v=version,
- * bb=bandwidth(bytes/s), b=bandwidth(Mbps legacy), dt=disk temp, bat=battery,
+ * bb=bandwidth(bytes/s), b=bandwidth(MiB/s legacy), dt=disk temp, bat=battery,
  * sv=[running,total] services, h=hostname, m=CPU model, c=cores, ct=threads
  */
 function mapToSystemRow(system: BeszelSystem, details: BeszelSystemDetails | null): BeszelSystemRow {
@@ -37,8 +40,8 @@ function mapToSystemRow(system: BeszelSystem, details: BeszelSystemDetails | nul
     extraFilesystems: info.efs ?? {},
     gpu: info.g ?? 0,
     loadAvg: info.la ?? null,
-    // bb = bytes/s (newer), b = Mbps (legacy, multiply to get bytes/s)
-    netBytes: info.bb ?? (info.b ?? 0) * 1_000_000,
+    // bb = bytes/s (newer), b = MiB/s (legacy, normalize to bytes/s)
+    netBytes: info.bb ?? (info.b ?? 0) * MEBIBYTE,
     temp: info.dt ?? null,
     battery: info.bat ?? null,
     services: info.sv?.[0] ?? 0,
@@ -57,6 +60,7 @@ export const beszelSystemsRequestHandler = createIntegrationRequestHandler<
   "beszel" | "mock",
   Record<string, never>
 >({
+  cacheNamespace: "beszel:systems",
   async requestAsync(integration) {
     const start = performance.now();
     const instance = await createIntegrationAsync(integration);
@@ -89,6 +93,7 @@ export const beszelAlertsRequestHandler = createIntegrationRequestHandler<
   "beszel" | "mock",
   { includeHistory: boolean; maxHistoryItems: number }
 >({
+  cacheNamespace: "beszel:alerts",
   async requestAsync(integration, input) {
     const start = performance.now();
     const instance = await createIntegrationAsync(integration);
@@ -104,7 +109,7 @@ export const beszelAlertsRequestHandler = createIntegrationRequestHandler<
   },
 });
 
-const timePeriodConfig: Record<string, { type: string; perPage: number }> = {
+const timePeriodConfig: Record<BeszelTimePeriod, { type: string; perPage: number }> = {
   "1m": { type: "1m", perPage: 60 },
   "1h": { type: "1m", perPage: 60 },
   "12h": { type: "10m", perPage: 72 },
@@ -121,22 +126,27 @@ export interface BeszelStatsData {
 export const beszelStatsRequestHandler = createIntegrationRequestHandler<
   BeszelStatsData,
   "beszel" | "mock",
-  { systemId: string; timePeriod: string; includeDocker: boolean }
+  { systemId: string; timePeriod: BeszelTimePeriod; includeDocker: boolean }
 >({
+  cacheNamespace: "beszel:stats",
   // No cache — the widget polls every 5s for live updates;
   // a TTL here would serve stale records between polls.
   cacheTtlMs: 0,
   async requestAsync(integration, input) {
     const start = performance.now();
-    const config = timePeriodConfig[input.timePeriod] ?? { type: "1m", perPage: 60 };
+    const config = timePeriodConfig[beszelTimePeriodSchema.parse(input.timePeriod)];
     const instance = await createIntegrationAsync(integration);
-    const systemStats = await instance.getSystemStatsAsync(input.systemId, config.type, config.perPage);
-    const containerStats = input.includeDocker
-      ? await instance.getContainerStatsAsync(input.systemId, config.type, config.perPage).catch((error) => {
+    const systemStatsPromise = instance.getSystemStatsAsync(input.systemId, config.type, config.perPage);
+    let containerStatsPromise: Promise<BeszelContainerStatsRecord[]> = Promise.resolve([]);
+    if (input.includeDocker) {
+      containerStatsPromise = instance
+        .getContainerStatsAsync(input.systemId, config.type, config.perPage)
+        .catch((error) => {
           logger.warn("Failed to fetch Beszel container stats", { systemId: input.systemId, error: String(error) });
           return [];
-        })
-      : [];
+        });
+    }
+    const [systemStats, containerStats] = await Promise.all([systemStatsPromise, containerStatsPromise]);
     logger.debug("beszelStats fetch completed", {
       integrationId: integration.id,
       systemId: input.systemId,

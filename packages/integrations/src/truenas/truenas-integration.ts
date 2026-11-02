@@ -1,10 +1,12 @@
 import dayjs from "dayjs";
 import z from "zod";
 
+import { ParseError } from "@homarr/common/server";
 import { createLogger } from "@homarr/core/infrastructure/logs";
 
 import type { IntegrationTestingInput } from "../base/integration";
 import { Integration } from "../base/integration";
+import type { IntegrationHttpAuthentication } from "../http-auth";
 import type { TestingResult } from "../base/test-connection/test-connection-service";
 import type { ISystemHealthMonitoringIntegration } from "../interfaces/health-monitoring/health-monitoring-integration";
 import type { SystemHealthMonitoring } from "../interfaces/health-monitoring/health-monitoring-types";
@@ -13,7 +15,10 @@ import { TrueNasClient } from "./truenas-client";
 
 const logger = createLogger({ module: "trueNasIntegration" });
 
-const NETWORK_MULTIPLIER = 100;
+const NETWORK_MULTIPLIER = 1000 / 8;
+const MEBIBYTE = 1024 * 1024;
+// Allow Netdata to finish its collection interval before requesting the latest sample.
+const REPORTING_DELAY_SECONDS = 5;
 
 const ERROR_MESSAGE_LIMIT = 200;
 
@@ -24,12 +29,18 @@ const ERROR_MESSAGE_LIMIT = 200;
  */
 const describeRequestError = (error: unknown) => {
   const cause = error instanceof Error ? error.cause : undefined;
-  const reason = cause instanceof Error ? cause.message : error instanceof Error ? error.message : String(error);
-
-  return reason.length > ERROR_MESSAGE_LIMIT ? `${reason.slice(0, ERROR_MESSAGE_LIMIT)}…` : reason;
+  let reason = String(error);
+  if (error instanceof Error) reason = error.message;
+  if (cause instanceof Error) reason = cause.message;
+  if (reason.length > ERROR_MESSAGE_LIMIT) return `${reason.slice(0, ERROR_MESSAGE_LIMIT)}…`;
+  return reason;
 };
 
 export class TrueNasIntegration extends Integration implements ISystemHealthMonitoringIntegration {
+  public override async getHttpAuthenticationAsync(): Promise<IntegrationHttpAuthentication> {
+    throw new Error("TrueNAS credentials authenticate its WebSocket API and cannot authenticate generic HTTP requests");
+  }
+
   private client?: TrueNasClient;
 
   protected async testingAsync(input: IntegrationTestingInput): Promise<TestingResult> {
@@ -38,36 +49,59 @@ export class TrueNasIntegration extends Integration implements ISystemHealthMoni
   }
 
   public async getSystemInfoAsync(): Promise<SystemHealthMonitoring> {
-    const systemInformation = await this.getSystemInformationAsync();
-    const reporting = await this.getReportingAsync();
+    const [systemInformation, reporting, datasets, netdata] = await Promise.all([
+      this.getSystemInformationAsync(),
+      this.getReportingAsync(),
+      this.getPoolsAsync(),
+      this.getReportingNetdataAsync(),
+    ]);
 
     const cpuData = this.extractLatestReportingData(reporting, "cpu");
     const cpuTempData = this.extractLatestReportingData(reporting, "cputemp");
     const memoryData = this.extractLatestReportingData(reporting, "memory");
-    const datasets = await this.getPoolsAsync();
+    if (Object.values(memoryData).some((value) => value < 0)) {
+      throw new ParseError("TrueNAS returned negative memory reporting values");
+    }
 
-    const netdata = await this.getReportingNetdataAsync();
+    const upload = this.extractNetworkTrafficData(netdata, "sent");
+    const download = this.extractNetworkTrafficData(netdata, "received");
 
-    const upload = this.extractNetworkTrafficData(netdata, 2); // Index 2 is "sent"
-    const download = this.extractNetworkTrafficData(netdata, 1); // Index 1 is "received"
-
-    // The "memory" reporting graph reports available (free) memory, its legend is ["time", "available"].
-    // Used memory is therefore the physical total minus what is still available (clamped against timing skew).
-    const memAvailableInBytes = memoryData[1] ?? 0; // Index 0 is the UNIX timestamp, Index 1 is available bytes
-    const memUsedInBytes = Math.max(systemInformation.physmem - memAvailableInBytes, 0);
+    let memoryUsed: number;
+    if (memoryData.available !== undefined) {
+      memoryUsed = systemInformation.physmem - memoryData.available;
+    } else if (
+      memoryData.used !== undefined &&
+      ["free", "cached", "buffers"].every((column) => memoryData[column] !== undefined)
+    ) {
+      memoryUsed = memoryData.used * MEBIBYTE;
+    } else {
+      throw new ParseError("TrueNAS returned an unsupported memory reporting format");
+    }
+    const memUsedInBytes = Math.min(systemInformation.physmem, Math.max(memoryUsed, 0));
+    const memAvailableInBytes = systemInformation.physmem - memUsedInBytes;
+    const cpuUtilization =
+      cpuData.cpu ??
+      Object.entries(cpuData).reduce((total, [column, value]) => {
+        if (column === "idle" || column === "iowait") return total;
+        return total + value;
+      }, 0);
 
     return {
-      cpuUtilization: cpuData.reduce((acc, item) => acc + (item > 100 ? 0 : item), 0) / cpuData.length,
-      cpuTemp: Math.max(...cpuTempData.filter((_item, index) => index > 0)),
+      cpuUtilization: Math.min(100, Math.max(0, cpuUtilization)),
+      cpuTemp: Math.max(...Object.values(cpuTempData)),
       memAvailableInBytes,
       memUsedInBytes,
-      fileSystem: datasets.map((dataset) => ({
-        deviceName: dataset.name,
-        available: `${dataset.available}`,
-        used: `${dataset.used}`,
-        percentage:
-          dataset.used + dataset.available === 0 ? 0 : (dataset.used / (dataset.used + dataset.available)) * 100,
-      })),
+      fileSystem: datasets.map((dataset) => {
+        const total = dataset.used + dataset.available;
+        let percentage = 0;
+        if (total > 0) percentage = (dataset.used / total) * 100;
+        return {
+          deviceName: dataset.name,
+          available: `${dataset.available}`,
+          used: `${dataset.used}`,
+          percentage,
+        };
+      }),
       availablePkgUpdates: 0,
       network: {
         up: upload * NETWORK_MULTIPLIER,
@@ -227,7 +261,7 @@ export class TrueNasIntegration extends Integration implements ISystemHealthMoni
       {
         aggregate: true,
         start: dayjs().add(-5, "minutes").unix(),
-        end: dayjs().unix(),
+        end: dayjs().subtract(REPORTING_DELAY_SECONDS, "seconds").unix(),
       },
     ]);
     const result = await z.array(reportingItemSchema).parseAsync(response);
@@ -275,7 +309,7 @@ export class TrueNasIntegration extends Integration implements ISystemHealthMoni
       })),
       {
         start: dayjs().add(-5, "minutes").unix(),
-        end: dayjs().unix(),
+        end: dayjs().subtract(REPORTING_DELAY_SECONDS, "seconds").unix(),
       },
     ]);
     const result = await reportingNetDataSchema.parseAsync(response);
@@ -301,16 +335,29 @@ export class TrueNasIntegration extends Integration implements ISystemHealthMoni
     return result;
   }
 
-  private extractNetworkTrafficData = (data: z.infer<typeof reportingNetDataSchema>, index: 1 | 2) => {
-    return data.reduce((acc, current) => acc + (current.data.at(-1)?.at(index) ?? 0), 0);
+  private extractNetworkTrafficData = (data: z.infer<typeof reportingNetDataSchema>, column: "sent" | "received") => {
+    return data.reduce((total, report) => {
+      const value = report.data.at(-1)?.[report.legend.indexOf(column)] ?? 0;
+      return total + value;
+    }, 0);
   };
 
   private extractLatestReportingData(data: ReportingItem[], identifier: ReportingItem["identifier"]) {
     const item = data.find((reportingItem) => reportingItem.identifier === identifier);
-    // Reporting rows are [timestamp, ...values] in ascending time order, so the last row is the most recent reading.
     const latest = item?.data.at(-1);
-    if (!latest) throw new Error(`TrueNAS returned no "${identifier}" reporting data`);
-    return latest;
+    if (!item || !latest?.length) throw new ParseError(`TrueNAS returned no "${identifier}" reporting data`);
+    if (new Set(item.legend).size !== item.legend.length) {
+      throw new ParseError(`TrueNAS returned duplicate "${identifier}" reporting columns`);
+    }
+    const values: Record<string, number> = {};
+    for (const [index, column] of item.legend.entries()) {
+      if (column === "time") continue;
+      const value = latest[index];
+      if (value === undefined) throw new ParseError(`TrueNAS returned no "${identifier}.${column}" reporting value`);
+      values[column] = value;
+    }
+    if (Object.keys(values).length === 0) throw new ParseError(`TrueNAS returned no "${identifier}" reporting values`);
+    return values;
   }
 }
 
@@ -360,6 +407,7 @@ const reportingNetDataSchema = z.array(
   z.object({
     name: z.string(),
     identifier: z.string(),
+    legend: z.array(z.string()),
     data: z.array(z.array(z.number())),
   }),
 );
@@ -367,7 +415,7 @@ const reportingNetDataSchema = z.array(
 const systemInfoSchema = z.object({
   version: z.string(),
   hostname: z.string(),
-  physmem: z.number().min(0), // pysical memory
+  physmem: z.number().positive(),
   model: z.string(), // cpu model
   uptime_seconds: z.number().min(0),
 });

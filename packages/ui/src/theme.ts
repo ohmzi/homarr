@@ -62,6 +62,13 @@ const ohmzAmber: MantineColorsTuple = [
 
 const fontStack = "'Space Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
 
+export const scrollAreaDefaultProps = {
+  type: "hover",
+  scrollbarSize: 2,
+  scrollHideDelay: 500,
+  offsetScrollbars: true,
+} as const;
+
 export const theme = createTheme({
   primaryColor: "ohmzAmber",
   primaryShade: { light: 8, dark: 6 },
@@ -91,6 +98,7 @@ export const theme = createTheme({
   },
 
   fontSizes: {
+    xxs: rem(11),
     xs: rem(12),
     sm: rem(14),
     md: rem(16),
@@ -162,6 +170,12 @@ export const theme = createTheme({
       defaultProps: {
         style: { borderRadius: 5 },
       },
+    },
+    ScrollArea: {
+      defaultProps: scrollAreaDefaultProps,
+    },
+    ScrollAreaAutosize: {
+      defaultProps: scrollAreaDefaultProps,
     },
     LoadingOverlay: {
       defaultProps: {

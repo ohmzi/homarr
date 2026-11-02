@@ -2,7 +2,7 @@ import { Card, Group, Text, useComputedColorScheme } from "@mantine/core";
 import { IconClock } from "@tabler/icons-react";
 
 import { useRequiredBoard } from "@homarr/boards/context";
-import { useScopedI18n } from "@homarr/translation/client";
+import { useI18n } from "@homarr/translation/client";
 
 import type { LabelDisplayModeOption } from "..";
 
@@ -29,7 +29,7 @@ export const SystemResourceUptimeCard = ({
   uptimeInSeconds: number;
   labelDisplayMode: LabelDisplayModeOption;
 }) => {
-  const t = useScopedI18n("widget.systemResources.card");
+  const t = useI18n("widget.systemResources.card");
   const colorScheme = useComputedColorScheme("light");
   const board = useRequiredBoard();
 

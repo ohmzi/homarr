@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { Alert, Anchor, Center, Group, Stack, Table, TableTbody, TableTd, TableTr, Text, Title } from "@mantine/core";
+import { Alert, Anchor, Center, Group, Stack, Table, TableTbody, TableTd, TableTr, Text } from "@mantine/core";
 import { IconExclamationCircle } from "@tabler/icons-react";
 
 import type { RouterOutputs } from "@homarr/api";
@@ -11,9 +11,10 @@ import {
   isGroupMembershipManagedLocally,
 } from "@homarr/auth/server";
 import { everyoneGroup } from "@homarr/definitions";
-import { getI18n, getScopedI18n } from "@homarr/translation/server";
+import { getI18n } from "@homarr/translation/server";
 import { Link, SearchInput, UserAvatar } from "@homarr/ui";
 
+import { ManagePageHeader } from "~/components/manage/manage-page-layout";
 import { ReservedGroupAlert } from "../_reserved-group-alert";
 import { AddGroupMember } from "./_add-group-member";
 import { RemoveGroupMember } from "./_remove-group-member";
@@ -36,8 +37,8 @@ export default async function GroupsDetailPage(props: GroupsDetailPageProps) {
     notFound();
   }
 
-  const t = await getI18n();
-  const tMembers = await getScopedI18n("management.page.group.setting.members");
+  const tGroup = await getI18n("group");
+  const tMembers = await getI18n("management.page.group.setting.members");
   const group = await api.group.getById({ id: params.id });
   const isReserved = group.name === everyoneGroup;
 
@@ -53,27 +54,36 @@ export default async function GroupsDetailPage(props: GroupsDetailPageProps) {
 
   return (
     <Stack>
-      <Title>{tMembers("title")}</Title>
+      <ManagePageHeader
+        title={tMembers("title")}
+        primaryAction={
+          canManageMembers &&
+          !isReserved && (
+            <AddGroupMember
+              groupId={group.id}
+              presentUserIds={group.members.map((member) => member.id)}
+              allowedProviders={allowedProviders}
+            />
+          )
+        }
+      />
 
       {isReserved ? (
         <ReservedGroupAlert />
       ) : (
         managementType !== "local" && (
           <Alert variant="light" color="yellow" icon={<IconExclamationCircle size="1rem" stroke={1.5} />}>
-            {t(`group.memberNotice.${managementType}`)}
+            {tGroup(`memberNotice.${managementType}`)}
           </Alert>
         )
       )}
 
       <Group justify="space-between">
-        <SearchInput placeholder={`${tMembers("search")}...`} defaultValue={searchParams.search} />
-        {canManageMembers && !isReserved && (
-          <AddGroupMember
-            groupId={group.id}
-            presentUserIds={group.members.map((member) => member.id)}
-            allowedProviders={allowedProviders}
-          />
-        )}
+        <SearchInput
+          placeholder={`${tMembers("search")}...`}
+          ariaLabel={tMembers("search")}
+          defaultValue={searchParams.search}
+        />
       </Group>
       {filteredMembers.length === 0 && (
         <Center py="sm">

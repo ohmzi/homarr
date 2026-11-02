@@ -1,7 +1,7 @@
 import { createId } from "@homarr/common";
 
-import type { Board, DynamicSection, EmptySection, Item, Section } from "~/app/[locale]/boards/_types";
-import { DynamicSectionMockBuilder } from "./dynamic-section-mock";
+import type { Board, ContainerSection, EmptySection, Item, Section } from "~/app/[locale]/boards/_types";
+import { ContainerSectionMockBuilder } from "./container-section-mock";
 import { EmptySectionMockBuilder } from "./empty-section-mock";
 import { ItemMockBuilder } from "./item-mock";
 import { LayoutMockBuilder } from "./layout-mock";
@@ -34,7 +34,6 @@ export class BoardMockBuilder {
         id: createId(),
         image: null,
         name: "User",
-        email: null,
       },
       groupPermissions: [],
       userPermissions: [],
@@ -45,7 +44,10 @@ export class BoardMockBuilder {
           id: createId(),
           name: "Base",
           columnCount: 12,
-          breakpoint: 0,
+          leftGutterColumnCount: 0,
+          rightGutterColumnCount: 0,
+          breakpoint: 768,
+          role: "base",
         },
       ],
       ...board,
@@ -56,8 +58,8 @@ export class BoardMockBuilder {
     return this.addSection(new EmptySectionMockBuilder(emptySection).build());
   }
 
-  public addDynamicSection(dynamicSection?: Partial<DynamicSection>): BoardMockBuilder {
-    return this.addSection(new DynamicSectionMockBuilder(dynamicSection).build());
+  public addContainer(container?: Partial<ContainerSection>): BoardMockBuilder {
+    return this.addSection(new ContainerSectionMockBuilder(container).build());
   }
 
   public addSection(section: Section): BoardMockBuilder {

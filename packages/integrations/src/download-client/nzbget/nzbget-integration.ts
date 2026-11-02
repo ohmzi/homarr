@@ -23,9 +23,11 @@ export class NzbGetIntegration extends Integration implements IDownloadClientInt
 
   public async getClientJobsAndStatusAsync(input: { limit: number }): Promise<DownloadClientJobsAndStatus> {
     const type = "usenet";
-    const queue = await this.nzbGetApiCallAsync("listgroups");
-    const history = await this.nzbGetApiCallAsync("history");
-    const nzbGetStatus = await this.nzbGetApiCallAsync("status");
+    const [queue, history, nzbGetStatus] = await Promise.all([
+      this.nzbGetApiCallAsync("listgroups"),
+      this.nzbGetApiCallAsync("history"),
+      this.nzbGetApiCallAsync("status"),
+    ]);
     const status: DownloadClientStatus = {
       paused: nzbGetStatus.DownloadPaused,
       rates: { down: nzbGetStatus.DownloadRate },
@@ -113,9 +115,13 @@ export class NzbGetIntegration extends Integration implements IDownloadClientInt
   ): Promise<ReturnType<NzbGetClient[CallType]>> {
     const username = this.getSecretValue("username");
     const password = this.getSecretValue("password");
-    const url = this.url(`/${encodeURIComponent(username)}:${encodeURIComponent(password)}/jsonrpc`);
+    const url = this.url("/jsonrpc");
+    const headers = {
+      Authorization: `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`,
+      "Content-Type": "application/json",
+    };
     const body = JSON.stringify({ method, params });
-    return await fetchAsync(url, { method: "POST", body })
+    return await fetchAsync(url, { method: "POST", body, headers })
       .then(async (response) => {
         if (!response.ok) {
           throw new ResponseError(response);

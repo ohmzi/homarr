@@ -6,23 +6,24 @@
 homarr/
 ├── apps/
 │   ├── nextjs/          # Main Next.js application (port 3000)
-│   ├── docs/            # Docusaurus 3 documentation site (@homarr/docs)
-│   ├── tasks/           # Cron job runner + Fastify tRPC API (port 3002)
-│   └── websocket/       # Standalone tRPC WebSocket server (port 3001)
+│   ├── docs/            # Next.js + Fumadocs documentation site (@homarr/docs)
+│   ├── tasks/           # Cron-job initialization and scheduling runtime
+│   ├── websocket/       # Standalone tRPC WebSocket server (port 3001)
+│   └── workshop/        # Go/PocketBase Workshop service
 ├── packages/
 │   ├── api/             # tRPC appRouter, procedures, OpenAPI
 │   ├── auth/            # NextAuth config, providers, session, API keys
-│   ├── db/              # Drizzle schema (3 DB drivers), migrations, queries
+│   ├── db/              # SQLite and PostgreSQL schemas, migrations, queries
 │   ├── core/            # Env validation, DB/Redis driver factories, logging
 │   ├── definitions/     # Domain enums: WidgetKind, IntegrationKind, permissions
-│   ├── widgets/         # All 39 dashboard widgets (definitions + components)
+│   ├── widgets/         # Dashboard widget definitions and components
 │   ├── integrations/    # Integration classes (HTTP clients to external apps)
 │   ├── redis/           # Redis pub/sub channels, caching abstractions
 │   ├── translation/     # next-intl setup, locale configs, lang JSON files
 │   ├── ui/              # Shared Mantine components, theme, hooks
 │   ├── validation/      # Shared zod schemas for API/forms
 │   ├── common/          # Shared utilities, IDs, errors
-│   ├── cron-jobs/       # Cron job implementations (25+ jobs)
+│   ├── cron-jobs/       # Cron job implementations
 │   ├── cron-jobs-core/  # Cron scheduling primitives
 │   ├── cron-job-status/ # Cron status via Redis
 │   ├── boards/          # Board context, edit mode, cache updater
@@ -40,8 +41,9 @@ homarr/
 │   ├── analytics/       # Server-side analytics (Umami)
 │   ├── server-settings/ # Server setting keys/types
 │   ├── settings/        # User-facing settings UI context
-│   ├── old-import/      # Legacy Homarr import
-│   ├── old-schema/      # Legacy Homarr zod schemas
+│   ├── custom-widgets/  # Custom JSX v2 schema, validation, and runtime
+│   ├── onboarding/      # Onboarding studio and setup flow
+│   ├── workshop/        # Homarr-side Workshop client and contracts
 │   └── cli/             # Node CLI for ops (brocli)
 ├── tooling/
 │   ├── typescript/      # Base tsconfig
@@ -53,15 +55,17 @@ homarr/
 └── Dockerfile           # Multi-stage production build
 ```
 
-## Documentation Sync
+## Documentation
 
-The documentation site lives at `apps/docs/` (Docusaurus 3, `@homarr/docs`).
+Add documentation only when users need the information to set up, use, or troubleshoot Homarr and cannot reasonably discover it from the UI or generated API schema. If a user does not need to know it, do not document it. A code, UI, or API change alone is never a reason to add docs.
 
-When modifying user-facing code, you MUST also update the corresponding documentation:
+Keep warranted documentation concise. Omit UI walkthroughs, visible control descriptions, internal implementation details, and anything already clear from the interface or schema.
+
+Only after this user-need test passes, use these locations:
 
 - New integration → `apps/docs/docs/integrations/<slug>/index.mdx` + `index.ts`
 - New widget → `apps/docs/docs/widgets/<slug>/index.mdx` + `index.ts`
-- Changed API → `apps/docs/docs/management/api.mdx`
+- Changed API → `apps/docs/docs/management/api/index.mdx`
 - New/changed env vars → `apps/docs/docs/advanced/`
 - New CLI commands → `apps/docs/docs/advanced/command-line/`
 - Auth changes → `apps/docs/docs/advanced/` SSO pages
@@ -69,37 +73,71 @@ When modifying user-facing code, you MUST also update the corresponding document
 
 ## Monorepo Commands
 
-- `pnpm dev` — Next.js app only
-- `pnpm dev:cli -- dev` — run the developer CLI without installing a global binary
-- `pnpm db:seed` — seed default database data explicitly
-- `pnpm docker:dev:up` — start the Redis development service in the background
-- `pnpm dev:docs` — Docusaurus docs site only
-- `pnpm turbo build` — build all packages
-- `pnpm turbo build --filter=@homarr/docs` — build docs only
-- `pnpm turbo typecheck` — typecheck all packages
-- `pnpm lint` / `pnpm format` — oxlint / oxfmt
+- `bun run dev` — Next.js app only
+- `bun run dev:cli -- dev` — run the developer CLI without installing a global binary
+- `bun run db:seed` — seed default database data explicitly
+- `bun run docker:dev:up` — start the Redis development service in the background
+- `bun run dev:docs` — Fumadocs site only
+- `bun run turbo build` — build all packages
+- `bun run turbo build --filter=@homarr/docs` — build docs only
+- `bun run turbo typecheck` — typecheck all packages
+- `bun run lint` / `bun run format` — oxlint / oxfmt
 
 ## Code Style
 
 - Lint: oxlint (not ESLint)
 - Format: oxfmt (not Prettier)
 - UI: Mantine (not Tailwind) — Tailwind is only used in docs app
-- Mantine: use the `mantine` MCP server (configured in `.mcp.json`; tools `get_item_doc` / `get_item_props` / `search_docs`) for current v9 APIs before writing component code. Prefer built-in primitives (`Combobox`/`useCombobox` for selects, the polymorphic `component` prop, `@mantine/hooks`) over hand-rolled equivalents. Check `packages/ui/` for existing conventions first.
+- Mantine: before creating, changing, or reviewing application UI, follow [mantine-ui](plugins/homarr-mantine/skills/mantine-ui/SKILL.md) for component discovery, mandatory `get_item_doc` lookups, and styling through built-in props and the Styles API.
+- Icons: @tabler/icons-react
+- Docs app can import from `@homarr/definitions` for shared types
+- Run `bun run dev:cli -- dev` to browse local `homarr:*` images and remote PR images.
+- Run `bun run dev:cli -- build <name>` from a Homarr checkout to build `homarr:<name>` with rebuild provenance.
+- Run `bun run dev:cli -- build --pr <number>` to build a PR locally from a temporary checkout.
+
+## Testing
+
+Add tests only when requested, and only when the test is extremely relevant and will plausibly prevent a future regression in user-visible behavior or a security boundary. Do not add tests that restate implementation details or duplicate stronger coverage. For focused changes, run only the relevant existing or newly requested checks when validation is needed. Do not run broad test, Docker, or E2E suites by default.
+
+## AI-assisted pull requests
+
+These rules apply to every PR an agent prepares or opens, including contributor PRs. A PR that does not meet them will be closed.
+
+- Prove the change in the running app. Start Homarr locally, reproduce the reported case on unmodified `dev`, then repeat it on the PR head using `agent-browser` (`agent-browser skills get core` loads its workflow). Use the same viewport, theme, fixture data and settings for both captures.
+- The PR body must open with a before/after table of those screenshots, uploaded with `gh pr create --attach` (or `gh pr comment --attach`). Local paths, mock-ups and test-runner output are not substitutes. Read back the published body and check the images render.
+- For behavior that only shows over time (polling, refresh, notifications), capture the same view at the relevant moments, or a short recording, in the same table.
+- Changes with no user-visible effect (types, internal refactors, CI) state that in one line instead of the table.
+- Keep the body short: the problem, the resulting behavior, the evidence table, and one or two lines of relevant validation. No validation logs, environment recitals, private replay descriptions or checklists of what was not tested.
+- Contributors must not use the `homarr-triage` skill or its `> _This was generated by AI during triage._` disclaimer; disclose AI assistance in plain words instead. PRs a maintainer explicitly runs through `homarr-triage` keep that disclaimer as their first line.
 
 ## MCP servers
 
-`.mcp.json` at the repo root declares project-scoped MCP servers (the standard Claude Code layout; other tools can import the same `mcpServers` block). See the `mantine` entry there for the Mantine v9 server, and the upstream docs at https://mantine.dev/guides/llms/ for per-tool setup (OpenCode: `.opencode/opencode.json`, Codex: `.codex/config.toml`). Only keyless server definitions belong in `.mcp.json`; anything needing secrets stays in local dotfiles.
+The [Homarr Mantine plugin](plugins/homarr-mantine/plugin.json) bundles the UI skill and pinned documentation MCP server. `.agents/plugins/marketplace.json` exposes it through the project marketplace, and `.codex/config.toml` enables it for this repository. For clients requiring registration, run `codex plugin marketplace add .` from the repository root, then `codex plugin add homarr-mantine@homarr-local`. Keep shared definitions keyless; credentials belong in local dotfiles. See [Mantine LLM tooling](https://mantine.dev/guides/llms/) for documentation sources.
 
 ## Agent Skills
 
-Portable agent skills live in `.agents/skills/` (the Agent Skills open standard). Cursor, Codex, and OpenCode read `.agents/skills/` natively. Claude Code does not scan it, so `.claude/skills/` is a symlink back to `.agents/skills/`. Install skills at `.agents/skills/<name>/SKILL.md` — that single copy is used everywhere. See `.agents/skills/` for available skills (documentation-sync, mcp-integration, codebase-context, datatable-migration).
+Portable skills live in `.agents/skills/`. Read the relevant `SKILL.md` before working in that domain; detailed references are loaded only when needed. Claude-compatible discovery is provided through `.claude/skills`.
 
-- Icons: @tabler/icons-react
-- Docs app can import from `@homarr/definitions` for shared types
-- Run `pnpm dev:cli -- dev` to browse local `homarr:*` images and remote PR images.
-- Run `pnpm dev:cli -- build <name>` from a Homarr checkout to build `homarr:<name>` with rebuild provenance.
-- Run `pnpm dev:cli -- build --pr <number>` to build a PR locally from a temporary checkout.
-- Run Go checks from `tools/homarr-dev` with `go test ./...` and `go vet ./...`.
+- `codebase-context` — architecture, package boundaries, and shared utilities
+- `homarr-mantine:mantine-ui` — project plugin for Mantine component discovery, documentation, and built-in styling
+- `documentation-sync` — user-critical documentation only
+- `mcp-integration` — safe tRPC-to-MCP exposure
+- `homarr-custom-widget` — safe Custom JSX v2 authoring
+- `homarr-triage` — maintainer-only, explicit invocation; issue/PR queues, reporter follow-ups, and GitHub Project operations
+
+### Issue tracker
+
+Use GitHub Issues and pull requests in `homarr-labs/homarr` for agent work.
+Read `docs/agents/issue-tracker.md` before reading or updating reports.
+
+### Triage labels
+
+Use the exact GitHub label mappings, size weights and reporter testing states in
+`docs/agents/triage-labels.md` when triaging issues or PRs.
+
+### Domain docs
+
+Single-context: root `GLOSSARY.md` + `docs/adr/`. See `docs/agents/domain.md`.
 
 ## Deploying this fork — use `./deploy-homarr.sh`
 
@@ -123,3 +161,14 @@ It fails loudly if the container does not come up, or if the hardening did not s
 Note: Portainer stack 5 (`homarr`) still exists and points at upstream
 `ghcr.io/homarr-labs/homarr:latest`. Clicking "Update the stack" there replaces this fork
 with upstream. Deploy from this script instead.
+
+<!-- BEGIN:turborepo-agent-rules -->
+
+# This is NOT the Turborepo you know
+
+Turborepo configuration, task behavior, and CLI commands can vary between installed versions and may differ from your training data. Resolve the `turbo` package from this file's directory or relevant workspace; in monorepos, it may not be visible from the repository root. For example, run `node -p "require.resolve('turbo/package.json')"` from a workspace that depends on `turbo`.
+
+Read `docs/README.md` inside that installed package first, then read the relevant pages from its `docs/` directory before changing Turborepo configuration or commands. Heed deprecation notices. These bundled docs match the installed package version and are available without network access.
+
+This block is written and re-added by `turbo` before repository-scoped commands when an AI agent is detected. In the Turborepo source repository, its template is defined in `crates/turborepo-cli/src/cli/agent_guidance.rs`. Removing the managed block while updates are enabled means a later qualifying invocation will add it again. Set `"agentGuidance": false` in the root `turbo.json` or `turbo.jsonc` to opt out; this does not remove an existing block. When agent guidance is enabled, keep the block committed to avoid an uncommitted change on the next agent invocation. This repository disables agent guidance in `turbo.json`.
+<!-- END:turborepo-agent-rules -->

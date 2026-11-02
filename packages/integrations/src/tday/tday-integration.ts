@@ -14,14 +14,7 @@ import {
   tdaySessionResponseSchema,
   tdayTodosResponseSchema,
 } from "./tday-types";
-import type {
-  TdayList,
-  TdayListOption,
-  TdayPriority,
-  TdayTask,
-  TdayTaskKind,
-  TdayTaskView,
-} from "./tday-types";
+import type { TdayList, TdayListOption, TdayPriority, TdayTask, TdayTaskKind, TdayTaskView } from "./tday-types";
 
 const logger = createLogger({ module: "tdayIntegration" });
 
@@ -114,7 +107,15 @@ export class TdayIntegration extends Integration {
         }));
     }
 
-    const mapTodo = (todo: { id: string; title: string; priority: string; due?: string | null; instanceDate?: string | null; completed: boolean; listID?: string | null }) => ({
+    const mapTodo = (todo: {
+      id: string;
+      title: string;
+      priority: string;
+      due?: string | null;
+      instanceDate?: string | null;
+      completed: boolean;
+      listID?: string | null;
+    }) => ({
       id: todo.id,
       title: todo.title,
       priority: todo.priority,
@@ -148,7 +149,8 @@ export class TdayIntegration extends Integration {
   }
 
   /** Lists the user's lists for the view: floater-lists for "floater", todo-lists otherwise. */
-  public async getListsAsync(view: TdayTaskView): Promise<TdayList[]> {    const path = view === "floater" ? "/api/floaterList" : "/api/list";
+  public async getListsAsync(view: TdayTaskView): Promise<TdayList[]> {
+    const path = view === "floater" ? "/api/floaterList" : "/api/list";
     const { lists } = tdayListsResponseSchema.parse(await this.requestAsync(path));
     return lists.map((list) => ({
       id: list.id,
@@ -165,10 +167,7 @@ export class TdayIntegration extends Integration {
    * tables and an id from one means nothing in the other.
    */
   public async getListOptionsAsync(): Promise<TdayListOption[]> {
-    const [todoLists, floaterLists] = await Promise.all([
-      this.getListsAsync("today"),
-      this.getListsAsync("floater"),
-    ]);
+    const [todoLists, floaterLists] = await Promise.all([this.getListsAsync("today"), this.getListsAsync("floater")]);
     return [
       ...todoLists.map((list) => ({
         value: encodeTdayListSelection({ kind: "todo" as const, id: list.id }),
@@ -253,7 +252,10 @@ export class TdayIntegration extends Integration {
       titles.map((title) =>
         view === "floater"
           ? this.requestAsync("/api/floater", { method: "POST", body: { title, priority, ...listField } })
-          : this.requestAsync("/api/todo", { method: "POST", body: { title, priority, due: resolvedDue, ...listField } }),
+          : this.requestAsync("/api/todo", {
+              method: "POST",
+              body: { title, priority, due: resolvedDue, ...listField },
+            }),
       ),
     );
 

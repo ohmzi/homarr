@@ -1,5 +1,6 @@
 .tiptap hr {
   border-top-style: double;
+  border-top-color: rgb(from var(--mantine-color-default-border) r g b / calc(var(--opacity, 1) * 0.45));
 }
 
 .tiptap ul[data-type="taskList"] {
@@ -20,6 +21,10 @@
   outline: 3px solid rgba(0, 65, 198, 0.8);
 }
 
+.tiptap table :where(tr) {
+  background-color: transparent;
+}
+
 .tiptap table {
   border-collapse: collapse;
   margin: 0;
@@ -28,8 +33,8 @@
   width: 100%;
 }
 
-.tiptap table td {
-  border-color: var(--mantine-color-gray-5) !important;
+.tiptap table :where(th, td) {
+  border-color: rgb(from var(--mantine-color-default-border) r g b / calc(var(--opacity, 1) * 0.45)) !important;
   border-width: 1px !important;
   border-style: solid !important;
   box-sizing: border-box;
@@ -39,7 +44,7 @@
   vertical-align: top;
 }
 
-.tiptap table td > * {
+.homarr-notebook .tiptap table :where(th, td) > * {
   margin-bottom: 0;
 }
 
@@ -55,7 +60,7 @@
   z-index: 2;
 }
 
-.tiptap table p {
+.homarr-notebook .tiptap table p {
   margin: 0;
 }
 
@@ -66,7 +71,109 @@
 .tiptap[contenteditable="false"].resize-cursor {
   pointer-events: none;
 }
+.homarr-notebook-toolbar-group {
+  background-color: rgb(from var(--mantine-color-body) r g b / calc(var(--opacity, 1) * 0.12));
+}
+
+.homarr-notebook .tiptap :where(pre, blockquote) {
+  background-color: rgb(from var(--mantine-color-body) r g b / calc(var(--opacity, 1) * 0.12));
+}
+
+.homarr-notebook .tiptap :where(code, kbd) {
+  background-color: rgb(from var(--mantine-color-body) r g b / calc(var(--opacity, 1) * 0.12));
+  border-color: rgb(from var(--mantine-color-default-border) r g b / calc(var(--opacity, 1) * 0.45));
+}
+
+.homarr-notebook .tiptap :where(pre) :where(code) {
+  background-color: transparent;
+}
+
+.homarr-notebook[data-notebook-compact="true"] .tiptap :where(h1, h2, h3):not([style*="font-size"]) {
+  font-size: 1.125rem;
+}
+
+.homarr-notebook[data-notebook-compact="true"] .tiptap :where(h1, h2, h3):not([style*="line-height"]) {
+  line-height: 1.15;
+}
 
 .ProseMirror {
   height: 100%;
+}
+
+.homarr-notebook-action {
+  opacity: 0;
+  transform: translateX(2px);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.homarr-notebook:hover .homarr-notebook-action,
+.homarr-notebook:focus-within .homarr-notebook-action,
+.homarr-notebook-action[data-visible="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+@media (any-pointer: coarse) {
+  .homarr-notebook-action {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .homarr-notebook-action {
+    transition: none;
+  }
+}
+
+.homarr-notebook[data-notebook-compact="true"] .tiptap img {
+  max-height: 2rem;
+  object-fit: contain;
+}
+
+.homarr-notebook .tiptap :where(p) {
+  margin-top: 0;
+  margin-bottom: calc(0.4375rem * var(--mantine-scale));
+}
+
+.homarr-notebook .tiptap :where(h1, h2, h3, h4, h5, h6) {
+  margin-top: 0;
+}
+
+.homarr-notebook .tiptap :where(ul, ol) :where(li) {
+  margin-top: calc(0.125rem * var(--mantine-scale));
+}
+
+.homarr-notebook .tiptap :where(pre) {
+  font-family: var(--mantine-font-family-monospace);
+  border-radius: var(--mantine-radius-default);
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+}
+
+.homarr-notebook .tiptap :where(pre) :where(code) {
+  font-size: var(--mantine-font-size-sm);
+}
+
+.homarr-notebook .tiptap > :last-child {
+  margin-bottom: 0;
+}
+
+/* Read mode does not mount the editor that normally injects these text styles. */
+.homarr-notebook .homarr-notebook-read-mode {
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.homarr-notebook .ProseMirror pre {
+  white-space: pre-wrap;
+}
+
+.homarr-notebook .tiptap :where(p, h1, h2, h3, h4, h5, h6):empty::before {
+  content: "\00a0";
+}
+
+.homarr-notebook .tiptap li > p {
+  margin: 0;
 }

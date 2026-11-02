@@ -8,9 +8,9 @@ import {
   CloseButton,
   Combobox,
   Group,
-  Input,
   Pill,
   PillsInput,
+  ScrollArea,
   Stack,
   Text,
   useCombobox,
@@ -33,17 +33,27 @@ interface WidgetIntegrationSelectProps {
   canSelectMultiple?: boolean;
   data: IntegrationSelectOption[];
   withAsterisk?: boolean;
+  onOpenNewIntegration?: () => void;
 }
 export const WidgetIntegrationSelect = ({
   data,
   onChange,
   value: valueProp,
+  label,
   canSelectMultiple = true,
   withAsterisk = false,
+  onOpenNewIntegration,
   ...props
 }: WidgetIntegrationSelectProps) => {
-  const t = useI18n();
+  const tItem = useI18n("item.edit.field.integrations");
+  const tIntegration = useI18n("widget.common.integration");
+  const tCommon = useI18n("common");
   const multiSelectValues = valueProp ?? [];
+  const selectedIds = new Set(multiSelectValues);
+  const optionsById = new Map<string, IntegrationSelectOption>();
+  for (const option of data) {
+    if (!optionsById.has(option.id)) optionsById.set(option.id, option);
+  }
 
   const combobox = useCombobox({
     onDropdownClose: () => combobox.resetSelectedOption(),
@@ -51,7 +61,7 @@ export const WidgetIntegrationSelect = ({
   });
 
   const handleValueSelect = (selectedValue: string) => {
-    if (multiSelectValues.includes(selectedValue)) {
+    if (selectedIds.has(selectedValue)) {
       onChange(multiSelectValues.filter((value) => value !== selectedValue));
     } else if (canSelectMultiple) {
       onChange([...multiSelectValues, selectedValue]);
@@ -68,9 +78,22 @@ export const WidgetIntegrationSelect = ({
     onChange(multiSelectValues.filter((value) => value !== valueToRemove));
 
   const values = multiSelectValues.map((item) => {
-    const option = data.find((integration) => integration.id === item);
+    const option = optionsById.get(item);
     if (!option) {
-      return null;
+      return (
+        <Pill
+          key={item}
+          withRemoveButton
+          onRemove={() => handleValueRemove(item)}
+          removeButtonProps={{
+            "aria-label": tItem("removeLabel", { name: item }),
+            "aria-hidden": false,
+            tabIndex: 0,
+          }}
+        >
+          {tIntegration("noData")}: {item}
+        </Pill>
+      );
     }
 
     return (
@@ -79,20 +102,22 @@ export const WidgetIntegrationSelect = ({
         option={option}
         onRemove={() => handleValueRemove(item)}
         showRemoveButton={canSelectMultiple}
+        removeLabel={tItem("removeLabel", { name: option.name })}
       />
     );
   });
 
   const options = data.map((item) => {
+    const isSelected = selectedIds.has(item.id);
     return (
-      <Combobox.Option value={item.id} key={item.id} active={multiSelectValues.includes(item.id)}>
+      <Combobox.Option value={item.id} key={item.id} active={isSelected}>
         <Group gap="sm" align="center">
-          {multiSelectValues.includes(item.id) ? <CheckIcon size={12} /> : null}
+          {isSelected && <CheckIcon size="var(--mantine-font-size-xs)" />}
           <Group gap={7} align="center">
             <Avatar src={getIconUrl(item.kind)} size="sm" />
             <Stack gap={0}>
               <span>{item.name}</span>
-              <Text size="xs" c="gray.6">
+              <Text size="xs" c="dimmed">
                 {item.url}
               </Text>
             </Stack>
@@ -108,34 +133,51 @@ export const WidgetIntegrationSelect = ({
         <PillsInput
           inputWrapperOrder={["label", "input", "description", "error"]}
           description={
-            <Text size="xs" span>
-              {t.rich("widget.common.integration.description", {
-                here: () => (
-                  <Anchor size="xs" component={Link} target="_blank" href="/manage/integrations">
-                    {t("common.here")}
-                  </Anchor>
-                ),
-              })}
-            </Text>
+            onOpenNewIntegration ? (
+              <Text size="xs" span>
+                <Anchor size="xs" component="button" type="button" onClick={onOpenNewIntegration}>
+                  {tCommon("action.create")}
+                </Anchor>
+              </Text>
+            ) : (
+              <Text size="xs" span>
+                <Anchor size="xs" component={Link} target="_blank" href="/manage/integrations">
+                  {tIntegration("manage")}
+                </Anchor>
+              </Text>
+            )
           }
           pointer
-          onClick={() => combobox.toggleDropdown()}
+          onClick={() => combobox.openDropdown()}
+          label={label}
           withAsterisk={withAsterisk}
           {...props}
         >
           <Pill.Group>
-            {values.length > 0 ? values : <Input.Placeholder>{t("common.multiSelect.placeholder")}</Input.Placeholder>}
+            {values}
 
             <Combobox.EventsTarget>
               <PillsInput.Field
-                type="hidden"
+                readOnly
+                aria-label={label}
+                placeholder={values.length === 0 ? tCommon("multiSelect.placeholder") : undefined}
+                onFocus={() => combobox.openDropdown()}
                 onBlur={() => combobox.closeDropdown()}
                 onKeyDown={(event) => {
-                  if (event.key !== "Backspace") return;
-
-                  event.preventDefault();
-                  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                  handleValueRemove(multiSelectValues[multiSelectValues.length - 1]!);
+                  if (["ArrowDown", "Enter", " "].includes(event.key)) {
+                    event.preventDefault();
+                    combobox.openDropdown();
+                    return;
+                  }
+                  if (event.key === "Escape") {
+                    combobox.closeDropdown();
+                    return;
+                  }
+                  if (event.key === "Backspace" && canSelectMultiple && multiSelectValues.length > 0) {
+                    event.preventDefault();
+                    const lastValue = multiSelectValues.at(-1);
+                    if (lastValue) handleValueRemove(lastValue);
+                  }
                 }}
               />
             </Combobox.EventsTarget>
@@ -144,15 +186,17 @@ export const WidgetIntegrationSelect = ({
       </Combobox.DropdownTarget>
 
       <Combobox.Dropdown>
-        <Combobox.Options>
-          {options.length >= 1 ? (
-            options
-          ) : (
-            <Text p={4} size="sm" ta="center" c="var(--mantine-color-dimmed)">
-              {t("widget.common.integration.noData")}
-            </Text>
-          )}
-        </Combobox.Options>
+        <ScrollArea.Autosize mah="min(320px, 45dvh)" type="auto" scrollbars="y">
+          <Combobox.Options>
+            {options.length >= 1 ? (
+              options
+            ) : (
+              <Text p={4} size="sm" ta="center" c="var(--mantine-color-dimmed)">
+                {tIntegration("noData")}
+              </Text>
+            )}
+          </Combobox.Options>
+        </ScrollArea.Autosize>
       </Combobox.Dropdown>
     </Combobox>
   );
@@ -163,22 +207,38 @@ export interface IntegrationSelectOption {
   name: string;
   url: string;
   kind: IntegrationKind;
+  permissions?: {
+    hasUseAccess: boolean;
+    hasInteractAccess: boolean;
+    hasFullAccess: boolean;
+  };
 }
 
 interface IntegrationPillProps {
   option: IntegrationSelectOption;
   onRemove: () => void;
   showRemoveButton: boolean;
+  removeLabel: string;
 }
 
-const IntegrationPill = ({ option, onRemove, showRemoveButton }: IntegrationPillProps) => (
+const IntegrationPill = ({ option, onRemove, showRemoveButton, removeLabel }: IntegrationPillProps) => (
   <Group align="center" wrap="nowrap" gap={0} className={classes.pill} mih={24} pr={!showRemoveButton ? 10 : undefined}>
     <Avatar src={getIconUrl(option.kind)} size={14} mr={6} />
     <Text span size="xs" lh={1} fw={500}>
       {option.name}
     </Text>
     {showRemoveButton && (
-      <CloseButton onMouseDown={onRemove} variant="transparent" color="gray" size={22} iconSize={14} tabIndex={-1} />
+      <CloseButton
+        onClick={(event) => {
+          event.stopPropagation();
+          onRemove();
+        }}
+        aria-label={removeLabel}
+        variant="transparent"
+        color="gray"
+        size={24}
+        iconSize={14}
+      />
     )}
   </Group>
 );

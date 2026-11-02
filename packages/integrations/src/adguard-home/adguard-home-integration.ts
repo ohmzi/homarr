@@ -1,6 +1,7 @@
 import { ParseError } from "@homarr/common/server";
 import { fetchWithTrustedCertificatesAsync } from "@homarr/core/infrastructure/http";
 
+import type { IntegrationHttpAuthentication } from "../http-auth";
 import type { IntegrationTestingInput } from "../base/integration";
 import { Integration } from "../base/integration";
 import { TestConnectionError } from "../base/test-connection/test-connection-error";
@@ -10,12 +11,19 @@ import type { DnsHoleSummary } from "../interfaces/dns-hole-summary/dns-hole-sum
 import { filteringStatusSchema, statsResponseSchema, statusResponseSchema } from "./adguard-home-types";
 
 export class AdGuardHomeIntegration extends Integration implements DnsHoleSummaryIntegration {
+  public async getHttpAuthenticationAsync(): Promise<IntegrationHttpAuthentication> {
+    return { headers: { Authorization: `Basic ${this.getAuthorizationHeaderValue()}` } };
+  }
+
   public async getSummaryAsync(): Promise<DnsHoleSummary> {
-    const statsResponse = await fetchWithTrustedCertificatesAsync(this.url("/control/stats"), {
-      headers: {
-        Authorization: `Basic ${this.getAuthorizationHeaderValue()}`,
-      },
-    });
+    const headers = {
+      Authorization: `Basic ${this.getAuthorizationHeaderValue()}`,
+    };
+    const [statsResponse, statusResponse, filteringStatusResponse] = await Promise.all([
+      fetchWithTrustedCertificatesAsync(this.url("/control/stats"), { headers }),
+      fetchWithTrustedCertificatesAsync(this.url("/control/status"), { headers }),
+      fetchWithTrustedCertificatesAsync(this.url("/control/filtering/status"), { headers }),
+    ]);
 
     if (!statsResponse.ok) {
       throw new Error(
@@ -23,23 +31,11 @@ export class AdGuardHomeIntegration extends Integration implements DnsHoleSummar
       );
     }
 
-    const statusResponse = await fetchWithTrustedCertificatesAsync(this.url("/control/status"), {
-      headers: {
-        Authorization: `Basic ${this.getAuthorizationHeaderValue()}`,
-      },
-    });
-
     if (!statusResponse.ok) {
       throw new Error(
         `Failed to fetch status for ${this.integration.name} (${this.integration.id}): ${statusResponse.statusText}`,
       );
     }
-
-    const filteringStatusResponse = await fetchWithTrustedCertificatesAsync(this.url("/control/filtering/status"), {
-      headers: {
-        Authorization: `Basic ${this.getAuthorizationHeaderValue()}`,
-      },
-    });
 
     if (!filteringStatusResponse.ok) {
       throw new Error(
@@ -75,14 +71,21 @@ export class AdGuardHomeIntegration extends Integration implements DnsHoleSummar
       stats.data.time_units === "days"
         ? (stats.data.dns_queries[stats.data.dns_queries.length - 1] ?? 0)
         : stats.data.dns_queries.reduce((prev, sum) => prev + sum, 0);
-    const countFilteredDomains = filteringStatus.data.filters
-      .filter((filter) => filter.enabled)
-      .reduce((sum, filter) => filter.rules_count + sum, 0);
+    let countFilteredDomains = 0;
+    if (filteringStatus.data.filters !== null) {
+      countFilteredDomains = filteringStatus.data.filters
+        .filter((filter) => filter.enabled)
+        .reduce((sum, filter) => filter.rules_count + sum, 0);
+    }
+    let adsBlockedTodayPercentage = 0;
+    if (queriesToday > 0) {
+      adsBlockedTodayPercentage = (blockedQueriesToday / queriesToday) * 100;
+    }
 
     return {
       status: status.data.protection_enabled ? ("enabled" as const) : ("disabled" as const),
       adsBlockedToday: blockedQueriesToday,
-      adsBlockedTodayPercentage: blockedQueriesToday > 0 ? (queriesToday / blockedQueriesToday) * 100 : 0,
+      adsBlockedTodayPercentage,
       domainsBeingBlocked: countFilteredDomains,
       dnsQueriesToday: queriesToday,
     };

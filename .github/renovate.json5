@@ -1,14 +1,18 @@
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
-  extends: ["config:recommended", ":dependencyDashboardApproval"],
+  extends: [
+    "config:recommended",
+    "security:minimumReleaseAgeNpm",
+    "helpers:pinGitHubActionDigests",
+    "docker:pinDigests",
+  ],
   packageRules: [
     {
-      matchPackageNames: ["^@homarr/"],
-      enabled: false,
+      matchPackageNames: ["@tabler/icons-react", "@tabler/icons-sprite"],
+      groupName: "Tabler icons",
     },
-    // Reenable once https://github.com/privatenumber/tsx/issues/737 is fixed
     {
-      matchPackageNames: ["tsx"],
+      matchPackageNames: ["^@homarr/"],
       enabled: false,
     },
     // Reenable once bug with undici v8 is fixed (https://github.com/homarr-labs/homarr/issues/5467)
@@ -22,27 +26,25 @@
       automerge: true,
     },
     {
-      // disallow automerge for allowBuilds dependencies (native builds need manual verification)
+      // workflow changes run with repository secrets, so they need a human review and a release age cooldown
+      matchManagers: ["github-actions"],
+      minimumReleaseAge: "3 days",
+      internalChecksFilter: "strict",
+      automerge: false,
+    },
+    {
+      // disallow automerge for trustedDependencies (native builds need manual verification)
       matchPackageNames: [
-        "@tree-sitter-grammars/tree-sitter-yaml",
         "bcrypt",
         "better-sqlite3",
         "cpu-features",
         "esbuild",
         "sharp",
         "ssh2",
-        "tree-sitter",
-        "tree-sitter-json",
       ],
       automerge: false,
     },
   ],
-  // Updates lockfile for prebuilt-debian after if package.json is updated, otherwise only root lockfile is updated
-  postUpgradeTasks: {
-    commands: ["cd deployments/prebuilt-debian && pnpm install --ignore-workspace --lockfile-only"],
-    fileFilters: ["deployments/prebuilt-debian/pnpm-lock.yaml"],
-    executionMode: "update",
-  },
   updateInternalDeps: true,
   rangeStrategy: "bump",
   automerge: false,

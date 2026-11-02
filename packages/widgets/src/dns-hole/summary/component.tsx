@@ -1,8 +1,20 @@
 "use client";
 
-import { useMemo } from "react";
 import type { BoxProps } from "@mantine/core";
-import { Avatar, AvatarGroup, Card, Flex, SimpleGrid, Stack, Text, Tooltip, TooltipFloating } from "@mantine/core";
+import {
+  Avatar,
+  AvatarGroup,
+  Badge,
+  Box,
+  Card,
+  Flex,
+  Group,
+  ScrollArea,
+  SimpleGrid,
+  Stack,
+  Text,
+  Tooltip,
+} from "@mantine/core";
 import { useElementSize } from "@mantine/hooks";
 import { IconBarrierBlock, IconPercentage, IconSearch, IconWorldWww } from "@tabler/icons-react";
 
@@ -14,41 +26,98 @@ import type { DnsHoleSummary } from "@homarr/integrations/types";
 import type { stringOrTranslation, TranslationFunction } from "@homarr/translation";
 import { translateIfNecessary } from "@homarr/translation";
 import { useI18n } from "@homarr/translation/client";
+import { zoomCompensatedSize } from "@homarr/ui";
 import type { TablerIcon } from "@homarr/ui";
 
 import type { widgetKind } from ".";
 import type { WidgetComponentProps, WidgetProps } from "../../definition";
+import { IntegrationErrorIndicator } from "../../common/integration-error-indicator";
+import { getUsableWidgetQueryData, isInitialWidgetQueryPending } from "../../common/query-state";
+import { WidgetQueryLoadingState } from "../../common/query-state-indicator";
 
-export default function DnsHoleSummaryWidget({ options, integrationIds }: WidgetComponentProps<typeof widgetKind>) {
-  const { data: summaries = [] } = clientApi.widget.dnsHole.summary.useQuery({
+export default function DnsHoleSummaryWidget({
+  options,
+  integrationIds,
+  width,
+  height,
+  displayScale = 1,
+}: WidgetComponentProps<typeof widgetKind>) {
+  const summaryQuery = clientApi.widget.dnsHole.summary.useQuery({
     integrationIds,
   });
+  const summaries = getUsableWidgetQueryData(summaryQuery) ?? [];
 
   const t = useI18n();
+  const tDns = useI18n("widget.dnsHoleSummary");
+  const tWidgetCommon = useI18n("widget.common");
 
-  const data = useMemo(() => summaries.flatMap(({ summary }) => summary), [summaries]);
+  const successfulSummaries = summaries.filter(({ summary }) => summary !== null);
+  const data = successfulSummaries.flatMap(({ summary }) => (summary ? [summary] : []));
+  const layoutProps = boxPropsByLayout(options.layout);
+  const showSourceStatuses = successfulSummaries.length > 1 && width >= 240 && height >= 220;
+
+  if (isInitialWidgetQueryPending(summaryQuery)) return <WidgetQueryLoadingState />;
 
   return (
-    <SimpleGrid cols={2} spacing="xs" h="100%" p={"xs"} {...boxPropsByLayout(options.layout)}>
-      {data.length > 0 ? (
-        stats.map((item) => (
-          <StatCard key={item.color} item={item} usePiHoleColors={options.usePiHoleColors} data={data} t={t} />
-        ))
-      ) : (
-        <Stack h="100%" w="100%" justify="center" align="center" gap="sm" p="sm">
-          <AvatarGroup spacing="md">
-            {summaries.map(({ integration }) => (
-              <Tooltip key={integration.id} label={integration.name}>
-                <Avatar h={30} w={30} src={integrationDefs[integration.kind].iconUrl} />
-              </Tooltip>
+    <Stack h="100%" gap={0} pos="relative">
+      <Box pos="absolute" top={4} right={4} style={{ zIndex: 2 }}>
+        <Group gap={0}>
+          <IntegrationErrorIndicator results={summaries} />
+        </Group>
+      </Box>
+      <SimpleGrid cols={2} spacing="xs" p="xs" {...layoutProps} style={{ ...layoutProps.style, flex: 1, minHeight: 0 }}>
+        {data.length > 0 ? (
+          stats.map((item) => (
+            <StatCard
+              key={item.color}
+              item={item}
+              usePiHoleColors={options.usePiHoleColors}
+              data={data}
+              t={t}
+              displayScale={displayScale}
+            />
+          ))
+        ) : (
+          <Stack
+            aria-live="polite"
+            h="100%"
+            w="100%"
+            justify="center"
+            align="center"
+            gap="sm"
+            p="sm"
+            style={{ gridColumn: "1 / -1" }}
+          >
+            <AvatarGroup spacing="md">
+              {successfulSummaries.map(({ integration }) => (
+                <Tooltip key={integration.id} label={integration.name}>
+                  <Avatar h={30} w={30} src={integrationDefs[integration.kind].iconUrl} />
+                </Tooltip>
+              ))}
+            </AvatarGroup>
+            <Text fz="md" ta="center">
+              {tWidgetCommon("integrationDisconnected")}
+            </Text>
+          </Stack>
+        )}
+      </SimpleGrid>
+      {showSourceStatuses && (
+        <ScrollArea px="xs" pb="xs">
+          <Group gap="xs" wrap="nowrap">
+            {successfulSummaries.map(({ integration, summary }) => (
+              <Badge
+                key={integration.id}
+                variant="light"
+                color={summary?.status === "enabled" ? "green" : summary?.status === "disabled" ? "red" : "gray"}
+                style={{ flexShrink: 0 }}
+              >
+                {integration.name}: {tDns(`status.${summary?.status ?? "unknown"}` as never)}
+              </Badge>
             ))}
-          </AvatarGroup>
-          <Text fz="md" ta="center">
-            {t("widget.dnsHoleSummary.error.integrationsDisconnected")}
-          </Text>
-        </Stack>
+          </Group>
+        </ScrollArea>
       )}
-    </SimpleGrid>
+    </Stack>
   );
 }
 
@@ -61,7 +130,7 @@ const stats = [
         size === "sm" ? 0 : 2,
       ),
     label: (t) => t("widget.dnsHoleSummary.data.adsBlockedToday"),
-    color: "rgba(240, 82, 60, 0.4)", // RED
+    color: "var(--mantine-color-red-6)",
   },
   {
     icon: IconPercentage,
@@ -71,7 +140,7 @@ const stats = [
       return `${formatNumber(totalCount === 0 ? 0 : (blocked / totalCount) * 100, size === "sm" ? 0 : 2)}%`;
     },
     label: (t) => t("widget.dnsHoleSummary.data.adsBlockedTodayPercentage"),
-    color: "rgba(255, 165, 20, 0.4)", // YELLOW
+    color: "var(--mantine-color-yellow-6)",
   },
   {
     icon: IconSearch,
@@ -81,7 +150,7 @@ const stats = [
         size === "sm" ? 0 : 2,
       ),
     label: (t) => t("widget.dnsHoleSummary.data.dnsQueriesToday"),
-    color: "rgba(0, 175, 218, 0.4)", // BLUE
+    color: "var(--mantine-color-cyan-6)",
   },
   {
     icon: IconWorldWww,
@@ -97,7 +166,7 @@ const stats = [
     },
     tooltip: (data, t) => (data.length >= 2 ? t("widget.dnsHoleSummary.domainsTooltip") : undefined),
     label: (t) => t("widget.dnsHoleSummary.data.domainsBeingBlocked"),
-    color: "rgba(0, 176, 96, 0.4)", // GREEN
+    color: "var(--mantine-color-green-6)",
   },
 ] satisfies StatItem[];
 
@@ -114,25 +183,52 @@ interface StatCardProps {
   data: DnsHoleSummary[];
   usePiHoleColors: boolean;
   t: TranslationFunction;
+  displayScale: number;
 }
-const StatCard = ({ item, data, usePiHoleColors, t }: StatCardProps) => {
+const StatCard = ({ item, data, usePiHoleColors, t, displayScale }: StatCardProps) => {
   const { ref, height, width } = useElementSize();
-  const isLong = width > height + 20;
-  const canStackText = height > 32;
-  const hideLabel = (height <= 32 && width <= 256) || (height <= 64 && width <= 92);
-  const tooltip = item.tooltip?.(data, t);
+  let layoutScale = displayScale;
+  if (!Number.isFinite(layoutScale) || layoutScale <= 0) layoutScale = 1;
+
+  // Element measurements are logical pixels; density follows the displayed card.
+  const displayedWidth = width * layoutScale;
+  const displayedHeight = height * layoutScale;
+  const isLong = displayedWidth > displayedHeight + 20;
+  const canStackText = displayedHeight > 32;
+  const isCompact = (displayedHeight <= 32 && displayedWidth <= 256) || (displayedHeight <= 64 && displayedWidth <= 92);
   const board = useRequiredBoard();
+  const label = translateIfNecessary(t, item.label);
+  const value = item.value(data, isCompact || displayedWidth <= 64 ? "sm" : "md");
+  let tooltip = item.tooltip?.(data, t);
+  let padding: number | "sm" = "sm";
+  let valueSize = "lg";
+  if (isCompact) {
+    padding = 2;
+    // Reserve padding and borders so four-character values fit narrow mobile cards.
+    valueSize = `calc(${Math.min(12, Math.max(0, displayedWidth - 6) / 3)}px * var(--board-canvas-ui-scale, 1))`;
+    let compactTooltip = label;
+    if (tooltip) compactTooltip += `. ${tooltip}`;
+    tooltip = compactTooltip;
+  }
+  const backgroundColor = usePiHoleColors
+    ? `color-mix(in srgb, ${item.color} calc(var(--opacity, 1) * 40%), transparent)`
+    : "color-mix(in srgb, var(--mantine-color-primaryColor-filled) calc(var(--opacity, 1) * 12%), transparent)";
 
   return (
-    <TooltipFloating label={tooltip} disabled={!tooltip} w={250} multiline>
+    <Tooltip label={tooltip} disabled={!tooltip} w={250} multiline events={{ hover: true, focus: true, touch: true }}>
       <Card
         ref={ref}
+        component="section"
+        tabIndex={tooltip ? 0 : undefined}
+        aria-label={`${label}: ${value}`}
         className="summary-card"
-        p="sm"
+        p={padding}
         radius={board.itemRadius}
-        bg={usePiHoleColors ? item.color : "rgba(96, 96, 96, 0.1)"}
+        bg={backgroundColor}
         style={{
           flex: 1,
+          border:
+            "1px solid color-mix(in srgb, var(--mantine-color-secondaryColor-filled) calc(var(--opacity, 1) * 45%), transparent)",
         }}
       >
         <Flex
@@ -144,7 +240,16 @@ const StatCard = ({ item, data, usePiHoleColors, t }: StatCardProps) => {
           direction={isLong ? "row" : "column"}
           gap={0}
         >
-          <item.icon className="summary-card-icon" size={24} style={{ minWidth: 24, minHeight: 24 }} />
+          {!isCompact && (
+            <item.icon
+              className="summary-card-icon"
+              style={{
+                ...zoomCompensatedSize(24),
+                minWidth: "calc(24px * var(--board-canvas-ui-scale, 1))",
+                minHeight: "calc(24px * var(--board-canvas-ui-scale, 1))",
+              }}
+            />
+          )}
           <Flex
             className="summary-card-texts"
             justify="center"
@@ -157,18 +262,18 @@ const StatCard = ({ item, data, usePiHoleColors, t }: StatCardProps) => {
             gap={isLong ? 4 : 0}
             wrap="wrap"
           >
-            <Text className="summary-card-value text-flash" ta="center" size="lg" fw="bold" maw="100%">
-              {item.value(data, width <= 64 ? "sm" : "md")}
+            <Text className="summary-card-value text-flash" ta="center" size={valueSize} fw="bold" maw="100%">
+              {value}
             </Text>
-            {!hideLabel && (
+            {!isCompact && (
               <Text className="summary-card-label" ta="center" size="xs" maw="100%">
-                {translateIfNecessary(t, item.label)}
+                {label}
               </Text>
             )}
           </Flex>
         </Flex>
       </Card>
-    </TooltipFloating>
+    </Tooltip>
   );
 };
 

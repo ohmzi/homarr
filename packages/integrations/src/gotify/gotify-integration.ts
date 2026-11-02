@@ -68,6 +68,14 @@ export class GotifyIntegration extends Integration implements INotificationsInte
     }
   }
 
+  public async deleteNotificationAsync(id: string): Promise<void> {
+    const response = await fetchWithTrustedCertificatesAsync(this.url(`/message/${encodeURIComponent(id)}`), {
+      method: "DELETE",
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new ResponseError(response);
+  }
+
   public async getNotificationsAsync(): Promise<Notification[]> {
     const [messagesResponse, applicationsById] = await Promise.all([
       fetchWithTrustedCertificatesAsync(this.url("/message", { limit: 100 }), { headers: this.getHeaders() }),
@@ -82,7 +90,9 @@ export class GotifyIntegration extends Integration implements INotificationsInte
     const imageProxy = new ImageProxy();
     const iconUrlsByApplicationId = new Map<number, string | undefined>();
     await Promise.all(
-      [...applicationsById.entries()].map(async ([applicationId, application]) => {
+      [...new Set(messagesResult.data.messages.map((message) => message.appid))].map(async (applicationId) => {
+        const application = applicationsById.get(applicationId);
+        if (!application) return;
         iconUrlsByApplicationId.set(
           applicationId,
           await this.getApplicationIconUrlAsync(imageProxy, application.image),
@@ -98,6 +108,7 @@ export class GotifyIntegration extends Integration implements INotificationsInte
         time: new Date(message.date),
         title: message.title,
         body: message.message,
+        contentType: message.extras?.["client::display"]?.contentType,
         href: this.getMessagesUrl(message.appid),
         source: application
           ? {

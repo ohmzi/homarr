@@ -1,6 +1,3 @@
-import type { MySqlRawQueryResult } from "drizzle-orm/mysql2";
-import type { QueryResult } from "pg";
-
 import { createId, splitToNChunks, Stopwatch } from "@homarr/common";
 import { env } from "@homarr/common/env";
 import { createLogger } from "@homarr/core/infrastructure/logs";
@@ -47,7 +44,12 @@ export const iconsUpdaterJob = createCronJob("iconsUpdater", EVERY_WEEK, {
 
   const newIconRepositories: InferInsertModel<typeof iconRepositories>[] = [];
   const newIcons: InferInsertModel<typeof icons>[] = [];
-  const allDbIcons = databaseIconRepositories.flatMap((group) => group.icons);
+  const repositoriesBySlug = new Map<string, (typeof databaseIconRepositories)[number]>();
+  for (const repository of databaseIconRepositories) {
+    if (!repositoriesBySlug.has(repository.slug)) {
+      repositoriesBySlug.set(repository.slug, repository);
+    }
+  }
 
   for (const repositoryIconGroup of repositoryIconGroups) {
     if (!repositoryIconGroup.success) {
@@ -55,9 +57,7 @@ export const iconsUpdaterJob = createCronJob("iconsUpdater", EVERY_WEEK, {
     }
     const localSkippedChecksums: string[] = [];
 
-    const repositoryInDb = databaseIconRepositories.find(
-      (dbIconGroup) => dbIconGroup.slug === repositoryIconGroup.slug,
-    );
+    const repositoryInDb = repositoriesBySlug.get(repositoryIconGroup.slug);
     const iconRepositoryId: string = repositoryInDb?.id ?? createId();
     if (!repositoryInDb?.id) {
       newIconRepositories.push({
@@ -66,10 +66,10 @@ export const iconsUpdaterJob = createCronJob("iconsUpdater", EVERY_WEEK, {
       });
     }
 
-    const dbIconsInRepository = allDbIcons.filter((icon) => icon.iconRepositoryId === iconRepositoryId);
+    const persistedChecksums = new Set(repositoryInDb?.icons.map((icon) => icon.checksum));
 
     for (const icon of repositoryIconGroup.icons) {
-      if (dbIconsInRepository.some((dbIcon) => dbIcon.checksum === icon.checksum)) {
+      if (persistedChecksums.has(icon.checksum)) {
         localSkippedChecksums.push(icon.checksum);
         continue;
       }
@@ -87,8 +87,9 @@ export const iconsUpdaterJob = createCronJob("iconsUpdater", EVERY_WEEK, {
     skippedChecksums.set(iconRepositoryId, localSkippedChecksums);
   }
 
+  const fetchedRepositorySlugs = new Set(repositoryIconGroups.map((group) => group.slug));
   const deadIconRepositories = databaseIconRepositories.filter(
-    (iconRepository) => !repositoryIconGroups.some((group) => group.slug === iconRepository.slug),
+    (iconRepository) => !fetchedRepositorySlugs.has(iconRepository.slug),
   );
 
   const deadIconsFilter = or(
@@ -100,11 +101,9 @@ export const iconsUpdaterJob = createCronJob("iconsUpdater", EVERY_WEEK, {
   await handleTransactionsAsync(db, {
     async handleAsync(db, schema) {
       await db.transaction(async (transaction) => {
-        const result = (await transaction.delete(schema.icons).where(deadIconsFilter)) as
-          | MySqlRawQueryResult
-          | QueryResult;
+        const result = await transaction.delete(schema.icons).where(deadIconsFilter);
 
-        countDeleted += Array.isArray(result) ? result[0].affectedRows : (result.rowCount ?? 0);
+        countDeleted += result.rowCount ?? 0;
 
         if (deadIconRepositories.length >= 1) {
           await transaction.delete(schema.iconRepositories).where(

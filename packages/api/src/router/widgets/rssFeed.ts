@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import SuperJSON from "superjson";
 import { z } from "zod/v4";
 
@@ -5,50 +6,82 @@ import type { Session } from "@homarr/auth";
 import { env } from "@homarr/common/env";
 import type { Database } from "@homarr/db";
 import { eq } from "@homarr/db";
-import { items, users } from "@homarr/db/schema";
+import { boards, items, users } from "@homarr/db/schema";
 import { createLogger } from "@homarr/core/infrastructure/logs";
 import { rssFeedsRequestHandler } from "@homarr/request-handler/rss-feeds";
 
 import type { WidgetComponentProps } from "../../../../widgets/src";
 import { createTRPCRouter, publicProcedure } from "../../trpc";
+import { isActionAllowedAsync } from "../board/board-access";
 
 const logger = createLogger({ module: "rssFeed" });
+
+const safeFeedLogContext = (url: string, feedIndex: number) => {
+  try {
+    return { feedIndex, origin: new URL(url).origin };
+  } catch {
+    return { feedIndex };
+  }
+};
+
+const redactFeedFailureMessage = (message: string) => message.replace(/https?:\/\/\S+/gi, "[redacted URL]");
 
 const feedsInput = z.object({
   urls: z.array(z.string()).max(100),
   maximumAmountPosts: z.number(),
+  descriptionMaxLength: z.number().int().min(1).max(5000).default(250),
 });
 
 export const rssFeedRouter = createTRPCRouter({
   getFeeds: publicProcedure.input(feedsInput).query(async ({ ctx, input }) => {
-    if (env.NO_EXTERNAL_CONNECTION) return [];
+    if (env.NO_EXTERNAL_CONNECTION) return { entries: [], failedFeedCount: 0 };
 
     const urls = (await canAccessAllFeedsAsync(ctx.db, ctx.session))
       ? input.urls
-      : await restrictUrlsAsync(ctx.db, input.urls);
+      : await restrictUrlsAsync(ctx, input.urls);
 
     const settled = await Promise.allSettled(
       urls.map(async (url) => {
         const innerHandler = rssFeedsRequestHandler.handler({
           url,
           count: input.maximumAmountPosts,
+          descriptionMaxLength: input.descriptionMaxLength,
         });
         return await innerHandler.getDataAsync();
       }),
     );
 
-    return settled
-      .flatMap((result, index) => {
-        if (result.status === "fulfilled") return result.value.data.entries;
-        logger.warn("RSS feed fetch failed", { url: urls[index], error: result.reason });
-        return [];
-      })
-      .toSorted((entryA, entryB) => {
-        return entryA.published && entryB.published
-          ? new Date(entryB.published).getTime() - new Date(entryA.published).getTime()
-          : 0;
-      })
-      .slice(0, input.maximumAmountPosts);
+    const failures = settled.filter((result) => result.status === "rejected");
+    settled.forEach((result, index) => {
+      if (result.status === "rejected") {
+        logger.warn("RSS feed fetch failed", {
+          ...safeFeedLogContext(urls[index] ?? "", index),
+          errorType: result.reason instanceof Error ? result.reason.name : typeof result.reason,
+          errorMessage: result.reason instanceof Error ? redactFeedFailureMessage(result.reason.message) : undefined,
+        });
+      }
+    });
+    if (settled.length > 0 && failures.length === settled.length) {
+      throw new TRPCError({
+        code: "BAD_GATEWAY",
+        message: "All RSS feed requests failed",
+      });
+    }
+
+    return {
+      entries: settled
+        .flatMap((result) => {
+          if (result.status === "fulfilled") return result.value.data.entries;
+          return [];
+        })
+        .toSorted((entryA, entryB) => {
+          return entryA.published && entryB.published
+            ? new Date(entryB.published).getTime() - new Date(entryA.published).getTime()
+            : 0;
+        })
+        .slice(0, input.maximumAmountPosts),
+      failedFeedCount: failures.length,
+    };
   }),
 });
 
@@ -101,13 +134,31 @@ export async function canAccessAllFeedsAsync(db: Database, session: Session | nu
   return false;
 }
 
-export async function restrictUrlsAsync(db: Database, urls: string[]) {
-  const rssFeedItems = await db.query.items.findMany({
+export async function restrictUrlsAsync(ctx: { db: Database; session: Session | null }, urls: string[]) {
+  const requestedUrls = new Set(urls);
+  const rssFeedItems = await ctx.db.query.items.findMany({
+    columns: { boardId: true, options: true },
     where: eq(items.kind, "rssFeed"),
   });
 
-  const configuredUrls = rssFeedItems
-    .map((item) => SuperJSON.parse<WidgetComponentProps<"rssFeed">["options"]>(item.options))
-    .flatMap((options) => options.feedUrls);
-  return urls.filter((url) => configuredUrls.includes(url));
+  const urlsByBoard = new Map<string, Set<string>>();
+  for (const item of rssFeedItems) {
+    const matchingUrls = SuperJSON.parse<WidgetComponentProps<"rssFeed">["options"]>(item.options).feedUrls.filter(
+      (url) => requestedUrls.has(url),
+    );
+    if (matchingUrls.length === 0) continue;
+
+    const boardUrls = urlsByBoard.get(item.boardId) ?? new Set<string>();
+    for (const url of matchingUrls) boardUrls.add(url);
+    urlsByBoard.set(item.boardId, boardUrls);
+  }
+
+  const allowedUrls = new Set<string>();
+  await Promise.all(
+    [...urlsByBoard].map(async ([boardId, boardUrls]) => {
+      if (!(await isActionAllowedAsync(ctx, eq(boards.id, boardId), "view"))) return;
+      for (const url of boardUrls) allowedUrls.add(url);
+    }),
+  );
+  return urls.filter((url) => allowedUrls.has(url));
 }

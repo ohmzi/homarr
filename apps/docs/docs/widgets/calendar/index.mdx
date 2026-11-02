@@ -1,75 +1,70 @@
 ---
-title: 'Calendar'
-description: 'Display events from your integrations in a calendar view within a certain relative time period'
+title: "Calendar"
+description: "Display calendar events and upcoming media releases."
 hide_title: true
 ---
 
-import { WidgetHeader } from '@site/src/components/widgets/header';
-import { AddingWidget } from '@site/src/components/widgets/adding';
-import { WidgetConfig } from '@site/src/components/widgets/configuration';
-import { WidgetIntegrations } from '@site/src/components/widgets/integrations';
-import { IconAd } from "@tabler/icons-react";
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-import { calendarWidget } from '.';
-import { lidarrIntegration } from '@site/docs/integrations/lidarr';
-import { nextcloudIntegration } from '@site/docs/integrations/nextcloud';
-import { homeAssistantIntegration } from '@site/docs/integrations/home-assistant';
-import { radarrIntegration } from '@site/docs/integrations/radarr';
-import { readarrIntegration } from '@site/docs/integrations/readarr';
-import { sonarrIntegration } from '@site/docs/integrations/sonarr';
-import { icalIntegration } from '@site/docs/integrations/ical';
+import { WidgetInteractionGuide } from "@site/src/components/widgets/interactions";
 
+import { WidgetHeader } from "@site/src/components/widgets/header";
+import { AddingWidget } from "@site/src/components/widgets/adding";
+import { WidgetConfig } from "@site/src/components/widgets/configuration";
+import { WidgetIntegrations } from "@site/src/components/widgets/integrations";
+import { calendarWidget } from ".";
+import { lidarrIntegration } from "@site/docs/integrations/lidarr";
+import { nextcloudIntegration } from "@site/docs/integrations/nextcloud";
+import { homeAssistantIntegration } from "@site/docs/integrations/home-assistant";
+import { radarrIntegration } from "@site/docs/integrations/radarr";
+import { readarrIntegration } from "@site/docs/integrations/readarr";
+import { sonarrIntegration } from "@site/docs/integrations/sonarr";
+import { sportarrIntegration } from "@site/docs/integrations/sportarr";
+import { icalIntegration } from "@site/docs/integrations/ical";
 
-<WidgetHeader
-  widget={calendarWidget}
-  categories={['Media manager', "Servarr"]}
+<WidgetHeader widget={calendarWidget} categories={["Media manager", "Servarr"]} />
+
+The Calendar widget combines events and upcoming media releases. Healthy integrations remain visible when another
+source fails.
+
+Advanced view always shows the Agenda. Timed events without an end time
+occupy a 30-minute slot in Day and Week; their details keep the original event time.
+
+### Supported integrations
+
+<WidgetIntegrations
+  items={[
+    { integration: nextcloudIntegration },
+    { integration: lidarrIntegration },
+    { integration: radarrIntegration },
+    { integration: readarrIntegration },
+    { integration: sonarrIntegration },
+    { integration: sportarrIntegration },
+    { integration: icalIntegration },
+    { integration: homeAssistantIntegration },
+  ]}
 />
 
-The calendar widget shows a month view of events from different integrations.
-It allows you to view calendar events or upcoming releases from your media managers.
+### Views
 
-### Screenshots
+**Compact month is the default**, keeping the familiar calendar with colored event indicators.
 
-import popover from './img/popover.png';
-import withIntegrations from './img/with-integrations.png';
-import withoutIntegrations from './img/without-integrations.png';
-
-<div className='flex gap-1'>
-    <img src={withIntegrations} alt="calendar with-integrations big-size" width={256 + 4} height={256 + 4} />
-    <div className='flex flex-col gap-1'>
-        <img src={popover} alt="calendar popover-details the-mandalorian" width={128 * 3} height={128} />
-        <img src={withoutIntegrations} alt="calendar without-integrations small-size" width={256} height={128} />
-    </div>
-</div>
-
-### Supported Integrations
-
-<WidgetIntegrations items={[{
-  integration: nextcloudIntegration,
-}, {
-  integration: lidarrIntegration,
-}, {
-  integration: radarrIntegration,
-}, {
-  integration: readarrIntegration,
-}, {
-  integration: sonarrIntegration,
-}, {
-  integration: icalIntegration
-}, {
-  integration: homeAssistantIntegration
-}]} />
+| View                        | Preview                                                                                                                                           |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Compact month (default)** | <img src="/img/widgets/calendar/current-view.png" width={800} height={592} alt="Default compact month with colored event indicators" />           |
+| Month                       | <img src="/img/widgets/calendar/month-view.png" width={400} height={296} alt="Month grid with event times and titles" />                          |
+| Week                        | <img src="/img/widgets/calendar/week-view.png" width={400} height={296} alt="Week time grid with an all-day row" />                               |
+| Day                         | <img src="/img/widgets/calendar/day-view.png" width={400} height={296} alt="Day time grid with an all-day row" />                                 |
+| Agenda                      | <img src="/img/widgets/calendar/advanced-view.png" width={400} height={296} alt="Agenda with grouped events, source labels, and event details" /> |
 
 ### Interactions
 
-- Hover over a marked date to preview its events in a popover.
-- Click on a marked date to pin the popover open (it will stay visible even after moving the mouse away).
-- Click the date again or click outside to close the pinned popover.
+- Hover a date or event to inspect its details.
+
+<WidgetInteractionGuide />
 
 ### Adding the widget
 
 <AddingWidget />
 
 ### Configuration
+
 <WidgetConfig configuration={calendarWidget.configuration} />

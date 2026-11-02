@@ -1,5 +1,4 @@
 import SuperJSON from "superjson";
-import { escapeForRegEx } from "@tiptap/react";
 import { z } from "zod/v4";
 
 import { decryptSecret } from "@homarr/common/server";
@@ -7,12 +6,23 @@ import { createLogger } from "@homarr/core/infrastructure/logs";
 import { eq } from "@homarr/db";
 import { boards, items, widgetSecrets } from "@homarr/db/schema";
 import { releaseProviderKinds } from "@homarr/definitions";
-import { releasesRequestHandler } from "@homarr/request-handler/releases";
+import type { ReleaseErrorCode } from "@homarr/request-handler/releases";
+import { releasesRequestHandler, TransientReleaseError } from "@homarr/request-handler/releases";
+import { serviceVersionRequestHandler } from "@homarr/request-handler/service-version";
 
+import { createManyWidgetIntegrationMiddleware } from "../../middlewares/integration";
+import { settleIntegrationQueries, toPublicIntegrationError } from "../../settle-integrations";
 import { createTRPCRouter, publicProcedure } from "../../trpc";
-import { throwIfActionForbiddenAsync } from "../board/board-access";
+import { isActionAllowedAsync, throwIfActionForbiddenAsync } from "../board/board-access";
 
 const logger = createLogger({ module: "releasesRouter" });
+const PUBLIC_RELEASE_ERROR_MESSAGE: string = "Release provider request failed";
+const escapeForRegEx = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const getFailedLookupErrorCode = (error: unknown): ReleaseErrorCode => {
+  if (error instanceof TransientReleaseError) return error.releaseError.code;
+  return "unexpected";
+};
 
 const formatVersionFilterRegex = (versionFilter: z.infer<typeof releaseVersionFilterSchema> | undefined) => {
   if (!versionFilter) return undefined;
@@ -35,12 +45,14 @@ export const releasesRouter = createTRPCRouter({
     .input(
       z.object({
         itemId: z.string().optional(),
+        boardId: z.string().optional(),
         repositories: z.array(
           z.object({
             id: z.string().optional(),
             provider: z.enum(releaseProviderKinds),
             identifier: z.string(),
             versionFilter: releaseVersionFilterSchema.optional(),
+            excludePrereleases: z.boolean().optional(),
             providerUrl: z.string().url().optional(),
           }),
         ),
@@ -49,12 +61,14 @@ export const releasesRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const tokensByProvider = new Map<string, string>();
       const savedRepos = new Map<string, { providerUrl?: string }>();
+      let configurationBoardId = input.boardId;
 
       if (input.itemId) {
         try {
           const item = await ctx.db.query.items.findFirst({ where: eq(items.id, input.itemId) });
           if (item && item.kind === "releases") {
             await throwIfActionForbiddenAsync(ctx, eq(boards.id, item.boardId), "view");
+            configurationBoardId = item.boardId;
 
             const options = SuperJSON.parse<Record<string, unknown>>(item.options);
             const repos = options.repositories as
@@ -84,10 +98,17 @@ export const releasesRouter = createTRPCRouter({
         }
       }
 
+      const canConfigure = configurationBoardId
+        ? await isActionAllowedAsync(ctx, eq(boards.id, configurationBoardId), "modify")
+        : false;
+
       return await Promise.all(
         input.repositories.map(async (repository) => {
           const repositoryId = repository.id ?? repository.identifier;
           const savedRepo = savedRepos.get(`${repository.provider}:${repository.identifier}`);
+          const providerUrl = canConfigure ? repository.providerUrl : savedRepo?.providerUrl;
+          const token =
+            savedRepo && providerUrl === savedRepo.providerUrl ? tokensByProvider.get(repository.provider) : undefined;
           try {
             const response = await releasesRequestHandler
               .handler({
@@ -95,27 +116,78 @@ export const releasesRouter = createTRPCRouter({
                 provider: repository.provider,
                 identifier: repository.identifier,
                 versionRegex: formatVersionFilterRegex(repository.versionFilter),
-                providerUrl: savedRepo?.providerUrl ?? repository.providerUrl,
-                token: savedRepo ? tokensByProvider.get(repository.provider) : undefined,
+                excludePrereleases: repository.excludePrereleases,
+                providerUrl,
+                token,
               })
               .getDataAsync();
+
+            const data = response.data.success
+              ? response.data
+              : {
+                  success: false as const,
+                  error: { code: response.data.error.code, message: PUBLIC_RELEASE_ERROR_MESSAGE },
+                };
+            if (!response.data.success) {
+              logger.warn("Release provider request failed", {
+                repositoryId,
+                provider: repository.provider,
+                error: response.data.error,
+              });
+            }
 
             return {
               id: repositoryId,
               provider: repository.provider,
               timestamp: response.timestamp,
-              ...response.data,
+              ...data,
             };
           } catch (error) {
+            logger.warn("Release provider request failed", {
+              repositoryId,
+              provider: repository.provider,
+              error,
+            });
             return {
               id: repositoryId,
               provider: repository.provider,
               timestamp: new Date(),
               success: false as const,
-              error: { code: "unexpected" as const, message: String(error) },
+              error: { code: getFailedLookupErrorCode(error), message: PUBLIC_RELEASE_ERROR_MESSAGE },
             };
           }
         }),
+      );
+    }),
+  getServiceVersions: publicProcedure
+    .concat(createManyWidgetIntegrationMiddleware("query", "releases"))
+    .query(async ({ ctx }) => {
+      return await settleIntegrationQueries(
+        ctx.integrations,
+        async (integration) => {
+          const innerHandler = serviceVersionRequestHandler.handler(integration, {});
+          const { data, timestamp } = await innerHandler.getDataAsync();
+
+          return {
+            integrationId: integration.id,
+            integrationName: integration.name,
+            integrationKind: integration.kind,
+            version: data.version,
+            updatedAt: timestamp,
+            error: undefined,
+          };
+        },
+        {
+          fallback: (integration, error) => ({
+            integrationId: integration.id,
+            integrationName: integration.name,
+            integrationKind: integration.kind,
+            version: null,
+            updatedAt: new Date(0),
+            error: toPublicIntegrationError(error),
+          }),
+          throwOnAllFailures: true,
+        },
       );
     }),
 });

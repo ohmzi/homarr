@@ -1,0 +1,221 @@
+// The maintainer readout's pure parts: what each row prints given the service's answer.
+// Kept free of React and the canvas so the mapping can be tested alone. The words are
+// deliberately literal English, like the other data sources: the drum only carries Latin
+// capitals, so a translated word would print blank on a non-Latin locale.
+
+import { HEALTH_GLYPHS } from "./engine/charset";
+
+export const splitFlapMaintainerMetrics = ["greeting", "health", "fun"] as const;
+export type SplitFlapMaintainerMetric = (typeof splitFlapMaintainerMetrics)[number];
+
+export const isMaintainerMetric = (value: unknown): value is SplitFlapMaintainerMetric =>
+  typeof value === "string" && (splitFlapMaintainerMetrics as readonly string[]).includes(value);
+
+// The monitoring pipeline's own vocabulary (tasks/self_health): ok | degraded | down.
+const healthWords: Record<string, string> = { ok: "HEALTHY", degraded: "DEGRADED", down: "DOWN" };
+
+/** What a row prints when the service has nothing to say. */
+export const splitFlapNoData = "NO DATA";
+
+/** One part of the monitoring pipeline that is not healthy. */
+export interface SplitFlapPipelinePart {
+  title: string | null;
+  state: string | null;
+}
+
+/** Good morning / afternoon / evening, with the viewer's name when there is one. */
+export const greetingText = (now: Date | null, name: string | null): string => {
+  if (now === null) return "";
+  const hour = now.getHours();
+  const greeting = hour < 12 ? "GOOD MORNING" : hour < 18 ? "GOOD AFTERNOON" : "GOOD EVENING";
+  const trimmed = name?.trim() ?? "";
+  return trimmed === "" ? greeting : `${greeting} - ${trimmed}`;
+};
+
+/** The level word with its glyph, or NO DATA when the level is unknown or missing. */
+export const healthText = (level: unknown): string => {
+  if (typeof level !== "string") return splitFlapNoData;
+  const glyph = (HEALTH_GLYPHS as Record<string, string | undefined>)[level];
+  const word = healthWords[level];
+  return glyph === undefined || word === undefined ? splitFlapNoData : `${glyph} ${word}`;
+};
+
+// Fun lines for a healthy board: server-flavoured, motivational, or a film line. All are
+// uppercase and within the drum's character set, so they print rather than blank out.
+export const splitFlapQuotes = [
+  // Server and ops
+  "IT'S NOT A BUG, IT'S A FEATURE",
+  "PLOT TWIST: IT WAS DNS",
+  "HAVE YOU CHECKED THE LOGS?",
+  "TURN IT OFF AND ON AGAIN",
+  "IT WORKS ON MY MACHINE",
+  "PING ME WHEN IT'S FIXED",
+  "IF IT AIN'T BROKE, DON'T TOUCH IT",
+  "IT'S BETWEEN CHAIR AND KEYBOARD",
+  "THE CODE NEVER LIES",
+  "IT COMPILED, MY JOB IS DONE",
+  "THIS BETTER WORK",
+  "REBOOT AND PRAY",
+  "GIT HAPPENS",
+  "COMMIT EARLY, COMMIT OFTEN",
+  "KEEP CALM AND GIT PUSH",
+  "MOVE FAST AND BREAK THINGS",
+  "DEPLOY ON FRIDAY, LIVE ON THE EDGE",
+  "IN CODE WE TRUST",
+  "ZERO DOWNTIME, ZERO DRAMA",
+  "ALL SYSTEMS NOMINAL",
+  "THE SERVER IS CALM TODAY",
+  "TALK IS CHEAP, SHOW ME THE CODE",
+  "CACHE ME IF YOU CAN",
+  "THE CLOUD IS SOMEONE ELSE'S COMPUTER",
+  "NO PLACE LIKE 127.0.0.1",
+  "DROP IT LIKE IT'S HOT",
+  "VIM USERS DON'T QUIT",
+  "RM -RF IS A PERSONALITY TEST",
+  "SCHRODINGER'S EMAIL",
+  "THE CRON JOB NOBODY WROTE",
+  "EVERY APPLIANCE RUNS ON MAGIC SMOKE",
+  "TO ERR IS HUMAN, TO ROOT DIVINE",
+  "YOUR LACK OF BACKUPS IS DISTURBING",
+  "HOUSTON, WE HAVE UPTIME",
+  // Film and television
+  "MAY THE FORCE BE WITH YOU",
+  "DO OR DO NOT, THERE IS NO TRY",
+  "I'LL BE BACK",
+  "HASTA LA VISTA, BABY",
+  "TO INFINITY AND BEYOND",
+  "LIVE LONG AND PROSPER",
+  "RESISTANCE IS FUTILE",
+  "IT'S A TRAP",
+  "THIS IS SPARTA",
+  "NO, I AM YOUR FATHER",
+  "I AM IRON MAN",
+  "AVENGERS ASSEMBLE",
+  "SHOW ME THE MONEY",
+  "HERE'S JOHNNY",
+  "I FEEL THE NEED FOR SPEED",
+  "YOU'RE GONNA NEED A BIGGER BOAT",
+  "WHAT WE DO IN LIFE ECHOES IN ETERNITY",
+  "NEVER GIVE UP, NEVER SURRENDER",
+  "ALL YOUR BASE ARE BELONG TO US",
+  "WINTER IS COMING",
+  "THE CAKE IS A LIE",
+  // Short and sharp
+  "OUT OF SCOPE",
+  "READ THE DOCS",
+  "BLAME THE CACHE",
+  "FORCE PUSH ANYWAY",
+  "LGTM, SHIP IT",
+  "LEGACY CODE HAPPENS",
+  "MERGED WITHOUT CONFLICTS",
+  "TEST IN PRODUCTION",
+  "COFFEE, THEN CODE",
+  "DON'T CLICK THAT LINK",
+  "MIND THE SEMICOLONS",
+  "DON'T SHARE YOUR PASSWORDS",
+  "THE S IN IOT STANDS FOR SECURITY",
+  "THERE ARE 10 TYPES OF PEOPLE",
+  "ENCRYPTION WORKS, PEOPLE DON'T",
+  "99 PROBLEMS, BUT NO SYNTAX ERROR",
+  "IF YOU MUST EXPLAIN IT, IT'S BAD",
+  "I WILL REPLACE YOU WITH A SHELL SCRIPT",
+  "AI IS NO MATCH FOR NATURAL STUPIDITY",
+  "DIRTY DATA, LYING MODEL",
+  "TORTURE THE DATA, IT WILL CONFESS",
+  "TEACHING SAND TO THINK",
+  "EVERYTHING IS A FILE",
+  "AUTOMATE EVERYTHING",
+  "THE SERVER IS FINE, IT'S THE USERS",
+  "GOOD CODE DOCUMENTS ITSELF",
+  "NOTHING LASTS LIKE A WORKAROUND",
+  "THE BEST CODE IS NO CODE",
+  "YOU ONLY NEED BACKUPS ONCE",
+  "NINE PEOPLE CANNOT MAKE A BABY",
+  "REFACTORING IS AGGRESSIVE CLEANING",
+  "I'M NOT ARGUING, I'M EXPLAINING",
+  "KEYBOARD NOT FOUND, PRESS F1",
+  "WE'LL FIX IT IN POST",
+  // The modern stack
+  "IT WORKED PERFECTLY IN YAML",
+  "MY LAMBDA HAS COMMITMENT ISSUES",
+  "AGILE, LOST BUT FLEXIBLE",
+  "IT'LL ONLY TAKE FIVE MINUTES",
+  "I SURVIVED ANOTHER MEETING",
+  "HUMAN IN THE LOOP: BUTTON MONITOR",
+  "PROMPT ENGINEERING MY REVIEW",
+  "CODE WRITTEN LAST WEEK IS A MYSTERY",
+  "IT WORKS, DON'T TOUCH IT",
+  // Film mashups
+  "I'LL BE BACK, AFTER THIS BUILD",
+  "HOUSTON, WE HAVE A MEMORY LEAK",
+  "YOU'RE GONNA NEED A BIGGER SERVER",
+  "ONE DOES NOT SIMPLY DEPLOY ON FRIDAY",
+  "YOU SHALL NOT PASS CODE REVIEW",
+  "KEEP YOUR SECRETS, I READ THE LOGS",
+  "IT'S ALIVE, IT'S COMPILING",
+  "MAY THE FORCE PUSH BE WITH YOU",
+  "THERE IS NO SPOON, ONLY EXCEPTIONS",
+  "I KNOW KUNG FU, AND REGEX",
+  "IT RUNS ON LEGACY CODE",
+  "FOLLOW THE WHITE RABBIT",
+  "THE GOOD, THE BAD, THE UNTESTED",
+  "A LONG TIME AGO IN A REPO FAR AWAY",
+  "AWESOME UNTIL THE API CHANGES",
+  "PLOT TWIST: IT WAS NESTED IFS",
+  "FRANKLY, I DON'T GIVE A DAMN",
+  "NOT THE BUGS YOU'RE LOOKING FOR",
+  "NEVER TELL ME THE DEPLOYMENT ODDS",
+  "I CAN FIX THIS LEGACY CODE ALL DAY",
+  "DREAD IT, THE MERGE CONFLICT ARRIVES",
+  "I AM INEVITABLE, AND I AM ROOT",
+  "MY SECRET, CAP: I'M ALWAYS DEBUGGING",
+  "HE'S BEGINNING TO BELIEVE IN HIS DOCS",
+  "FREE YOUR MIND, LOCK YOUR API KEYS",
+  "MY PRECIOUS, LOCAL ENVIRONMENT",
+  "CAST IT INTO THE FIRE",
+  "CODE FINDS A WAY",
+  "HOLD ONTO YOUR BUTTS, MERGING TO MAIN",
+  "AN ELEGANT REPO FOR A CIVILIZED AGE",
+  "WE HAVE A HULK, WE NEED DEVOPS",
+  // Keep going
+  "KEEP CALM AND CARRY ON",
+  "GOOD VIBES ONLY",
+  "STAY CURIOUS",
+  "SHIP IT",
+  "SLEEP IS FOR THE WEAK",
+] as const;
+
+/** Draws one fun line. Called once per board load, so the board settles on a single line. */
+export const pickQuote = (random: () => number = Math.random): string =>
+  splitFlapQuotes[Math.floor(random() * splitFlapQuotes.length)] ?? splitFlapQuotes[0];
+
+const asLine = (value: string): string => value.trim().toUpperCase();
+
+/**
+ * The parts of the monitoring pipeline that are not healthy, worst first, one board line each. The maintainer sends
+ * them in its own order and already leaves out anything that is `ok` or `info`; the board's third row holds three
+ * lines, and anything beyond that is on the maintainer's own page.
+ */
+export const unhealthyText = (parts: readonly SplitFlapPipelinePart[]): string =>
+  parts
+    .map((part) => (typeof part.title === "string" ? asLine(part.title) : ""))
+    .filter((line) => line !== "")
+    .join("\n");
+
+/**
+ * The third row: a fun line while the monitoring pipeline is healthy, and the parts that are not when it is not — so a
+ * degraded board names the stage that is broken instead of only saying that something is.
+ */
+export const funText = (
+  level: unknown,
+  parts: readonly SplitFlapPipelinePart[],
+  reasons: readonly string[],
+  quote: string,
+): string => {
+  if (level === "ok") return quote;
+  const named = unhealthyText(parts);
+  if (named !== "") return named;
+  // Degraded with no part to name (a stale document, say): the verdict's own reason is the only thing there is.
+  const reason = reasons.find((entry) => entry.trim() !== "");
+  return reason === undefined ? splitFlapNoData : asLine(reason);
+};

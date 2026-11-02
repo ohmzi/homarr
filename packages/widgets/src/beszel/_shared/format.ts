@@ -5,50 +5,54 @@ import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(duration);
 dayjs.extend(relativeTime);
 
-const byteUnits = ["B", "KB", "MB", "GB", "TB"] as const;
-const rateUnits = ["B/s", "KB/s", "MB/s", "GB/s"] as const;
-
-const formatScaled = (value: number, units: readonly string[], zeroLabel: string): string => {
-  if (!value || !Number.isFinite(value)) return zeroLabel;
-  const i = Math.max(0, Math.min(Math.floor(Math.log(Math.abs(value)) / Math.log(1024)), units.length - 1));
-  const scaled = value / 1024 ** i;
-  const decimals = scaled < 10 ? 2 : 1;
-  return `${scaled.toFixed(decimals)} ${units[i] ?? ""}`;
+const compactByteLabel = (value: number, formatter: (value: number) => string): string => {
+  if (!value || !Number.isFinite(value)) return "0";
+  return formatter(Number(value)).replace(".0 ", "").replace(" ", "");
 };
 
-const formatScaledCompact = (value: number, units: readonly string[], zeroLabel: string): string => {
-  if (!value || !Number.isFinite(value)) return zeroLabel;
-  const i = Math.max(0, Math.min(Math.floor(Math.log(Math.abs(value)) / Math.log(1024)), units.length - 1));
-  const scaled = value / 1024 ** i;
-  return `${scaled < 10 ? scaled.toFixed(1) : Math.round(scaled)}${units[i] ?? ""}`;
-};
-
-export const formatByteRate = (value: number): string => formatScaled(value, rateUnits, "0 B/s");
-
-export const formatStorageBytes = (bytes: number): string => formatScaled(bytes, byteUnits, "0 B");
-
-export const formatGB = (value: number): string => {
-  if (!value || !Number.isFinite(value)) return "0 GB";
-  if (Math.abs(value) >= 1024) return `${(value / 1024).toFixed(2)} TB`;
-  return `${value.toFixed(2)} GB`;
-};
+export const createByteChartAxisFormatters = (
+  formatBytes: (bytes: number) => string,
+  formatByteRate: (bytes: number) => string,
+) => ({
+  bytes: (value: number) => compactByteLabel(value, formatBytes),
+  rate: (value: number) => compactByteLabel(value, formatByteRate),
+});
 
 export const formatPercent = (value: number): string => `${value.toFixed(1)}%`;
 
-export const getProgressTrackSize = (size: "xs" | "sm"): number => (size === "xs" ? 6 : 9);
+export const formatWatts = (value: number): string => `${value.toFixed(1)} W`;
 
-export const chartAxisFormatters = {
-  percent: formatPercent,
-  gb: (value: number) => {
-    const numericValue = Number(value);
-    if (!numericValue) return "0";
-    if (Math.abs(numericValue) >= 1024) return `${(numericValue / 1024).toFixed(1)}T`;
-    return `${numericValue.toFixed(0)}G`;
-  },
-  mb: (value: number) => (!value ? "0" : `${Number(value).toFixed(0)}M`),
-  bytes: (value: number) => formatScaledCompact(Number(value), byteUnits, "0"),
-  rate: (value: number) => formatScaledCompact(Number(value), rateUnits, "0"),
-} as const;
+// Native Beszel uses binary byte divisors with B/KB/MB/GB labels and two tooltip decimals.
+// Keep this contract local to its charts; dashboard-wide byte preferences remain independent.
+export const createBeszelChartFormatters = (locale: string) => {
+  const decimal = new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const compact = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const bytes = (value: number, axis = false) => {
+    let unit = 0;
+    if (value >= 100) unit = 1;
+    while (unit < units.length - 1 && value >= 1000 * 1024 ** unit) unit++;
+    const scaled = value / 1024 ** unit;
+    if (axis) {
+      let rounded = scaled;
+      if (scaled >= 10) rounded = Math.round(scaled);
+      return `${compact.format(rounded)} ${units[unit]}`;
+    }
+    return `${decimal.format(scaled)} ${units[unit]}`;
+  };
+  return {
+    bytes: (value: number) => bytes(value),
+    bytesAxis: (value: number) => bytes(value, true),
+    memory: (mebibytes: number) => bytes(mebibytes * 1024 ** 2),
+    memoryAxis: (mebibytes: number) => bytes(mebibytes * 1024 ** 2, true),
+    rate: (value: number) => `${bytes(value)}/s`,
+    rateAxis: (value: number) => `${bytes(value, true)}/s`,
+    percent: (value: number) => `${decimal.format(value)}%`,
+    watts: (value: number) => `${decimal.format(value)}W`,
+  };
+};
+
+export const getProgressTrackSize = (size: "xs" | "sm"): number => (size === "xs" ? 6 : 9);
 
 export const formatUptime = (seconds: number): string => dayjs.duration(seconds, "seconds").humanize();
 

@@ -12,7 +12,7 @@ import { revalidatePathActionAsync } from "@homarr/common/client";
 import type { UseFormReturnType } from "@homarr/form";
 import { useZodForm } from "@homarr/form";
 import { showErrorNotification, showSuccessNotification } from "@homarr/notifications";
-import { useScopedI18n } from "@homarr/translation/client";
+import { useI18n } from "@homarr/translation/client";
 import { sanitizeRedirectionUrl } from "@homarr/validation/redirection-url";
 import { userSignInSchema } from "@homarr/validation/user";
 
@@ -41,7 +41,7 @@ const extendedValidation = userSignInSchema.extend({ provider: z.enum(["credenti
 const withNativeValidation = <T extends { error?: unknown }>({ error: _error, ...rest }: T) => rest;
 
 export const LoginForm = ({ providers, oidcClientName, isOidcAutoLoginEnabled, callbackUrl }: LoginFormProps) => {
-  const t = useScopedI18n("user");
+  const t = useI18n("user");
   const searchParams = useSearchParams();
   const isError = searchParams.has("error");
   const router = useRouter();
@@ -128,18 +128,22 @@ export const LoginForm = ({ providers, oidcClientName, isOidcAutoLoginEnabled, c
       <Stack gap="lg">
         {credentialInputsVisible && (
           <>
-            {/* space-y-2 between field groups, mt-5 before the submit — the
-                Ohmz AI sign-in's own rhythm. */}
-            <form onSubmit={form.onSubmit((credentials) => void signInAsync(credentials.provider, credentials))}>
-              <Stack gap={8}>
+            <form
+              autoComplete="on"
+              onSubmit={form.onSubmit((credentials) => void signInAsync(credentials.provider, credentials))}
+            >
+              <Stack gap="lg">
                 <TextInput
                   label={t("field.username.label")}
                   placeholder={t("field.username.label")}
                   id="username"
                   autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   required
                   withAsterisk={false}
                   {...withNativeValidation(form.getInputProps("name"))}
+                  name="username"
                 />
                 <PasswordInput
                   label={t("field.password.label")}
@@ -149,6 +153,7 @@ export const LoginForm = ({ providers, oidcClientName, isOidcAutoLoginEnabled, c
                   required
                   withAsterisk={false}
                   {...withNativeValidation(form.getInputProps("password"))}
+                  name="password"
                 />
 
                 {providers.includes("credentials") && (
@@ -172,7 +177,7 @@ export const LoginForm = ({ providers, oidcClientName, isOidcAutoLoginEnabled, c
         )}
 
         {providers.includes("oidc") && (
-          <Button fullWidth variant="light" onClick={async () => await signInAsync("oidc")}>
+          <Button type="button" fullWidth variant="light" disabled={isPending} onClick={() => void signInAsync("oidc")}>
             {t("action.login.labelWith", { provider: oidcClientName })}
           </Button>
         )}
@@ -193,7 +198,8 @@ const SubmitButton = ({ isPending, form, provider, children }: PropsWithChildren
   return (
     <Button
       type="submit"
-      name={provider}
+      name="provider"
+      value={provider}
       fullWidth
       onClick={() => form.setFieldValue("provider", provider)}
       loading={isPending && isCurrentProviderActive}
@@ -209,7 +215,7 @@ interface PasswordForgottenCollapseProps {
 }
 const PasswordForgottenCollapse = ({ username }: PasswordForgottenCollapseProps) => {
   const [visible, { toggle }] = useDisclosure(false);
-  const tForgotPassword = useScopedI18n("user.action.login.forgotPassword");
+  const tForgotPassword = useI18n("user.action.login.forgotPassword");
 
   const commandUsername = username.trim().length >= 1 ? username.trim() : "<username>";
 

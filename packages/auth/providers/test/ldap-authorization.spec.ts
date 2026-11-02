@@ -1,4 +1,5 @@
 import { CredentialsSignin } from "@auth/core/errors";
+import { FilterParser } from "ldapts";
 import { describe, expect, test, vi } from "vitest";
 
 import { createId } from "@homarr/common";
@@ -9,17 +10,71 @@ import { createDb } from "@homarr/db/test";
 
 import { authorizeWithLdapCredentialsAsync } from "../credentials/authorization/ldap-authorization";
 import * as ldapClient from "../credentials/ldap-client";
+import { env } from "../../env";
 
 vi.mock("../../env", () => ({
   env: {
     AUTH_LDAP_BIND_DN: "bind_dn",
     AUTH_LDAP_BIND_PASSWORD: "bind_password",
     AUTH_LDAP_USER_MAIL_ATTRIBUTE: "mail",
+    AUTH_LDAP_USERNAME_ATTRIBUTE: "uid",
     AUTH_LDAP_GROUP_CLASS: "group",
+    AUTH_LDAP_GROUP_MEMBER_ATTRIBUTE: "member",
+    get AUTH_LDAP_GROUP_MEMBER_USER_ATTRIBUTE() {
+      return "dn";
+    },
   },
 }));
 
+const mocks = vi.hoisted(() => ({
+  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+}));
+
+vi.mock("@homarr/core/infrastructure/logs", () => ({
+  createLogger: () => mocks.logger,
+}));
+
+const ipAddress = "203.0.113.7";
+
 describe("authorizeWithLdapCredentials", () => {
+  test("requests the group lookup attribute and preserves literal filter values", async () => {
+    const memberAttribute = vi.spyOn(env, "AUTH_LDAP_GROUP_MEMBER_USER_ATTRIBUTE", "get");
+    memberAttribute.mockReturnValue("distinguishedName");
+    const username = "user*)(uid=*)";
+    const dn = "cn=Comma\\2C User (test),dc=example,dc=com";
+    const search = vi
+      .fn()
+      .mockResolvedValueOnce([{ dn, distinguishedName: dn, mail: "literal@example.com" }])
+      .mockResolvedValueOnce([{ cn: "homarr-users" }]);
+    vi.spyOn(ldapClient, "LdapClient").mockImplementation(function () {
+      return {
+        bindAsync: vi.fn().mockResolvedValue(undefined),
+        searchAsync: search,
+        disconnectAsync: vi.fn().mockResolvedValue(undefined),
+      } as unknown as ldapClient.LdapClient;
+    });
+
+    try {
+      const result = await authorizeWithLdapCredentialsAsync(
+        createDb(),
+        { name: username, password: "test" },
+        ipAddress,
+      );
+      const userSearch = search.mock.calls[0]?.[0];
+      const groupSearch = search.mock.calls[1]?.[0];
+      expect(userSearch.options.attributes).toContain("distinguishedName");
+      const userFilter = FilterParser.parseString(userSearch.options.filter);
+      expect(userFilter.matches({ uid: username })).toBe(true);
+      expect(userFilter.matches({ uid: "some-other-user" })).toBe(false);
+      const groupFilter = FilterParser.parseString(groupSearch.options.filter);
+      expect(groupFilter.matches({ objectClass: "group", member: dn })).toBe(true);
+      expect(groupFilter.matches({ objectClass: "group", member: "cn=other,dc=example,dc=com" })).toBe(false);
+      expect(result.groups).toEqual(["homarr-users"]);
+    } finally {
+      memberAttribute.mockRestore();
+    }
+  });
+
   test("should fail when wrong ldap base credentials", async () => {
     // Arrange
     const spy = vi.spyOn(ldapClient, "LdapClient");
@@ -31,10 +86,14 @@ describe("authorizeWithLdapCredentials", () => {
 
     // Act
     const act = () =>
-      authorizeWithLdapCredentialsAsync(null as unknown as Database, {
-        name: "test",
-        password: "test",
-      });
+      authorizeWithLdapCredentialsAsync(
+        null as unknown as Database,
+        {
+          name: "test",
+          password: "test",
+        },
+        ipAddress,
+      );
 
     // Assert
     await expect(act()).rejects.toThrow(CredentialsSignin);
@@ -52,13 +111,18 @@ describe("authorizeWithLdapCredentials", () => {
 
     // Act
     const act = () =>
-      authorizeWithLdapCredentialsAsync(null as unknown as Database, {
-        name: "test",
-        password: "test",
-      });
+      authorizeWithLdapCredentialsAsync(
+        null as unknown as Database,
+        {
+          name: "test",
+          password: "test",
+        },
+        ipAddress,
+      );
 
     // Assert
     await expect(act()).rejects.toThrow(CredentialsSignin);
+    expect(mocks.logger.warn).toHaveBeenCalledWith("User not found", { userName: "test", ipAddress });
   });
 
   test("should fail when user has invalid email", async () => {
@@ -80,10 +144,14 @@ describe("authorizeWithLdapCredentials", () => {
 
     // Act
     const act = () =>
-      authorizeWithLdapCredentialsAsync(null as unknown as Database, {
-        name: "test",
-        password: "test",
-      });
+      authorizeWithLdapCredentialsAsync(
+        null as unknown as Database,
+        {
+          name: "test",
+          password: "test",
+        },
+        ipAddress,
+      );
 
     // Assert
     await expect(act()).rejects.toThrow(CredentialsSignin);
@@ -111,14 +179,19 @@ describe("authorizeWithLdapCredentials", () => {
 
     // Act
     const act = () =>
-      authorizeWithLdapCredentialsAsync(null as unknown as Database, {
-        name: "test",
-        password: "test",
-      });
+      authorizeWithLdapCredentialsAsync(
+        null as unknown as Database,
+        {
+          name: "test",
+          password: "test",
+        },
+        ipAddress,
+      );
 
     // Assert
     await expect(act()).rejects.toThrow(CredentialsSignin);
     expect(searchSpy).toHaveBeenCalledTimes(1);
+    expect(mocks.logger.warn).toHaveBeenCalledWith("Wrong credentials for user", { userName: "test", ipAddress });
   });
 
   test("should authorize user with correct credentials and create user", async () => {
@@ -141,10 +214,14 @@ describe("authorizeWithLdapCredentials", () => {
     });
 
     // Act
-    const result = await authorizeWithLdapCredentialsAsync(db, {
-      name: "test",
-      password: "test",
-    });
+    const result = await authorizeWithLdapCredentialsAsync(
+      db,
+      {
+        name: "test",
+        password: "test",
+      },
+      ipAddress,
+    );
 
     // Assert
     expect(result.name).toBe("test");
@@ -185,10 +262,14 @@ describe("authorizeWithLdapCredentials", () => {
     });
 
     // Act
-    const result = await authorizeWithLdapCredentialsAsync(db, {
-      name: "test",
-      password: "test",
-    });
+    const result = await authorizeWithLdapCredentialsAsync(
+      db,
+      {
+        name: "test",
+        password: "test",
+      },
+      ipAddress,
+    );
 
     // Assert
     expect(result.name).toBe("test");
@@ -239,10 +320,14 @@ describe("authorizeWithLdapCredentials", () => {
     });
 
     // Act
-    const result = await authorizeWithLdapCredentialsAsync(db, {
-      name: "test",
-      password: "test",
-    });
+    const result = await authorizeWithLdapCredentialsAsync(
+      db,
+      {
+        name: "test",
+        password: "test",
+      },
+      ipAddress,
+    );
 
     // Assert
     expect(result).toEqual({ id: userId, name: "test", groups: [] });
@@ -298,10 +383,14 @@ describe("authorizeWithLdapCredentials", () => {
     });
 
     // Act
-    const result = await authorizeWithLdapCredentialsAsync(db, {
-      name: "test",
-      password: "test",
-    });
+    const result = await authorizeWithLdapCredentialsAsync(
+      db,
+      {
+        name: "test",
+        password: "test",
+      },
+      ipAddress,
+    );
 
     // Assert
     expect(result).toEqual({ id: userId, name: "test", groups: ["homarr_example"] });

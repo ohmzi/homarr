@@ -21,15 +21,18 @@ export default async function SearchEngineEditPage(props: SearchEngineEditPagePr
     notFound();
   }
 
-  const searchEngine = await api.searchEngine.byId({ id: params.id });
-  const t = await getI18n();
+  const [searchEngine, integrations] = await Promise.all([
+    api.searchEngine.byId({ id: params.id }),
+    api.integration.allThatSupportSearch(),
+  ]);
+  const t = await getI18n("search.engine.page.edit");
 
   return (
     <ManageContainer>
       <DynamicBreadcrumb dynamicMappings={new Map([[params.id, searchEngine.name]])} nonInteractable={["edit"]} />
       <Stack>
-        <Title>{t("search.engine.page.edit.title")}</Title>
-        <SearchEngineEditForm searchEngine={searchEngine} />
+        <Title>{t("title")}</Title>
+        <SearchEngineEditForm searchEngine={searchEngine} integrations={integrations} />
       </Stack>
     </ManageContainer>
   );

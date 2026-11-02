@@ -2,6 +2,7 @@
 
 import { Button, Group, Stack } from "@mantine/core";
 
+import type { RouterOutputs } from "@homarr/api";
 import { clientApi } from "@homarr/api/client";
 import { useZodForm } from "@homarr/form";
 import { showErrorNotification, showSuccessNotification } from "@homarr/notifications";
@@ -11,14 +12,15 @@ import { groupSettingsSchema } from "@homarr/validation/group";
 import { BoardSelect } from "~/components/board/board-select";
 
 interface GroupHomeBoardsProps {
+  availableBoards: RouterOutputs["board"]["getBoardsForGroup"];
   homeBoardId: string | null;
   mobileHomeBoardId: string | null;
   groupId: string;
 }
 
-export const GroupHomeBoards = ({ homeBoardId, mobileHomeBoardId, groupId }: GroupHomeBoardsProps) => {
-  const t = useI18n();
-  const [availableBoards] = clientApi.board.getBoardsForGroup.useSuspenseQuery({ groupId });
+export const GroupHomeBoards = ({ homeBoardId, mobileHomeBoardId, groupId, availableBoards }: GroupHomeBoardsProps) => {
+  const tGroup = useI18n("group");
+  const tCommon = useI18n("common");
   const form = useZodForm(groupSettingsSchema.pick({ homeBoardId: true, mobileHomeBoardId: true }), {
     initialValues: {
       homeBoardId,
@@ -37,14 +39,14 @@ export const GroupHomeBoards = ({ homeBoardId, mobileHomeBoardId, groupId }: Gro
         onSuccess() {
           form.setInitialValues(values);
           showSuccessNotification({
-            title: t("group.action.settings.board.notification.success.title"),
-            message: t("group.action.settings.board.notification.success.message"),
+            title: tGroup("action.settings.board.notification.success.title"),
+            message: tGroup("action.settings.board.notification.success.message"),
           });
         },
         onError() {
           showErrorNotification({
-            title: t("group.action.settings.board.notification.error.title"),
-            message: t("group.action.settings.board.notification.error.message"),
+            title: tGroup("action.settings.board.notification.error.title"),
+            message: tGroup("action.settings.board.notification.error.message"),
           });
         },
       },
@@ -55,16 +57,16 @@ export const GroupHomeBoards = ({ homeBoardId, mobileHomeBoardId, groupId }: Gro
     <form onSubmit={handleSubmit}>
       <Stack gap="md">
         <BoardSelect
-          label={t("group.field.homeBoard.label")}
-          description={t("group.field.homeBoard.description")}
+          label={tGroup("field.homeBoard.label")}
+          description={tGroup("field.homeBoard.description")}
           clearable
           boards={availableBoards}
           {...form.getInputProps("homeBoardId")}
         />
 
         <BoardSelect
-          label={t("group.field.mobileBoard.label")}
-          description={t("group.field.mobileBoard.description")}
+          label={tGroup("field.mobileBoard.label")}
+          description={tGroup("field.mobileBoard.description")}
           clearable
           boards={availableBoards}
           {...form.getInputProps("mobileHomeBoardId")}
@@ -72,7 +74,7 @@ export const GroupHomeBoards = ({ homeBoardId, mobileHomeBoardId, groupId }: Gro
 
         <Group justify="end">
           <Button type="submit" loading={isPending}>
-            {t("common.action.save")}
+            {tCommon("action.save")}
           </Button>
         </Group>
       </Stack>

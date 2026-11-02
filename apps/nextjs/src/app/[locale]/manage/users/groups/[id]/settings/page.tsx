@@ -22,20 +22,29 @@ export default async function GroupPermissionsPage(props: GroupSettingsPageProps
     notFound();
   }
 
-  const group = await api.group.getById({ id: params.id });
-  const t = await getI18n();
+  const [group, availableBoards] = await Promise.all([
+    api.group.getById({ id: params.id }),
+    api.board.getBoardsForGroup({ groupId: params.id }),
+  ]);
+  const t = await getI18n("management.page.group.setting.setting");
+  const tEntities = await getI18n("common.entity");
 
   return (
     <Stack>
-      <Title>{t("management.page.group.setting.setting.title")}</Title>
+      <Title>{t("title")}</Title>
 
       <Alert color="cyan" icon={<IconExclamationCircle size="1rem" stroke={1.5} />}>
-        {t("management.page.group.setting.setting.alert")}
+        {t("alert")}
       </Alert>
 
-      <Title order={3}>{t("management.page.group.setting.setting.board.title")}</Title>
+      <Title order={3}>{tEntities("boards")}</Title>
 
-      <GroupHomeBoards homeBoardId={group.homeBoardId} mobileHomeBoardId={group.mobileHomeBoardId} groupId={group.id} />
+      <GroupHomeBoards
+        homeBoardId={group.homeBoardId}
+        mobileHomeBoardId={group.mobileHomeBoardId}
+        groupId={group.id}
+        availableBoards={availableBoards}
+      />
     </Stack>
   );
 }

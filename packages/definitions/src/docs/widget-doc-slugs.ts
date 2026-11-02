@@ -1,8 +1,12 @@
 import type { WidgetKind } from "../widget";
 
-export const widgetDocSlugs: Record<WidgetKind, string | null> = {
+export const widgetDocSlugs = {
+  stats: "stats",
   clock: "clock",
   weather: "weather",
+  airQuality: "air-quality",
+  countdown: "countdown",
+  timer: "timer",
   app: "app",
   iframe: "iframe",
   video: "video",
@@ -39,6 +43,10 @@ export const widgetDocSlugs: Record<WidgetKind, string | null> = {
   "immich-serverStats": "immich-server-stats",
   "immich-albumCarousel": "immich-album-carousel",
   paperlessNgx: "paperless-ngx",
+  "thingport-libraryStats": "thingport-library-stats",
+  "thingport-models": "thingport-models",
+  "thingport-featuredModel": "thingport-featured-model",
+  "thingport-activityHeatmap": "thingport-activity-heatmap",
   patchmon: "patchmon",
   bazarr: "bazarr",
   tracearr: "tracearr",
@@ -57,5 +65,9 @@ export const widgetDocSlugs: Record<WidgetKind, string | null> = {
   beszelSystemStats: "beszel-system-stats",
   traefik: "traefik",
   customApi: "custom-api",
+  assistant: "assistant",
   wud: "whats-up-docker",
-};
+  llamacpp: "llama-cpp",
+  wazuh: "wazuh",
+  splitFlap: null,
+} satisfies Record<WidgetKind, string | null>;

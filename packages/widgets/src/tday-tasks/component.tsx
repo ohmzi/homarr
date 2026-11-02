@@ -23,8 +23,8 @@ import type { LucideIcon } from "lucide-react";
 
 import { clientApi } from "@homarr/api/client";
 import { useIntegrationsWithInteractAccess } from "@homarr/auth/client";
-import type { TdayTask } from "@homarr/integrations";
-import { useScopedI18n } from "@homarr/translation/client";
+import type { TdayPriority, TdayTask, TdayTaskView } from "@homarr/integrations";
+import { useI18n } from "@homarr/translation/client";
 
 import type { WidgetComponentProps } from "../definition";
 import { getListIcon } from "./list-icons";
@@ -32,7 +32,7 @@ import { getListIcon } from "./list-icons";
 import "./tday-tasks.css";
 
 export default function TdayTasksWidget({ options, integrationIds }: WidgetComponentProps<"tdayTasks">) {
-  const t = useScopedI18n("widget.tdayTasks");
+  const t = useI18n("widget.tdayTasks");
   const integrationId = integrationIds[0];
 
   if (!integrationId) {
@@ -54,8 +54,12 @@ interface TdayTasksContentProps {
 }
 
 const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => {
-  const t = useScopedI18n("widget.tdayTasks");
+  const t = useI18n("widget.tdayTasks");
   const view = options.view;
+  const scoped = parseScopedList(options.list?.value ?? null);
+  // A scoped list decides where new tasks go: a floater list takes floaters, a todo list takes
+  // scheduled tasks. Without one, the view does.
+  const composerView: TdayTaskView = scoped ? (scoped.kind === "floater" ? "floater" : "today") : view;
 
   const [tasks, { refetch }] = clientApi.widget.tday.getTasks.useSuspenseQuery(
     // A chosen list wins over the view; the view still decides the sort's default and what the
@@ -127,13 +131,15 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
   const [draft, setDraft] = useState("");
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
-  const [priority, setPriority] = useState<"Low" | "Medium" | "High">("Low");
+  const [priority, setPriority] = useState<TdayPriority>("Low");
+  // Once the user picks a priority by hand, a list change no longer overwrites it (web parity).
+  const [priorityTouchedByUser, setPriorityTouchedByUser] = useState(false);
   const [listId, setListId] = useState<string | null>(null);
   const [addDue, setAddDue] = useState<string | null>(null);
 
   const [editing, setEditing] = useState<TdayTask | null>(null);
   const [editTitle, setEditTitle] = useState("");
-  const [editPriority, setEditPriority] = useState<"Low" | "Medium" | "High">("Low");
+  const [editPriority, setEditPriority] = useState<TdayPriority>("Low");
   const [editListId, setEditListId] = useState<string | null>(null);
   const [editDue, setEditDue] = useState<string | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
@@ -146,14 +152,23 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
     if (editing) editInputRef.current?.focus();
   }, [editing]);
 
-  // Lists for the chosen view (todo-lists, or floater-lists for the floater view).
-  // Fetched once the add or edit panel is opened.
+  // Lists for the composer's namespace (todo-lists, or floater-lists for floaters). Fetched once the
+  // add or edit panel is opened, or up front when a scoped list needs its default priority.
   const listsQuery = clientApi.widget.tday.getLists.useQuery(
-    { integrationId, view },
-    { enabled: adding || editing !== null, refetchOnWindowFocus: false, retry: false },
+    { integrationId, view: composerView },
+    {
+      enabled: adding || editing !== null || (scoped !== null && options.showQuickAdd),
+      refetchOnWindowFocus: false,
+      retry: false,
+    },
   );
   const listOptions = (listsQuery.data ?? []).map((list) => ({ value: list.id, label: list.name }));
   const listById = new Map((listsQuery.data ?? []).map((list) => [list.id, list]));
+
+  // The scoped list's own default is the composer's starting priority, and it is what a fresh
+  // composer or a cleared one goes back to. Unscoped, the composer starts at Low.
+  const scopedList = scoped ? (listById.get(scoped.id) ?? null) : null;
+  const scopedDefaultPriority = normalizePriority(scopedList?.defaultPriority ?? null);
 
   const completeMutation = clientApi.widget.tday.complete.useMutation();
   const uncompleteMutation = clientApi.widget.tday.uncomplete.useMutation();
@@ -180,9 +195,7 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
       // The next composer starts clean rather than inheriting this task's list,
       // priority and due (issue: "creating a new task keeps the previous
       // selection of list and priority").
-      setPriority("Low");
-      setListId(null);
-      setAddDue(null);
+      resetComposerFields();
     },
     onError: (error) => setAddError(error.message || "Failed to add tasks"),
   });
@@ -241,7 +254,14 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
     const title = draft.trim();
     if (!title) return;
     setAddError(null);
-    quickAddMutation.mutate({ integrationId, view, titles: [title], priority, listId, due: toTdayDue(addDue) });
+    quickAddMutation.mutate({
+      integrationId,
+      view: composerView,
+      titles: [title],
+      priority,
+      listId,
+      due: toTdayDue(addDue),
+    });
   };
 
   // The add/save button takes the selected list's colour, falling back to the per-view accent.
@@ -254,31 +274,53 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
     } as CSSProperties;
   };
 
+  // The composer's starting state: the scoped list (if any) with its default priority, otherwise a
+  // clean slate. Used on open, on cancel and after a successful add.
+  const resetComposerFields = () => {
+    setListId(scopedList?.id ?? null);
+    setPriority(scopedDefaultPriority);
+    setPriorityTouchedByUser(false);
+    setAddDue(null);
+  };
+
+  const openComposer = () => {
+    resetComposerFields();
+    setAdding(true);
+  };
+
   const cancelAdd = () => {
     setAdding(false);
     setDraft("");
     setAddError(null);
     // The composer is a fresh sheet each time it opens: a list, priority or due
     // left over from the previous task must not become the next one's.
-    setPriority("Low");
-    setListId(null);
-    setAddDue(null);
+    resetComposerFields();
   };
 
-  const normalizePriority = (value: string): "Low" | "Medium" | "High" =>
-    value === "Medium" || value === "High" ? value : "Low";
+  // Until the scoped list's default arrives (or when it has none), the priority follows the
+  // default as soon as it is known — but only while that list is still the composer's list and the
+  // user has not chosen a priority by hand.
+  useEffect(() => {
+    if (!adding || priorityTouchedByUser || !scopedList || listId !== scopedList.id) return;
+    setPriority(scopedDefaultPriority);
+  }, [adding, priorityTouchedByUser, scopedList, scopedDefaultPriority, listId]);
+
+  const handleAddPriorityChange = (next: TdayPriority) => {
+    setPriority(next);
+    setPriorityTouchedByUser(true);
+  };
 
   /**
-   * Picking a list in the add composer also picks that list's default priority —
-   * the same rule the app's own create sheet follows, so a widget-added task
-   * lands at the urgency the list asked for instead of the composer's last
-   * value. A list with no default settles on Low. The widget offers no Lowest
-   * tier, so a Lowest default narrows to Low. Clearing the list leaves Low.
+   * Picking a list in the add composer also picks that list's default priority — the same rule the
+   * app's own create sheet follows, so a widget-added task lands at the urgency the list asked for.
+   * Once the user has picked a priority by hand, the list no longer overwrites it. Clearing the list
+   * settles on Low.
    */
   const handleAddListChange = (next: string | null) => {
     setListId(next);
+    if (priorityTouchedByUser) return;
     const listDefault = next ? (listById.get(next)?.defaultPriority ?? null) : null;
-    setPriority(normalizePriority(listDefault ?? "Low"));
+    setPriority(normalizePriority(listDefault));
   };
 
   const startEdit = (task: TdayTask) => {
@@ -325,19 +367,16 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
 
   // Reusable priority/list selects (shared by the add and edit panels). Label-less inside the
   // composer's controls strip; flex-basis lets the three controls share a row or wrap when narrow.
-  const prioritySelect = (
-    value: "Low" | "Medium" | "High",
-    onChange: (next: "Low" | "Medium" | "High") => void,
-    disabled: boolean,
-  ) => (
+  const prioritySelect = (value: TdayPriority, onChange: (next: TdayPriority) => void, disabled: boolean) => (
     <Select
       size="xs"
       radius="md"
       aria-label={t("priority")}
       style={{ flex: "1 1 96px", minWidth: 0 }}
       value={value}
-      onChange={(next) => onChange((next as "Low" | "Medium" | "High" | null) ?? "Low")}
+      onChange={(next) => onChange(normalizePriority(next))}
       data={[
+        { value: "Lowest", label: t("priorityLowest") },
         { value: "Low", label: t("priorityNormal") },
         { value: "Medium", label: t("priorityImportant") },
         { value: "High", label: t("priorityUrgent") },
@@ -606,9 +645,9 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
               disabled={quickAddMutation.isPending}
             />
             <div className="tday-composer-controls">
-              {prioritySelect(priority, setPriority, quickAddMutation.isPending)}
+              {prioritySelect(priority, handleAddPriorityChange, quickAddMutation.isPending)}
               {listSelect(listId, handleAddListChange, quickAddMutation.isPending)}
-              {view !== "floater" && duePicker(addDue, setAddDue, quickAddMutation.isPending)}
+              {composerView !== "floater" && duePicker(addDue, setAddDue, quickAddMutation.isPending)}
             </div>
             {addError && (
               <Text size="xs" c="red" px={10} pt={6}>
@@ -643,7 +682,7 @@ const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => 
             </div>
           </div>
         ) : (
-          <UnstyledButton ref={ghostAddRef} className="tday-add-ghost" onClick={() => setAdding(true)}>
+          <UnstyledButton ref={ghostAddRef} className="tday-add-ghost" onClick={openComposer}>
             <span className="tday-add-ghost-circle" aria-hidden>
               <IconPlus size={12} stroke={2.5} />
             </span>
@@ -835,20 +874,45 @@ const resolveViewIdentity = (view: string, isNight: boolean): ViewIdentity => {
   }
 };
 
-// Tday stores Low/Medium/High; the app surfaces these as Normal/Important/Urgent and shows a
-// filled flag only for Important (orange) / Urgent (red). `flag` null = no flag in task rows.
-const PRIORITY_NORMAL: { key: "priorityNormal" | "priorityImportant" | "priorityUrgent"; flag: string | null } = {
-  key: "priorityNormal",
-  flag: null,
+// Tday stores Lowest/Low/Medium/High. The app labels them Low/Normal/Important/Urgent (the web's
+// `labels.ts`), and shows a filled flag only for Important (orange) / Urgent (red). `flag` null = no
+// flag in task rows.
+type PriorityMeta = {
+  key: "priorityLowest" | "priorityNormal" | "priorityImportant" | "priorityUrgent";
+  flag: string | null;
 };
 
-const PRIORITY_META: Record<string, typeof PRIORITY_NORMAL> = {
+const PRIORITY_LOWEST: PriorityMeta = { key: "priorityLowest", flag: null };
+const PRIORITY_NORMAL: PriorityMeta = { key: "priorityNormal", flag: null };
+
+const PRIORITY_META: Record<string, PriorityMeta> = {
+  Lowest: PRIORITY_LOWEST,
   Low: PRIORITY_NORMAL,
   Medium: { key: "priorityImportant", flag: "var(--mantine-color-orange-6)" },
   High: { key: "priorityUrgent", flag: "var(--mantine-color-red-6)" },
 };
 
-const PRIORITY_RANK: Record<string, number> = { High: 0, Medium: 1, Low: 2 };
+const PRIORITY_RANK: Record<string, number> = { High: 0, Medium: 1, Low: 2, Lowest: 3 };
+
+const PRIORITY_VALUES: readonly TdayPriority[] = ["Lowest", "Low", "Medium", "High"];
+
+/** Any value the API or a select might hand back, as a priority the widget can show. Unknown means Low. */
+const normalizePriority = (value: string | null | undefined): TdayPriority =>
+  PRIORITY_VALUES.find((priority) => priority === value) ?? "Low";
+
+/**
+ * The widget's `list` option is an encoded selection (`"todo:<id>"` or `"floater:<id>"`, written by
+ * the integration). It is parsed here rather than imported: the integrations barrel is server code.
+ */
+const parseScopedList = (value: string | null): { kind: "todo" | "floater"; id: string } | null => {
+  if (!value) return null;
+  const separator = value.indexOf(":");
+  if (separator < 1) return null;
+  const kind = value.slice(0, separator);
+  const id = value.slice(separator + 1);
+  if ((kind !== "todo" && kind !== "floater") || id.length === 0) return null;
+  return { kind, id };
+};
 
 // Mantine date pickers emit "YYYY-MM-DD HH:mm"; Tday expects an ISO local datetime ("…THH:mm").
 const toTdayDue = (value: string | null): string | null => (value ? value.replace(" ", "T") : null);

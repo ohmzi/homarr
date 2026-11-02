@@ -6,41 +6,52 @@ import { Integration } from "../base/integration";
 import { TestConnectionError } from "../base/test-connection/test-connection-error";
 import type { TestingResult } from "../base/test-connection/test-connection-service";
 import {
-  uptimeKumaHeartbeatCategoryMap,
+  toUptimeKumaMonitorStatus,
   uptimeKumaHeartbeatResponseSchema,
+  uptimeKumaIncidentStyles,
+  uptimeKumaMaxHeartbeats,
   uptimeKumaStatusPageResponseSchema,
 } from "./uptime-kuma-types";
 import type {
-  UptimeKumaDashboardData,
+  UptimeKumaHeartbeat,
+  UptimeKumaHeartbeatResponse,
+  UptimeKumaIncident,
+  UptimeKumaIncidentStyle,
   UptimeKumaMonitor,
-  UptimeKumaMonitorCategory,
   UptimeKumaMonitorHeartbeats,
+  UptimeKumaMonitorStatus,
+  UptimeKumaStatusPage,
+  UptimeKumaStatusPageResponse,
 } from "./uptime-kuma-types";
+
+const uptimeWindowMs = 24 * 60 * 60 * 1000;
+const minimumStaleAgeMs = 10 * 60 * 1000;
+const missedChecksUntilStale = 5;
+
+type StatusPageMonitor = UptimeKumaStatusPageResponse["publicGroupList"][number]["monitorList"][number];
+type StatusPageIncident = NonNullable<UptimeKumaStatusPageResponse["incident"]>;
+type RawHeartbeat = UptimeKumaHeartbeatResponse["heartbeatList"][string][number];
 
 export class UptimeKumaIntegration extends Integration {
   protected async testingAsync(input: IntegrationTestingInput): Promise<TestingResult> {
-    const statusPageResponse = await input.fetchAsync(this.statusPageUrl());
-
+    const statusPageResponse = await input.fetchAsync(this.statusPageApiUrl());
     if (!statusPageResponse.ok) {
       return TestConnectionError.StatusResult(statusPageResponse);
     }
 
     const statusPageParsed = uptimeKumaStatusPageResponseSchema.safeParse(await statusPageResponse.json());
-
     if (!statusPageParsed.success) {
       return TestConnectionError.ParseResult(
         new ParseError("Invalid Uptime Kuma status page response", { cause: statusPageParsed.error }),
       );
     }
 
-    const heartbeatResponse = await input.fetchAsync(this.heartbeatUrl());
-
+    const heartbeatResponse = await input.fetchAsync(this.heartbeatApiUrl());
     if (!heartbeatResponse.ok) {
       return TestConnectionError.StatusResult(heartbeatResponse);
     }
 
     const heartbeatParsed = uptimeKumaHeartbeatResponseSchema.safeParse(await heartbeatResponse.json());
-
     if (!heartbeatParsed.success) {
       return TestConnectionError.ParseResult(
         new ParseError("Invalid Uptime Kuma heartbeat response", { cause: heartbeatParsed.error }),
@@ -50,35 +61,60 @@ export class UptimeKumaIntegration extends Integration {
     return { success: true };
   }
 
-  public async getDashboardDataAsync(): Promise<UptimeKumaDashboardData> {
+  public async getStatusPageAsync(signal?: AbortSignal, statusPageSlug?: string): Promise<UptimeKumaStatusPage> {
+    const slug = statusPageSlug?.trim().toLowerCase() || this.getSlug();
     const [statusPageResponse, heartbeatResponse] = await Promise.all([
-      this.getStatusPageAsync(),
-      this.getHeartbeatAsync(),
+      this.fetchOkAsync(this.statusPageApiUrl(slug), signal),
+      this.fetchOkAsync(this.heartbeatApiUrl(slug), signal),
     ]);
 
     const statusPage = uptimeKumaStatusPageResponseSchema.parse(await statusPageResponse.json());
     const heartbeat = uptimeKumaHeartbeatResponseSchema.parse(await heartbeatResponse.json());
-
-    const monitors = statusPage.publicGroupList.flatMap((group) =>
-      group.monitorList.map((monitor) => this.mapMonitor(monitor, heartbeat)),
+    const heartbeatsByMonitor = new Map(
+      Object.entries(heartbeat.heartbeatList).map(([monitorId, heartbeats]) => [
+        Number(monitorId),
+        heartbeats
+          .flatMap(mapHeartbeat)
+          .toSorted((left, right) => left.time - right.time)
+          .slice(-uptimeKumaMaxHeartbeats),
+      ]),
     );
 
-    return this.buildDashboardData(monitors);
+    return {
+      title: statusPage.config?.title?.trim() || slug,
+      url: this.externalUrl(`/status/${encodeURIComponent(slug)}`).toString(),
+      groups: statusPage.publicGroupList.map((group) => ({
+        id: group.id,
+        name: group.name,
+        monitors: group.monitorList.map((monitor) =>
+          mapMonitor(monitor, {
+            heartbeats: heartbeatsByMonitor.get(monitor.id) ?? [],
+            uptimeRatio: heartbeat.uptimeList[`${monitor.id}_24`],
+          }),
+        ),
+      })),
+      incidents: uniqueById([statusPage.incidents ?? [], statusPage.incident ?? []].flat()).map(mapIncident),
+      maintenances: (statusPage.maintenanceList ?? []).map((maintenance) => ({
+        id: maintenance.id,
+        title: maintenance.title?.trim() || "",
+        description: maintenance.description?.trim() || null,
+      })),
+    };
   }
 
   /**
-   * Heartbeat history per monitor. `getDashboardDataAsync` keeps only the newest
-   * heartbeat of each monitor; this keeps the whole window, which is what the uptime
-   * widget accumulates into its own daily history.
+   * Raw heartbeat history per monitor, for the uptime-status history job. `getStatusPageAsync`
+   * keeps only what it displays; this keeps the whole window the endpoint returns, unmapped, so
+   * the job can attribute each gap between beats to the later beat's status.
    *
    * The status page endpoint caps heartbeats at 100 per monitor, so the window is
-   * `100 × probe interval` — about 8 hours at a 300s interval. Callers should treat
-   * beats older than what they last recorded as unavailable rather than absent.
+   * `100 x probe interval`. Callers should treat beats older than what they last recorded as
+   * unavailable rather than absent.
    */
   public async getMonitorHeartbeatsAsync(): Promise<UptimeKumaMonitorHeartbeats[]> {
     const [statusPageResponse, heartbeatResponse] = await Promise.all([
-      this.getStatusPageAsync(),
-      this.getHeartbeatAsync(),
+      this.fetchOkAsync(this.statusPageApiUrl()),
+      this.fetchOkAsync(this.heartbeatApiUrl()),
     ]);
 
     const statusPage = uptimeKumaStatusPageResponseSchema.parse(await statusPageResponse.json());
@@ -93,80 +129,133 @@ export class UptimeKumaIntegration extends Integration {
     );
   }
 
-  private mapMonitor(
-    monitor: { id: number; name: string },
-    heartbeat: { heartbeatList: Record<string, { status: number }[]>; uptimeList: Record<string, number> },
-  ): UptimeKumaMonitor {
-    const heartbeats = heartbeat.heartbeatList[String(monitor.id)] ?? [];
-    const latestHeartbeat = heartbeats.at(-1);
-    const uptimeKey = `${monitor.id}_24`;
-    const uptimeRaw = heartbeat.uptimeList[uptimeKey];
-    const uptimePercent24h = typeof uptimeRaw === "number" ? uptimeRaw * 100 : null;
-    const status: UptimeKumaMonitorCategory =
-      (latestHeartbeat && (uptimeKumaHeartbeatCategoryMap[latestHeartbeat.status] ?? "down")) || "paused";
-
-    return {
-      id: monitor.id,
-      name: monitor.name,
-      status,
-      uptimePercent24h,
-    };
-  }
-
-  private buildDashboardData(monitors: UptimeKumaMonitor[]): UptimeKumaDashboardData {
-    const counts = monitors.reduce(
-      (acc, monitor) => {
-        acc[monitor.status] += 1;
-        return acc;
-      },
-      { up: 0, down: 0, paused: 0 },
-    );
-
-    const uptimeValues = monitors
-      .map((monitor) => monitor.uptimePercent24h)
-      .filter((value): value is number => value !== null);
-
-    const averageUptimePercent = uptimeValues.reduce((sum, value) => sum + value, 0) / Math.max(uptimeValues.length, 1);
-
-    return {
-      totalMonitors: monitors.length,
-      upCount: counts.up,
-      downCount: counts.down,
-      pausedCount: counts.paused,
-      averageUptimePercent,
-      monitors,
-    };
-  }
-
-  private async fetchOkAsync(url: string | URL) {
-    const response = await fetchWithTrustedCertificatesAsync(url);
+  private async fetchOkAsync(url: URL, signal?: AbortSignal) {
+    const response = await fetchWithTrustedCertificatesAsync(url, { signal });
     if (!response.ok) {
       throw new ResponseError(response);
     }
     return response;
   }
 
-  private getStatusPageAsync() {
-    return this.fetchOkAsync(this.statusPageUrl());
+  private statusPageApiUrl(slug = this.getSlug()) {
+    return this.url(`/api/status-page/${encodeURIComponent(slug)}`);
   }
 
-  private getHeartbeatAsync() {
-    return this.fetchOkAsync(this.heartbeatUrl());
-  }
-
-  private statusPageUrl() {
-    return this.url(`/api/status-page/${this.getSlug()}`);
-  }
-
-  private heartbeatUrl() {
-    return this.url(`/api/status-page/heartbeat/${this.getSlug()}`);
+  private heartbeatApiUrl(slug = this.getSlug()) {
+    return this.url(`/api/status-page/heartbeat/${encodeURIComponent(slug)}`);
   }
 
   private getSlug() {
     if (this.hasSecretValue("slug")) {
-      return this.getSecretValue("slug").toLowerCase();
+      return this.getSecretValue("slug").trim().toLowerCase();
     }
 
     return "default";
   }
 }
+
+interface MonitorHeartbeatData {
+  heartbeats: UptimeKumaHeartbeat[];
+  uptimeRatio: number | undefined;
+}
+
+const mapMonitor = (
+  monitor: StatusPageMonitor,
+  { heartbeats, uptimeRatio }: MonitorHeartbeatData,
+): UptimeKumaMonitor => {
+  const latest = heartbeats.at(-1);
+  const checkedWithinUptimeWindow = latest !== undefined && Date.now() - latest.time <= uptimeWindowMs;
+  const status = getMonitorStatus(latest, getCheckInterval(heartbeats));
+  let statusSince: number | null = null;
+  if (status !== "stale") statusSince = getStatusSince(heartbeats);
+
+  return {
+    id: monitor.id,
+    name: monitor.name,
+    type: monitor.type ?? null,
+    url: monitor.url?.trim() || null,
+    status,
+    uptime24h:
+      checkedWithinUptimeWindow && typeof uptimeRatio === "number"
+        ? Math.min(100, Math.max(0, uptimeRatio * 100))
+        : null,
+    ping: latest?.ping ?? null,
+    lastCheckAt: latest?.time ?? null,
+    statusSince,
+    certificateDaysRemaining: getCertificateDaysRemaining(monitor),
+    tags: (monitor.tags ?? []).map((tag) => ({
+      name: tag.name,
+      color: tag.color ?? null,
+      value: tag.value?.trim() || null,
+    })),
+    heartbeats,
+  };
+};
+
+const getMonitorStatus = (
+  latest: UptimeKumaHeartbeat | undefined,
+  checkInterval: number | null,
+): UptimeKumaMonitorStatus => {
+  if (!latest) return "unknown";
+  if (Date.now() - latest.time > getStaleAfter(checkInterval)) return "stale";
+  return latest.status;
+};
+
+const getStaleAfter = (checkInterval: number | null) => {
+  if (checkInterval === null) return uptimeWindowMs;
+  return Math.max(minimumStaleAgeMs, checkInterval * missedChecksUntilStale);
+};
+
+const getCheckInterval = (heartbeats: readonly UptimeKumaHeartbeat[]) =>
+  median(heartbeats.slice(1).map((heartbeat, index) => heartbeat.time - (heartbeats[index]?.time ?? heartbeat.time)));
+
+const median = (values: readonly number[]) => {
+  if (values.length === 0) return null;
+  const sorted = values.toSorted((left, right) => left - right);
+  return sorted[Math.floor(sorted.length / 2)] ?? null;
+};
+
+const uniqueById = <TItem extends { id: number }>(items: readonly TItem[]) => [
+  ...new Map(items.map((item) => [item.id, item])).values(),
+];
+
+const mapHeartbeat = (heartbeat: RawHeartbeat): UptimeKumaHeartbeat[] => {
+  const time = parseUptimeKumaDate(heartbeat.time);
+  if (time === null) return [];
+  return [{ status: toUptimeKumaMonitorStatus(heartbeat.status), time, ping: heartbeat.ping ?? null }];
+};
+
+const mapIncident = (incident: StatusPageIncident): UptimeKumaIncident => ({
+  id: incident.id,
+  title: incident.title?.trim() || "",
+  content: incident.content?.trim() || null,
+  style: isIncidentStyle(incident.style) ? incident.style : "warning",
+  createdAt: parseUptimeKumaDate(incident.createdDate),
+  updatedAt: parseUptimeKumaDate(incident.lastUpdatedDate),
+});
+
+const isIncidentStyle = (style: string | null | undefined): style is UptimeKumaIncidentStyle =>
+  uptimeKumaIncidentStyles.some((value) => value === style);
+
+const getStatusSince = (heartbeats: readonly UptimeKumaHeartbeat[]) => {
+  const latest = heartbeats.at(-1);
+  if (!latest) return null;
+
+  for (let index = heartbeats.length - 2; index >= 0; index--) {
+    if (heartbeats[index]?.status !== latest.status) return heartbeats[index + 1]?.time ?? null;
+  }
+  return null;
+};
+
+const getCertificateDaysRemaining = (monitor: StatusPageMonitor) => {
+  if (monitor.validCert !== true || typeof monitor.certExpiryDaysRemaining !== "number") return null;
+  return monitor.certExpiryDaysRemaining;
+};
+
+const parseUptimeKumaDate = (value: string | null | undefined) => {
+  if (!value) return null;
+  const normalized = value.includes("T") ? value : value.replace(" ", "T");
+  const hasOffset = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(normalized);
+  const time = Date.parse(hasOffset ? normalized : `${normalized}Z`);
+  return Number.isNaN(time) ? null : time;
+};

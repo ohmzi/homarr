@@ -8,7 +8,8 @@ import { createTRPCRouter, publicProcedure } from "../../trpc";
 
 /** Mirrors HOST_SOURCE_ID / SOURCE_ID in the cron jobs that write these rows. */
 const HOST_SOURCE_ID = "host";
-const OPENWEBUI_SOURCE_ID = "openwebui";
+const OHMZAI_SOURCE_ID = "ohmzai";
+const PLEX_SOURCE_ID = "plex";
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 export const UPTIME_RETENTION_DAYS = 90;
 
@@ -25,13 +26,14 @@ export const uptimeStatusRouter = createTRPCRouter({
       mcp: {
         enabled: true,
         description:
-          "Get daily uptime history (up/down seconds per day, last 90 days) for Uptime Kuma monitors, the Homarr host and OpenWebUI. OPTIONAL: integrationIds (array of Uptime Kuma integration IDs from integration_all), includeHost (boolean), includeOpenWebUi (boolean), days (number, max 90)",
+          "Get daily uptime history (up/down seconds per day, last 90 days) for Uptime Kuma monitors, the Homarr host, Ohmz AI and Plex. OPTIONAL: integrationIds (array of Uptime Kuma integration IDs from integration_all), includeHost (boolean), includeOhmzAi (boolean), includePlex (boolean), days (number, max 90)",
       },
     })
     .input(
       z.object({
         includeHost: z.boolean().default(true),
-        includeOpenWebUi: z.boolean().default(true),
+        includeOhmzAi: z.boolean().default(true),
+        includePlex: z.boolean().default(true),
         days: z.number().int().min(1).max(UPTIME_RETENTION_DAYS).default(UPTIME_RETENTION_DAYS),
       }),
     )
@@ -40,7 +42,8 @@ export const uptimeStatusRouter = createTRPCRouter({
       const sourceIds = [
         ...ctx.integrations.map((integration) => integration.id),
         ...(input.includeHost ? [HOST_SOURCE_ID] : []),
-        ...(input.includeOpenWebUi ? [OPENWEBUI_SOURCE_ID] : []),
+        ...(input.includeOhmzAi ? [OHMZAI_SOURCE_ID] : []),
+        ...(input.includePlex ? [PLEX_SOURCE_ID] : []),
       ];
 
       if (sourceIds.length === 0) {
@@ -59,7 +62,6 @@ export const uptimeStatusRouter = createTRPCRouter({
           id: string;
           name: string;
           sourceId: string;
-          isHost: boolean;
           days: { date: string; upSeconds: number; downSeconds: number }[];
         }
       >();
@@ -70,7 +72,6 @@ export const uptimeStatusRouter = createTRPCRouter({
           id: key,
           name: row.monitorName,
           sourceId: row.sourceId,
-          isHost: row.sourceId === HOST_SOURCE_ID,
           days: [],
         };
 
@@ -78,8 +79,19 @@ export const uptimeStatusRouter = createTRPCRouter({
         monitors.set(key, monitor);
       }
 
-      // The host is the machine this dashboard runs on, so it belongs at the top.
-      const sorted = [...monitors.values()].toSorted((a, b) => Number(b.isHost) - Number(a.isHost));
+      // Pinned top-5, in this exact order; everyone else keeps insertion order after them.
+      // "Internet" and "Immich" have no dedicated source id (they are just other Kuma
+      // monitors), so they are matched by name like Ohmz AI/Plex effectively are via their
+      // source id.
+      const topFiveRank = (monitor: { sourceId: string; name: string }): number => {
+        if (monitor.sourceId === HOST_SOURCE_ID) return 0;
+        if (monitor.name === "Internet") return 1;
+        if (monitor.sourceId === PLEX_SOURCE_ID) return 2;
+        if (monitor.sourceId === OHMZAI_SOURCE_ID) return 3;
+        if (monitor.name === "Immich") return 4;
+        return 5;
+      };
+      const sorted = [...monitors.values()].toSorted((a, b) => topFiveRank(a) - topFiveRank(b));
 
       return { days: input.days, monitors: sorted };
     }),

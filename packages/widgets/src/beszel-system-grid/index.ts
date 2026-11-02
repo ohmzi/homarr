@@ -1,37 +1,31 @@
 import { IconLayoutGrid, IconServerOff } from "@tabler/icons-react";
 
+import { getWidgetIntegrationConfig } from "@homarr/definitions";
+
 import { createWidgetDefinition } from "../definition";
-import { statusOptions } from "../beszel/_shared/options";
+import { createBeszelMetricOptions, statusOptions } from "../beszel/_shared/options";
 import { optionsBuilder } from "../options";
 
 export const { definition, componentLoader } = createWidgetDefinition("beszelSystemGrid", {
   icon: IconLayoutGrid,
-  queryKey: [["widget", "beszel"]],
-  supportedIntegrations: ["beszel", "mock"],
-  integrationsRequired: true,
+  queryKey: [["widget", "beszel", "getSystems"]],
+  ...getWidgetIntegrationConfig("beszelSystemGrid"),
   createOptions() {
     return optionsBuilder.from((factory) => ({
       statusFilter: factory.select({
         defaultValue: "all",
         options: statusOptions,
       }),
-      showCpu: factory.switch({ defaultValue: true }),
-      showMemory: factory.switch({ defaultValue: true }),
-      showDisk: factory.switch({ defaultValue: true }),
-      showGpu: factory.switch({ defaultValue: true }),
-      showLoadAvg: factory.switch({ defaultValue: true }),
-      showNet: factory.switch({ defaultValue: true }),
-      showTemp: factory.switch({ defaultValue: true }),
-      showBattery: factory.switch({ defaultValue: true }),
-      showServices: factory.switch({ defaultValue: true }),
-      showUptime: factory.switch({ defaultValue: true }),
-      showAgent: factory.switch({ defaultValue: true }),
+      fahrenheit: factory.switch({
+        defaultValue: false,
+      }),
+      ...createBeszelMetricOptions(() => factory.switch({ defaultValue: true })),
     }));
   },
   errors: {
     INTERNAL_SERVER_ERROR: {
       icon: IconServerOff,
-      message: (t) => t("widget.beszelSystemGrid.error.internalServerError"),
+      message: (t) => t("widget.beszel.error.internalServerError"),
     },
   },
 }).withDynamicImport(() => import("./component"));

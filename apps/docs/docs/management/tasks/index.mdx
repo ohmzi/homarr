@@ -7,10 +7,17 @@ tags:
 
 # Tasks
 
-Homarr has background jobs for various tasks, most of them are for realtime widget updates.
-The tasks page allows you to run background jobs manually and configure them.
+The tasks page controls scheduled background jobs used by integrations and widgets. It is available to administrators
+under **Management → Tools → Tasks**.
 
-![Tasks page](./img/tasks.png)
+Each task exposes:
+
+- its current status and schedule;
+- a cron-based schedule interval;
+- a manual run action;
+- an enable or disable action.
+
+![The scheduled Tasks management page](../img/tasks.png)
 
 ## Opening the tasks page
 
@@ -25,13 +32,18 @@ All intervals are cron expressions, which means it will run the next time the cr
 
 ## Jobs
 
-| Job              | Default interval | Description                                                                                             |
-| ---------------- | ---------------- | ------------------------------------------------------------------------------------------------------- |
-| `Icons Updater`  | Weekly           | Refreshes the cached icon repositories.                                                                  |
-| `Analytics`      | Weekly           | Sends anonymous server analytics. Disabled when `NO_EXTERNAL_CONNECTION` is set.                        |
-| `Pings`          | 1 minute         | Simple reachability pings for apps that have status indicators enabled.                                  |
-| `Uptime Sync`    | 5 minutes        | Collects daily uptime history for Uptime Kuma monitors and this machine, for the Uptime Status widget.   |
-| `OpenWebUI Probe` | Daily           | Signs in to OpenWebUI and streams a chat completion, requiring the model to follow the instruction — so the Uptime Status widget reflects auth, model load and inference rather than just an open port. |
+| Job             | Default interval | Description                                                                                                                                                                                                                                      |
+| --------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Icons Updater` | Weekly           | Refreshes the cached icon repositories.                                                                                                                                                                                                          |
+| `Analytics`     | Weekly           | Sends anonymous server analytics. Disabled when `NO_EXTERNAL_CONNECTION` is set.                                                                                                                                                                 |
+| `Pings`         | 1 minute         | Simple reachability pings for apps that have status indicators enabled.                                                                                                                                                                          |
+| `Uptime Sync`   | 5 minutes        | Collects daily uptime history for Uptime Kuma monitors and this machine, for the Uptime Status widget.                                                                                                                                           |
+| `Ohmz AI Probe` | 30 minutes       | Asks the configured instance a question and requires the model to have answered it, so the Uptime Status widget reflects the guest gate, sign-in, model load and inference rather than just an open port. Skipped when no model can be resolved. |
+| `Plex Probe`    | 30 minutes       | Opens movie pages on the local Plex server, so the Uptime Status widget reflects whether the library and the web client work rather than just whether the port answers. Skipped when no Plex integration is configured.                          |
+
+Both probes sample every six hours, retrying after 30 minutes if an attempt fails. A window whose
+three attempts all fail is recorded as downtime in full. Their interval is fixed because that
+retry policy is expressed in ticks.
 
 ## Actions
 
@@ -48,6 +60,3 @@ You can disable a task by clicking the "Power" button, which will change it to a
 When a task is disabled, it will not run automatically according to its schedule.
 You can enable it again by clicking the "Power-Off" button, which will change it back to a "Power" button.
 Running a task manually is still possible when it is disabled.
-
-
-

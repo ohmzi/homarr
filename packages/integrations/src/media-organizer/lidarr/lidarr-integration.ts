@@ -3,17 +3,42 @@ import { z } from "zod/v4";
 import { fetchWithTrustedCertificatesAsync } from "@homarr/core/infrastructure/http";
 import { createLogger } from "@homarr/core/infrastructure/logs";
 
+import type { IntegrationHttpAuthentication } from "../../http-auth";
+import { apiKeyAuth } from "../../http-auth";
 import { Integration } from "../../base/integration";
 import type { IntegrationTestingInput } from "../../base/integration";
 import { TestConnectionError } from "../../base/test-connection/test-connection-error";
 import type { TestingResult } from "../../base/test-connection/test-connection-service";
+import { fetchServarrServiceVersionAsync } from "../../base/servarr-service-version";
 import type { ICalendarIntegration } from "../../interfaces/calendar/calendar-integration";
 import type { CalendarEvent, CalendarLink } from "../../interfaces/calendar/calendar-types";
+import type { IServiceVersionIntegration } from "../../interfaces/service-version/service-version-integration";
+import type { ServiceVersion } from "../../interfaces/service-version/service-version-types";
 import { mediaOrganizerPriorities } from "../media-organizer";
 
 const logger = createLogger({ module: "lidarrIntegration" });
 
-export class LidarrIntegration extends Integration implements ICalendarIntegration {
+export class LidarrIntegration extends Integration implements ICalendarIntegration, IServiceVersionIntegration {
+  public async getHttpAuthenticationAsync(): Promise<IntegrationHttpAuthentication> {
+    return apiKeyAuth(this.integration);
+  }
+
+  async getLibraryStatsAsync() {
+    const response = await fetchWithTrustedCertificatesAsync(this.url("/api/v1/artist"), {
+      headers: (await this.getHttpAuthenticationAsync()).headers,
+    });
+    if (!response.ok) throw new Error(`Lidarr library request failed (${response.status})`);
+    const library = z.array(z.object({ monitored: z.boolean() })).parse(await response.json());
+    return { artists: library.length, monitored: library.filter((artist) => artist.monitored).length };
+  }
+
+  async getServiceVersionAsync(): Promise<ServiceVersion> {
+    return await fetchServarrServiceVersionAsync(
+      this.url("/api/v1/system/status"),
+      (await this.getHttpAuthenticationAsync()).headers,
+    );
+  }
+
   protected async testingAsync(input: IntegrationTestingInput): Promise<TestingResult> {
     const response = await input.fetchAsync(this.url("/api"), {
       headers: { "X-Api-Key": super.getSecretValue("apiKey") },
