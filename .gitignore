@@ -97,3 +97,6 @@ homarr-backup*.zip
 # PR description screenshots belong on the pull request, not in the repository
 .screenshots/
 .slim/deepwork/
+
+# next-intl generated message declarations
+packages/translation/src/lang/*.d.json.ts
