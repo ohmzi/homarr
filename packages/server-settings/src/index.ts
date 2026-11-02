@@ -58,12 +58,12 @@ export const brandingServerSettingsSchema = z.object({
 export type BrandingSettings = z.infer<typeof brandingServerSettingsSchema>;
 
 export const defaultBrandingSettings: BrandingSettings = {
-  appName: "Homarr",
+  appName: "Ohmz HomeLab",
   greeting: "",
   logoImageUrl: null,
   faviconImageUrl: null,
-  primaryColor: "#fa5252",
-  secondaryColor: "#fd7e14",
+  primaryColor: "#e0913f",
+  secondaryColor: "#c87c31",
   lockPrimaryColor: false,
   signInBackgroundImageUrl: null,
   signInBackgroundOverlay: 0.55,
@@ -148,7 +148,12 @@ export const defaultServerSettings = {
     enableGravatar: true,
   },
   appearance: {
-    defaultColorScheme: "auto" as ColorScheme,
+    // Dark by default, matching Ohmz AI and ohmz.cloud: these apps are
+    // dark-first, and a visitor whose OS is in light mode should still meet the
+    // brand the way it is designed. "auto" would hand that decision to the OS.
+    // A signed-in user's own choice still wins — it is stored in the colour
+    // scheme cookie and read ahead of this in theme/color-scheme.ts.
+    defaultColorScheme: "dark" as ColorScheme,
   },
   branding: defaultBrandingSettings,
   culture: {

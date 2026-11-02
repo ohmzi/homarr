@@ -57,7 +57,8 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     // NOTE: this only binds when Homarr is installed to the home screen; an
     // ordinary browser tab ignores manifest orientation.
     orientation: "portrait",
-    background_color: "#fff",
+    // Brand canvas (--ohmz-canvas), so the PWA splash matches the app shell.
+    background_color: "#1a1917",
     theme_color: branding.primaryColor,
     icons,
   };

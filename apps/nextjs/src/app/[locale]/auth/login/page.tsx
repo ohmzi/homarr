@@ -1,17 +1,17 @@
 import { redirect } from "next/navigation";
-import { Alert, Code, Text } from "@mantine/core";
+import { Alert, Box, Center, Code, Stack, Text, Title } from "@mantine/core";
 import { IconLogin } from "@tabler/icons-react";
 
 import { getRscServerSettingsAsync } from "@homarr/api/server-settings-server";
 import { env } from "@homarr/auth/env";
 import { auth } from "@homarr/auth/next";
-import { OnboardingAuthShell } from "@homarr/onboarding";
-import { getBrandingColorOverrides } from "@homarr/server-settings";
-import { getI18n } from "@homarr/translation/server";
+import { defaultBrandingSettings } from "@homarr/server-settings";
 import { sanitizeRedirectionUrl } from "@homarr/validation/redirection-url";
 
 import { env as appEnv } from "~/env";
 
+import { BrandWordmark } from "~/components/layout/logo/homarr-logo";
+import { Logo } from "~/components/layout/logo/logo";
 import { LoginForm } from "./_login-form";
 
 interface LoginProps {
@@ -29,43 +29,59 @@ export default async function Login(props: LoginProps) {
     redirect(redirectUrl);
   }
 
-  const [t, serverSettings] = await Promise.all([getI18n("user.page.login"), getRscServerSettingsAsync()]);
+  const serverSettings = await getRscServerSettingsAsync();
   const branding = serverSettings.branding;
-  const wordmarkColors = getBrandingColorOverrides(branding);
   const showCustomGreeting = branding.authBranding.showGreeting && branding.greeting.length > 0;
-  const description = showCustomGreeting ? branding.greeting : t("subtitle");
+  const isDefaultName = branding.appName === defaultBrandingSettings.appName;
 
   return (
-    <OnboardingAuthShell
-      title={t("title")}
-      description={description}
-      icon={<IconLogin size={24} />}
-      appName={branding.appName}
-      showAppName={branding.authBranding.showAppName}
-      showAppLogo={branding.authBranding.showLogo}
-      primaryColor={branding.primaryColor}
-      secondaryColor={branding.secondaryColor}
-      wordmarkPrimaryColor={wordmarkColors.primaryColor}
-      wordmarkSecondaryColor={wordmarkColors.secondaryColor}
-      logoImageUrl={branding.logoImageUrl ?? undefined}
-      backgroundImageUrl={branding.signInBackgroundImageUrl ?? undefined}
-      backgroundOverlay={branding.signInBackgroundOverlay}
-      showMarquee={branding.showSignInMarquee}
-      radius={branding.defaultRadius}
-    >
-      {appEnv.DEMO_MODE ? (
-        <Alert icon={<IconLogin size={18} />} color="blue" variant="light">
-          <Text size="sm" fw={500}>
-            Demo mode is enabled. Sign in with username <Code>demo</Code> and password <Code>demo</Code>
+    // mih fills the viewport so the block is optically centred instead of
+    // stranded at the top with dead space under it.
+    <Center component="main" mih="100dvh" px={40} py="xl" className="ohmz-auth-screen">
+      {/* pb=141 is not decoration. Ohmz AI's card measures 551px tall and is
+          vertically centred, so its logo lands at (100vh - 551) / 2. This block
+          is only ~410px: it has no sign-up row, no guest button and no caption.
+          Padding it out to the same 551px total makes identical centring produce
+          an identical position, rather than nudging it with an offset that would
+          only hold at one viewport height. Ohmz AI uses the same device on its own
+          card (pb-10). */}
+      <Stack align="center" gap={18} w="100%" maw={448} pb={141}>
+        <Stack align="center" gap={24}>
+          {/* Ohmz AI's badge artwork. The filename carries a hash of the file's bytes:
+              replacing an image in place leaves browsers that cached it showing the
+              old mark, and a new hash means a new URL that no stale copy can serve. */}
+          {branding.authBranding.showLogo && (
+            <Box className="ohmz-auth-badge">
+              <Logo size={96} src={branding.logoImageUrl ?? "/logo/ohmz-badge.1b89078f.png"} alt={branding.appName} />
+            </Box>
+          )}
+          {branding.authBranding.showAppName && (
+            <Title order={2} className="ohmz-auth-heading" ta="center">
+              {isDefaultName ? <BrandWordmark /> : branding.appName}
+            </Title>
+          )}
+        </Stack>
+        {showCustomGreeting && (
+          <Text c="dimmed" ta="center">
+            {branding.greeting}
           </Text>
-        </Alert>
-      ) : null}
-      <LoginForm
-        providers={env.AUTH_PROVIDERS}
-        oidcClientName={env.AUTH_OIDC_CLIENT_NAME}
-        isOidcAutoLoginEnabled={env.AUTH_OIDC_AUTO_LOGIN}
-        callbackUrl={redirectUrl}
-      />
-    </OnboardingAuthShell>
+        )}
+        {appEnv.DEMO_MODE ? (
+          <Alert icon={<IconLogin size={18} />} color="blue" variant="light" w="100%">
+            <Text size="sm" fw={500}>
+              Demo mode is enabled. Sign in with username <Code>demo</Code> and password <Code>demo</Code>
+            </Text>
+          </Alert>
+        ) : null}
+        <Box w="100%">
+          <LoginForm
+            providers={env.AUTH_PROVIDERS}
+            oidcClientName={env.AUTH_OIDC_CLIENT_NAME}
+            isOidcAutoLoginEnabled={env.AUTH_OIDC_AUTO_LOGIN}
+            callbackUrl={redirectUrl}
+          />
+        </Box>
+      </Stack>
+    </Center>
   );
 }
