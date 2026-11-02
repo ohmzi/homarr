@@ -2483,6 +2483,10 @@
             }
           }
         },
+        "list": {
+          "label": "List",
+          "description": "Optional: show one of your lists instead of the view above."
+        },
         "sort": {
           "label": "Sort by",
           "option": {
@@ -2521,6 +2525,7 @@
       "quickAddShortcutHint": "One per line · Ctrl/⌘ + Enter",
       "addPartialFailed": "Failed to add {count} task(s)",
       "priority": "Priority",
+      "priorityLowest": "Low",
       "priorityNormal": "Normal",
       "priorityImportant": "Important",
       "priorityUrgent": "Urgent",

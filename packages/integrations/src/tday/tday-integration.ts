@@ -7,12 +7,14 @@ import { Integration } from "../base/integration";
 import { TestConnectionError } from "../base/test-connection/test-connection-error";
 import type { TestingResult } from "../base/test-connection/test-connection-service";
 import {
+  encodeTdayListSelection,
+  parseTdayListSelection,
   tdayFloatersResponseSchema,
   tdayListsResponseSchema,
   tdaySessionResponseSchema,
   tdayTodosResponseSchema,
 } from "./tday-types";
-import type { TdayList, TdayPriority, TdayTask, TdayTaskKind, TdayTaskView } from "./tday-types";
+import type { TdayList, TdayListOption, TdayPriority, TdayTask, TdayTaskKind, TdayTaskView } from "./tday-types";
 
 const logger = createLogger({ module: "tdayIntegration" });
 
@@ -34,9 +36,18 @@ export class TdayIntegration extends Integration {
    * - scheduled: dated todos that are not overdue (due now or later)
    * - overdue: dated todos whose due time has passed
    * - floater: incomplete floaters (no due date)
+   *
+   * With a [listId] — an encoded selection (`"todo:<id>"`, see [encodeTdayListSelection]) — the
+   * view is set aside and the whole of that one list is returned instead, because that is what a
+   * widget pointed at "Groceries" is asking for: every open task in it, whatever day each is due.
+   * The list's own kind decides which namespace to read. An unreadable value falls back to the
+   * view rather than failing the widget.
    */
-  public async getTasksAsync(view: TdayTaskView): Promise<TdayTask[]> {
-    const listMetaById = new Map((await this.getListsAsync(view)).map((list) => [list.id, list]));
+  public async getTasksAsync(view: TdayTaskView, listId?: string | null): Promise<TdayTask[]> {
+    const selection = parseTdayListSelection(listId);
+    // A selection's lists come from its own kind's namespace, not the view's.
+    const listNamespace: TdayTaskView = selection ? (selection.kind === "floater" ? "floater" : "today") : view;
+    const listMetaById = new Map((await this.getListsAsync(listNamespace)).map((list) => [list.id, list]));
     const listMeta = (listId: string | null | undefined) => {
       const meta = listId ? listMetaById.get(listId) : undefined;
       return {
@@ -46,6 +57,39 @@ export class TdayIntegration extends Integration {
         listColor: meta?.color ?? null,
       };
     };
+
+    if (selection) {
+      if (selection.kind === "floater") {
+        const { floaters } = tdayFloatersResponseSchema.parse(await this.requestAsync("/api/floater"));
+        return floaters
+          .filter((floater) => !floater.completed && floater.listID === selection.id)
+          .map((floater) => ({
+            id: floater.id,
+            title: floater.title,
+            priority: floater.priority,
+            due: null,
+            instanceDate: null,
+            completed: floater.completed,
+            kind: "floater" as const,
+            ...listMeta(floater.listID),
+          }));
+      }
+      const { todos } = tdayTodosResponseSchema.parse(
+        await this.requestAsync("/api/todo", { queryParams: { timeline: "true", recurringFutureDays: "60" } }),
+      );
+      return todos
+        .filter((todo) => !todo.completed && todo.due && todo.listID === selection.id)
+        .map((todo) => ({
+          id: todo.id,
+          title: todo.title,
+          priority: todo.priority,
+          due: todo.due ?? null,
+          instanceDate: todo.instanceDate ?? null,
+          completed: todo.completed,
+          kind: "todo" as const,
+          ...listMeta(todo.listID),
+        }));
+    }
 
     if (view === "floater") {
       const { floaters } = tdayFloatersResponseSchema.parse(await this.requestAsync("/api/floater"));
@@ -63,7 +107,15 @@ export class TdayIntegration extends Integration {
         }));
     }
 
-    const mapTodo = (todo: { id: string; title: string; priority: string; due?: string | null; instanceDate?: string | null; completed: boolean; listID?: string | null }) => ({
+    const mapTodo = (todo: {
+      id: string;
+      title: string;
+      priority: string;
+      due?: string | null;
+      instanceDate?: string | null;
+      completed: boolean;
+      listID?: string | null;
+    }) => ({
       id: todo.id,
       title: todo.title,
       priority: todo.priority,
@@ -105,7 +157,27 @@ export class TdayIntegration extends Integration {
       name: list.name,
       iconKey: list.iconKey ?? null,
       color: list.color ?? null,
+      defaultPriority: list.defaultPriority ?? null,
     }));
+  }
+
+  /**
+   * Every list of both kinds, for the widget's list picker, as ready-made select options. The
+   * value carries the kind ([encodeTdayListSelection]) because the two namespaces are separate
+   * tables and an id from one means nothing in the other.
+   */
+  public async getListOptionsAsync(): Promise<TdayListOption[]> {
+    const [todoLists, floaterLists] = await Promise.all([this.getListsAsync("today"), this.getListsAsync("floater")]);
+    return [
+      ...todoLists.map((list) => ({
+        value: encodeTdayListSelection({ kind: "todo" as const, id: list.id }),
+        label: list.name,
+      })),
+      ...floaterLists.map((list) => ({
+        value: encodeTdayListSelection({ kind: "floater" as const, id: list.id }),
+        label: list.name,
+      })),
+    ];
   }
 
   public async updateTaskAsync(
@@ -180,7 +252,10 @@ export class TdayIntegration extends Integration {
       titles.map((title) =>
         view === "floater"
           ? this.requestAsync("/api/floater", { method: "POST", body: { title, priority, ...listField } })
-          : this.requestAsync("/api/todo", { method: "POST", body: { title, priority, due: resolvedDue, ...listField } }),
+          : this.requestAsync("/api/todo", {
+              method: "POST",
+              body: { title, priority, due: resolvedDue, ...listField },
+            }),
       ),
     );
 
