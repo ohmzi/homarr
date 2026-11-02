@@ -253,12 +253,13 @@ const SystemCharts = ({
           {integrationName}
         </Text>
       )}
-      {options.showUptime && uptimeInSeconds !== undefined && (
-        // Fixed-height row: the grid below takes the remaining height via flex, so no reservation is needed.
-        <Box h={UPTIME_ROW_HEIGHT} style={{ flexShrink: 0 }}>
-          <SystemResourceUptimeCard uptimeInSeconds={uptimeInSeconds} labelDisplayMode={labelDisplayMode} />
-        </Box>
-      )}
+      {options.showUptime &&
+        uptimeInSeconds !== undefined && (
+          // Fixed-height row: the grid below takes the remaining height via flex, so no reservation is needed.
+          <Box h={UPTIME_ROW_HEIGHT} style={{ flexShrink: 0 }}>
+            <SystemResourceUptimeCard uptimeInSeconds={uptimeInSeconds} labelDisplayMode={labelDisplayMode} />
+          </Box>
+        )}
       {/* Divide the available height evenly across however many rows chartColumns wraps the
           charts into via CSS grid-auto-rows: 1fr, rather than computing a per-chart pixel height
           in JS - keeps every chart's own sizing untouched (still h="100%" of its grid cell) and
