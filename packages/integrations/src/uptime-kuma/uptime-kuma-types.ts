@@ -1,5 +1,13 @@
 import { z } from "zod";
 
+/** Uptime Kuma's raw heartbeat status codes, as the status page heartbeat endpoint reports them. */
+export const uptimeKumaHeartbeatStatus = {
+  down: 0,
+  up: 1,
+  pending: 2,
+  maintenance: 3,
+} as const;
+
 export type UptimeKumaMonitorStatus = "up" | "down" | "pending" | "maintenance" | "stale" | "unknown";
 
 export const uptimeKumaMaxHeartbeats = 50;

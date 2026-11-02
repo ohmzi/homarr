@@ -24,7 +24,6 @@ const readPipelineAsync = async (url: string) => {
       baseUrl: target,
       method: "GET",
       kind: "query",
-      networkScope: "loopback",
       // Shared across boards, so a wall of boards costs one fetch per window, not one each.
       cacheKey: `split-flap-pipeline:${target}`,
       cacheTtlSeconds: 10,
