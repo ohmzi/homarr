@@ -52,6 +52,11 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     description: "Your dashboard for managing your server.",
     start_url: "/",
     display: "standalone",
+    // Lock the installed app to portrait. The mobile boards are laid out as a
+    // single narrow column, so landscape just stretches them badly.
+    // NOTE: this only binds when Homarr is installed to the home screen; an
+    // ordinary browser tab ignores manifest orientation.
+    orientation: "portrait",
     background_color: "#fff",
     theme_color: branding.primaryColor,
     icons,

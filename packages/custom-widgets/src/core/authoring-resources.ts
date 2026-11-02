@@ -183,7 +183,7 @@ Manual queries require \`trigger: "manual"\` on request and \`SubFetch\`; otherw
 
 \`SubFetch\`, \`ActionButton\`, and \`ToggleSwitch\` need literal \`requestId\`; validation rejects missing/computed IDs.
 
-After an explicit \`ActionButton\` or \`ToggleSwitch\` invocation, its response is published as \`data.requestId\` and \`status.requestId\` in that widget instance. Guard the initial state before any action has run. This local response is not persisted across reloads; actions never execute automatically.
+After an explicit \`ActionButton\` or \`ToggleSwitch\` invocation, its response is published as \`data.requestId\` and \`status.requestId\` in that widget instance. Guard the initial state before any action has run. This local response is not persisted across reloads; actions never execute automatically. To show the current selection, pass a boolean expression from data the template already loads as `active={...}` (optionally with `activeVariant`); it renders the active variant with a check icon.
 
 Inside a successful manual result, \`<RefreshButton requestId="search" label="Run again" />\` reruns the same parameters.
 
