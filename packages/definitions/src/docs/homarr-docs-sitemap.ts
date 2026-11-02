@@ -283,6 +283,7 @@ export type HomarrDocumentationPath =
   | "/docs/widgets/umami"
   | "/docs/widgets/ups"
   | "/docs/widgets/uptime-kuma"
+  | "/docs/widgets/uptime-status"
   | "/docs/widgets/video"
   | "/docs/widgets/vpn"
   | "/docs/widgets/wazuh"

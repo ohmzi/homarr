@@ -18,6 +18,7 @@ import type {
   UptimeKumaIncident,
   UptimeKumaIncidentStyle,
   UptimeKumaMonitor,
+  UptimeKumaMonitorHeartbeats,
   UptimeKumaMonitorStatus,
   UptimeKumaStatusPage,
   UptimeKumaStatusPageResponse,
@@ -99,6 +100,32 @@ export class UptimeKumaIntegration extends Integration {
         description: maintenance.description?.trim() || null,
       })),
     };
+  }
+
+  /**
+   * Heartbeat history per monitor. `getStatusPageAsync` keeps only the newest
+   * `uptimeKumaMaxHeartbeats` beats for display; this keeps the whole window the endpoint
+   * returns, which the uptime-status history accumulates into its own daily totals.
+   *
+   * The window is `100 x probe interval` at most, so callers should treat beats older than
+   * what they last recorded as unavailable rather than absent.
+   */
+  public async getMonitorHeartbeatsAsync(): Promise<UptimeKumaMonitorHeartbeats[]> {
+    const [statusPageResponse, heartbeatResponse] = await Promise.all([
+      this.fetchOkAsync(this.statusPageApiUrl()),
+      this.fetchOkAsync(this.heartbeatApiUrl()),
+    ]);
+
+    const statusPage = uptimeKumaStatusPageResponseSchema.parse(await statusPageResponse.json());
+    const heartbeat = uptimeKumaHeartbeatResponseSchema.parse(await heartbeatResponse.json());
+
+    return statusPage.publicGroupList.flatMap((group) =>
+      group.monitorList.map((monitor) => ({
+        id: monitor.id,
+        name: monitor.name,
+        heartbeats: (heartbeat.heartbeatList[String(monitor.id)] ?? []).flatMap(mapHeartbeat),
+      })),
+    );
   }
 
   private async fetchOkAsync(url: URL, signal?: AbortSignal) {
