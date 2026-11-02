@@ -12,7 +12,6 @@ import { env as appEnv } from "~/env";
 
 import { BrandWordmark } from "~/components/layout/logo/homarr-logo";
 import { Logo } from "~/components/layout/logo/logo";
-import { brandPageTitle } from "~/metadata";
 import { LoginForm } from "./_login-form";
 
 interface LoginProps {
