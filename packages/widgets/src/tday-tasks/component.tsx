@@ -24,7 +24,7 @@ import type { LucideIcon } from "lucide-react";
 import { clientApi } from "@homarr/api/client";
 import { useIntegrationsWithInteractAccess } from "@homarr/auth/client";
 import type { TdayPriority, TdayTask, TdayTaskView } from "@homarr/integrations";
-import { useScopedI18n } from "@homarr/translation/client";
+import { useI18n } from "@homarr/translation/client";
 
 import type { WidgetComponentProps } from "../definition";
 import { getListIcon } from "./list-icons";
@@ -32,7 +32,7 @@ import { getListIcon } from "./list-icons";
 import "./tday-tasks.css";
 
 export default function TdayTasksWidget({ options, integrationIds }: WidgetComponentProps<"tdayTasks">) {
-  const t = useScopedI18n("widget.tdayTasks");
+  const t = useI18n("widget.tdayTasks");
   const integrationId = integrationIds[0];
 
   if (!integrationId) {
@@ -54,7 +54,7 @@ interface TdayTasksContentProps {
 }
 
 const TdayTasksContent = ({ options, integrationId }: TdayTasksContentProps) => {
-  const t = useScopedI18n("widget.tdayTasks");
+  const t = useI18n("widget.tdayTasks");
   const view = options.view;
   const scoped = parseScopedList(options.list?.value ?? null);
   // A scoped list decides where new tasks go: a floater list takes floaters, a todo list takes

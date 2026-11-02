@@ -22,6 +22,7 @@ export const { definition, componentLoader } = createWidgetDefinition("tdayTasks
       // list rather than a bucket of it. Empty keeps the view, which is what every widget that
       // predates this option does.
       list: factory.dynamicSelect({
+        withDescription: true,
         useOptions(query, integrationIds) {
           const { data, isPending } = clientApi.widget.tday.getListOptions.useQuery(
             { integrationId: integrationIds[0] ?? "" },

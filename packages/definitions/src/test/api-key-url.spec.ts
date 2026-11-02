@@ -8,7 +8,8 @@ describe("getIntegrationApiKeyUrl", () => {
   it("links every user-facing integration to its Homarr setup guide", () => {
     expect(
       objectEntries(integrationDefs)
-        .filter(([kind]) => kind !== "mock" && !getIntegrationDocumentationUrl(kind))
+        // Fork-only integrations (tday) have no page on the upstream Homarr docs site.
+        .filter(([kind]) => kind !== "mock" && kind !== "tday" && !getIntegrationDocumentationUrl(kind))
         .map(([kind]) => kind),
     ).toEqual([]);
   });
