@@ -55,9 +55,10 @@ export const splitFlapRouter = createTRPCRouter({
       .slice(0, splitFlapUnhealthyLimit)
       .map((row) => ({ title: readString(row, "title"), state: readString(row, "state") }));
 
-    const reasons = isRecord(doc) && Array.isArray(doc.reasons)
-      ? doc.reasons.filter((reason): reason is string => typeof reason === "string")
-      : [];
+    const reasons =
+      isRecord(doc) && Array.isArray(doc.reasons)
+        ? doc.reasons.filter((reason): reason is string => typeof reason === "string")
+        : [];
 
     return { level: readString(doc, "level"), reasons, unhealthy };
   }),
