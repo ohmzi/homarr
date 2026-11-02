@@ -2,7 +2,7 @@
 
 import type { ComponentType, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
-import { Button, Switch } from "@mantine/core";
+import { Button, Switch, Text } from "@mantine/core";
 import { IconCheck, IconPlayerPlay, IconPower, IconRefresh, IconTrash } from "@tabler/icons-react";
 import { useMutation } from "@tanstack/react-query";
 
@@ -83,6 +83,8 @@ export interface ActionButtonProps {
   params?: CustomJsxRuntimeParams;
   label?: string;
   children?: ReactNode;
+  /** Secondary value pinned to the right of the label, e.g. the preset value a button sets. */
+  sublabel?: string;
   color?: string;
   variant?: string;
   /** Variant used while `active` is true, so the current selection reads as pressed. */
@@ -159,7 +161,15 @@ export function ActionButton(props: ActionButtonProps) {
       size={(props.size ?? "sm") as never}
       onClick={() => void click()}
       loading={mutation.isPending}
+      justify={props.sublabel ? "space-between" : "center"}
       leftSection={isActive ? <IconCheck size={16} stroke={3} /> : Icon ? <Icon size={16} /> : undefined}
+      rightSection={
+        props.sublabel ? (
+          <Text component="span" fz={12} fw={700} opacity={0.75}>
+            {props.sublabel}
+          </Text>
+        ) : undefined
+      }
       disabled={
         parseBool(props.disabled) || runtime.isEditMode || (!runtime.itemId && !runtime.previewSessionId) || !params
       }
