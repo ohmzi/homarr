@@ -52,6 +52,7 @@ export const widgetKinds = [
   "uptimeKuma",
   "audioStats",
   "umami",
+  "tdayTasks",
   "vpn",
   "archiveTeamWarrior",
   "ups",

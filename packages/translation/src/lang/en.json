@@ -1514,6 +1514,7 @@
       "mediaMonitoring": "Monitoring",
       "speedtest": "Speed Test",
       "analytics": "Analytics",
+      "tasks": "Tasks",
       "vpn": "VPN",
       "mediaLibrary": "Media Library",
       "uptimeMonitoring": "Uptime Monitoring",
@@ -2495,6 +2496,85 @@
         "idle": "Idle",
         "unknown": "Unknown"
       }
+    },
+    "tdayTasks": {
+      "name": "Tday Tasks",
+      "description": "Displays your Tday tasks for a chosen view and lets you complete or add tasks.",
+      "option": {
+        "view": {
+          "label": "View",
+          "option": {
+            "today": {
+              "label": "Today's tasks",
+              "title": "Today"
+            },
+            "scheduled": {
+              "label": "Scheduled tasks",
+              "title": "Scheduled"
+            },
+            "overdue": {
+              "label": "Overdue tasks",
+              "title": "Overdue"
+            },
+            "floater": {
+              "label": "Floater tasks",
+              "title": "Floater"
+            }
+          }
+        },
+        "list": {
+          "label": "List",
+          "description": "Optional: show one of your lists instead of the view above."
+        },
+        "sort": {
+          "label": "Sort by",
+          "option": {
+            "default": {
+              "label": "Default"
+            },
+            "due": {
+              "label": "Due date"
+            },
+            "priority": {
+              "label": "Priority"
+            }
+          }
+        },
+        "showCompleteButton": {
+          "label": "Show complete button"
+        },
+        "showQuickAdd": {
+          "label": "Show quick-add input"
+        }
+      },
+      "empty": "No tasks to show",
+      "emptyAllClear": "All clear",
+      "complete": "Mark complete",
+      "quickAdd": "Add task",
+      "addTaskHint": "Add a task…",
+      "newTask": "New task",
+      "editTask": "Edit task",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "confirmDelete": "Confirm?",
+      "completedToast": "Task completed",
+      "undo": "Undo",
+      "quickAddPlaceholder": "Add a task",
+      "quickAddShortcutHint": "One per line · Ctrl/⌘ + Enter",
+      "addPartialFailed": "Failed to add {count} task(s)",
+      "priority": "Priority",
+      "priorityLowest": "Low",
+      "priorityNormal": "Normal",
+      "priorityImportant": "Important",
+      "priorityUrgent": "Urgent",
+      "list": "List",
+      "listNone": "No list",
+      "listLoading": "Loading…",
+      "due": "Due date",
+      "dueNone": "No due date",
+      "dueToday": "Today",
+      "dueTomorrow": "Tomorrow"
     },
     "wud": {
       "name": "What's Up Docker",

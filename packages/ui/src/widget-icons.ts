@@ -1,4 +1,5 @@
 import {
+  IconChecklist,
   IconActivityHeartbeat,
   IconAd,
   IconApi,
@@ -127,6 +128,7 @@ export const widgetCatalogIcons: Record<WidgetKind, TablerIcon> = {
   traefik: IconRoute,
   customApi: IconApi,
   wud: IconBrandDocker,
+  tdayTasks: IconChecklist,
   llamacpp: IconCpu,
   wazuh: IconShieldHalfFilled,
 };

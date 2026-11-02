@@ -64,6 +64,7 @@ import type * as video from "./video";
 import type * as vpn from "./vpn";
 import type * as weather from "./weather";
 import type * as wazuh from "./wazuh";
+import type * as tdayTasks from "./tday-tasks";
 import type * as wud from "./wud";
 import type * as llamacpp from "./llama-cpp";
 
@@ -134,6 +135,7 @@ export const widgetModuleLoaders = {
   customApi: () => import("./custom-api"),
   weather: () => import("./weather"),
   wud: () => import("./wud"),
+  tdayTasks: () => import("./tday-tasks"),
   llamacpp: () => import("./llama-cpp"),
   wazuh: () => import("./wazuh"),
 } satisfies { [TKind in WidgetKind]: () => Promise<WidgetImports[TKind]> };
@@ -203,6 +205,7 @@ export type WidgetImports = {
   customApi: typeof customApi;
   weather: typeof weather;
   wud: typeof wud;
+  tdayTasks: typeof tdayTasks;
   llamacpp: typeof llamacpp;
   wazuh: typeof wazuh;
 };
@@ -279,6 +282,7 @@ export const widgetComponentLoaders = {
   customApi: () => import("./custom-api/component"),
   weather: () => import("./weather/component"),
   wud: () => import("./wud/component"),
+  tdayTasks: () => import("./tday-tasks/component"),
   llamacpp: () => import("./llama-cpp/component"),
   wazuh: () => import("./wazuh/component"),
 } satisfies WidgetComponentLoaders;

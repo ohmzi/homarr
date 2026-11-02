@@ -184,6 +184,7 @@ export const widgetIntegrationConfigs = {
   anchorNote: { supportedIntegrations: ["anchor", "mock"], maxIntegrations: 1 },
   traefik: { supportedIntegrations: ["traefik", "mock"] },
   wud: { supportedIntegrations: ["wud", "mock"], maxIntegrations: 1 },
+  tdayTasks: { supportedIntegrations: ["tday"] },
   llamacpp: { supportedIntegrations: ["llamacpp", "mock"], maxIntegrations: 1 },
   wazuh: { supportedIntegrations: ["wazuh", "mock"], maxIntegrations: 1 },
 } satisfies Partial<Record<WidgetKind, WidgetIntegrationConfig>>;

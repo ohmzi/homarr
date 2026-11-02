@@ -352,6 +352,7 @@ const integrationCreators = {
   traefik: async (input: IntegrationInput) =>
     new (await import("../traefik/traefik-integration")).TraefikIntegration(input),
   wud: async (input: IntegrationInput) => new (await import("../wud/wud-integration")).WudIntegration(input),
+  tday: async (input: IntegrationInput) => new (await import("../tday/tday-integration")).TdayIntegration(input),
   llamacpp: async (input: IntegrationInput) =>
     new (await import("../llama-cpp/llamacpp-integration")).LlamacppIntegration(input),
 } satisfies Record<IntegrationKind, (input: IntegrationInput) => Promise<Integration>>;

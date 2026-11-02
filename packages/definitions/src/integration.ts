@@ -1013,6 +1013,14 @@ export const integrationDefs = {
     defaultPort: 55000,
     features: { docker: { aliases: ["wazuh", "wazuh-manager", "wazuh.manager"] } },
   },
+  tday: {
+    httpAuth: { type: "bearer" },
+    name: "Tday",
+    secretKinds: [["apiKey"]],
+    iconUrl: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons@master/svg/homarr.svg",
+    category: ["tasks"],
+    documentationSlug: null,
+  },
   wud: {
     httpAuth: {
       type: "modes",
@@ -1206,6 +1214,7 @@ export const integrationCategories = [
   "mediaMonitoring",
   "speedtest",
   "analytics",
+  "tasks",
   "vpn",
   "archiving",
   "ups",
