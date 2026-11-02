@@ -3,12 +3,14 @@
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 import {
+  Accordion,
   Avatar,
   Box,
   Card,
   Center,
   Grid,
   Group,
+  rem,
   ScrollArea,
   SimpleGrid,
   Stack,
@@ -16,7 +18,7 @@ import {
   ThemeIcon,
   Tooltip,
 } from "@mantine/core";
-import { useReducedMotion } from "@mantine/hooks";
+import { useLocalStorage, useReducedMotion } from "@mantine/hooks";
 import { IconArrowUpRight, IconBookmark, IconLink } from "@tabler/icons-react";
 
 import { clientApi } from "@homarr/api/client";
@@ -25,7 +27,7 @@ import { useRegisterSpotlightContextResults } from "@homarr/spotlight";
 import { useI18n } from "@homarr/translation/client";
 import { iconSizes, zoomCompensatedSize } from "@homarr/ui";
 
-import { getSafeAppHref, SAFE_NEW_TAB_REL } from "../common/application-url";
+import { SAFE_NEW_TAB_REL } from "../common/application-url";
 import { getUsableWidgetQueryData, isInitialWidgetQueryPending } from "../common/query-state";
 import { WidgetQueryLoadingState } from "../common/query-state-indicator";
 import type { WidgetComponentProps } from "../definition";
@@ -33,6 +35,7 @@ import { createDirectBookmark, getBookmarkFaviconUrl, getDirectBookmarkUrl } fro
 import type { BookmarkItem } from "./bookmark-item";
 import { getBookmarkCardDisplay, getBookmarkDisplayPlan } from "./layout";
 import type { BookmarkOrientation } from "./layout";
+import { getBookmarkGroups } from "./groups-data";
 
 type BookmarkVariant = WidgetComponentProps<"bookmarks">["options"]["variant"];
 
@@ -67,6 +70,19 @@ export default function BookmarksWidget({
     return [item];
   });
   const data = [...configuredItems, ...legacyItems];
+  const groups = getBookmarkGroups(options.groups);
+  const groupedIds = new Set<string>();
+  const sections = groups.flatMap((group) => {
+    const items = data.filter((item) => group.itemIds.includes(item.id) && !groupedIds.has(item.id));
+    for (const item of items) groupedIds.add(item.id);
+    if (items.length === 0) return [];
+    return [{ ...group, items }];
+  });
+  const ungroupedItems = data.filter((item) => !groupedIds.has(item.id));
+  const [collapsedGroups, setCollapsedGroups] = useLocalStorage<string[]>({
+    key: `homarr-bookmarks-collapsed-${itemId ?? "preview"}`,
+    defaultValue: [],
+  });
 
   let responsiveWidth = width;
   let responsiveHeight = height;
@@ -81,13 +97,35 @@ export default function BookmarksWidget({
     titleHeight = 36 + (options.titleSize - 11) * 1.2;
   }
   const contentHeight = Math.max(0, responsiveHeight - titleHeight);
+  const isTight = responsiveHeight < 120;
+  let contentPadding = 12;
+  if (isTight) contentPadding = 6;
+  let layoutHeight = contentHeight;
+  let layoutItemCount = data.length;
+  if (!advanced && options.layout === "column") {
+    layoutHeight = Math.max(0, responsiveHeight - contentPadding * 2 - 2);
+    if (showTitle) layoutHeight = Math.max(0, layoutHeight - options.titleSize * 1.2 - contentPadding);
+    if (sections.length > 0) {
+      const expandedSections = sections.filter((section) => !collapsedGroups.includes(section.id));
+      layoutItemCount =
+        ungroupedItems.length + expandedSections.reduce((count, section) => count + section.items.length, 0);
+      layoutHeight -= sections.length * bookmarkGroupControlHeight + expandedSections.length * bookmarkGroupSpacing;
+      let visibleListCount = expandedSections.length;
+      if (ungroupedItems.length > 0) {
+        layoutHeight -= bookmarkUngroupedHeadingHeight + bookmarkGroupSpacing * 2;
+        visibleListCount += 1;
+      }
+      layoutHeight += Math.max(0, visibleListCount - 1) * Math.min(bookmarkSpacingPixels[options.spacing], 4);
+      layoutHeight = Math.max(0, layoutHeight);
+    }
+  }
   let layoutWidth = responsiveWidth;
   if (options.layout === "gridHorizontal") layoutWidth = width;
 
   useRegisterSpotlightContextResults(
     `bookmark-${itemId}`,
     data.flatMap((bookmark) => {
-      const href = getSafeAppHref(bookmark.href);
+      const href = bookmark.href;
       if (!href) return [];
 
       return [
@@ -114,12 +152,13 @@ export default function BookmarksWidget({
       getBookmarkDisplayPlan({
         advanced,
         gap: bookmarkSpacingPixels[options.spacing],
-        height: contentHeight,
-        itemCount: data.length,
+        height: layoutHeight,
+        hideHostname: options.hideHostname,
+        itemCount: layoutItemCount,
         layout: options.layout,
         width: layoutWidth,
       }),
-    [advanced, contentHeight, data.length, layoutWidth, options.layout, options.spacing],
+    [advanced, layoutHeight, layoutItemCount, layoutWidth, options.hideHostname, options.layout, options.spacing],
   );
 
   const cardDisplay = getBookmarkCardDisplay({
@@ -130,27 +169,52 @@ export default function BookmarksWidget({
     plan,
   });
 
-  const cards = data.map((bookmark) => (
-    <BookmarkCard
-      key={bookmark.id}
-      bookmark={bookmark}
-      advanced={advanced}
-      orientation={cardDisplay.orientation}
-      showHostname={cardDisplay.showHostname}
-      showIcon={cardDisplay.showIcon}
-      showTitle={cardDisplay.showTitle}
-      openNewTab={options.openNewTab}
-      variant={options.variant}
-      withBorder={options.withBorder}
-      radius={board.itemRadius}
-      height={plan.itemHeight}
-      width={plan.horizontalScroll ? plan.itemWidth : undefined}
-    />
-  ));
+  const renderCards = (items: BookmarkItem[]) =>
+    items.map((bookmark) => (
+      <BookmarkCard
+        key={bookmark.id}
+        bookmark={bookmark}
+        advanced={advanced}
+        orientation={cardDisplay.orientation}
+        showHostname={cardDisplay.showHostname}
+        showIcon={cardDisplay.showIcon}
+        showTitle={cardDisplay.showTitle}
+        openNewTab={options.openNewTab}
+        variant={options.variant}
+        withBorder={options.withBorder}
+        radius={board.itemRadius}
+        height={plan.itemHeight}
+        width={plan.horizontalScroll ? plan.itemWidth : undefined}
+      />
+    ));
+
+  const renderItems = (items: BookmarkItem[]) => {
+    const cards = renderCards(items);
+    if (plan.horizontalScroll)
+      return (
+        <Group gap={plan.itemGap} wrap="nowrap" align="center" h="100%">
+          {cards}
+        </Group>
+      );
+    if (options.grow)
+      return (
+        <Grid grow columns={plan.columns} gap={plan.itemGap}>
+          {cards.map((card) => (
+            <Grid.Col key={card.key} span={1}>
+              {card}
+            </Grid.Col>
+          ))}
+        </Grid>
+      );
+    return (
+      <SimpleGrid cols={plan.columns} spacing={plan.itemGap} verticalSpacing={plan.itemGap}>
+        {cards}
+      </SimpleGrid>
+    );
+  };
 
   if (appIds.length > 0 && isInitialWidgetQueryPending(appsQuery)) return <WidgetQueryLoadingState />;
 
-  const isTight = responsiveHeight < 120;
   let compactStyle: CSSProperties | undefined;
   if (!advanced && Number.isFinite(displayScale) && displayScale > 1) {
     // Low-column boards zoom the canvas above 100%. Keep bookmark controls at their intended physical size.
@@ -165,7 +229,7 @@ export default function BookmarksWidget({
   }
 
   return (
-    <Stack h="100%" mih={0} gap={isTight ? 6 : "sm"} p={isTight ? 6 : "sm"} style={compactStyle}>
+    <Stack h="100%" mih={0} gap={contentPadding} p={contentPadding} style={compactStyle}>
       {showTitle && (
         <Text fz={options.titleSize} fw={600} px={2} lh={1.2} lineClamp={1} style={{ flexShrink: 0 }}>
           {options.title}
@@ -185,27 +249,61 @@ export default function BookmarksWidget({
         </Center>
       ) : (
         <ScrollArea
-          scrollbars={plan.horizontalScroll ? "x" : "y"}
+          scrollbars={sections.length > 0 ? "xy" : plan.horizontalScroll ? "x" : "y"}
           style={{ flex: 1, minHeight: 0 }}
           styles={{ content: { height: "100%" } }}
         >
           <Box miw="100%" h="100%" pb={2}>
-            {plan.horizontalScroll ? (
-              <Group gap={plan.itemGap} wrap="nowrap" h="100%" align="center">
-                {cards}
-              </Group>
-            ) : options.grow ? (
-              <Grid grow columns={plan.columns} gap={plan.itemGap}>
-                {cards.map((card) => (
-                  <Grid.Col key={card.key} span={1}>
-                    {card}
-                  </Grid.Col>
-                ))}
-              </Grid>
+            {sections.length > 0 ? (
+              <Stack gap={bookmarkGroupSpacing}>
+                <Accordion
+                  multiple
+                  value={sections
+                    .filter((section) => !collapsedGroups.includes(section.id))
+                    .map((section) => section.id)}
+                  onChange={(opened) => {
+                    const visibleIds = new Set(sections.map((section) => section.id));
+                    setCollapsedGroups((current) => [
+                      ...current.filter((id) => !visibleIds.has(id)),
+                      ...sections.filter((section) => !opened.includes(section.id)).map((section) => section.id),
+                    ]);
+                  }}
+                  transitionDuration={0}
+                  styles={{
+                    control: { padding: rem(bookmarkGroupSpacing), minHeight: rem(bookmarkGroupControlHeight) },
+                    label: { padding: 0, fontSize: "var(--mantine-font-size-xxs)", fontWeight: 600 },
+                    content: { padding: `0 0 ${rem(bookmarkGroupSpacing)}` },
+                    item: { border: 0 },
+                    chevron: zoomCompensatedSize(14),
+                  }}
+                >
+                  {sections.map((section) => (
+                    <Accordion.Item key={section.id} value={section.id}>
+                      <Accordion.Control>
+                        <Group justify="space-between" gap={4} wrap="nowrap">
+                          <Text inherit truncate>
+                            {section.name}
+                          </Text>
+                          <Text inherit c="dimmed">
+                            {section.items.length}
+                          </Text>
+                        </Group>
+                      </Accordion.Control>
+                      <Accordion.Panel>{renderItems(section.items)}</Accordion.Panel>
+                    </Accordion.Item>
+                  ))}
+                </Accordion>
+                {ungroupedItems.length > 0 && (
+                  <Stack gap={bookmarkGroupSpacing}>
+                    <Text size="xxs" fw={600} px={bookmarkGroupSpacing} lh={rem(bookmarkUngroupedHeadingHeight)}>
+                      {t("groups.ungrouped")}
+                    </Text>
+                    {renderItems(ungroupedItems)}
+                  </Stack>
+                )}
+              </Stack>
             ) : (
-              <SimpleGrid cols={plan.columns} spacing={plan.itemGap} verticalSpacing={plan.itemGap}>
-                {cards}
-              </SimpleGrid>
+              renderItems(data)
             )}
           </Box>
         </ScrollArea>
@@ -245,7 +343,7 @@ const BookmarkCard = ({
 }: BookmarkCardProps) => {
   const [active, setActive] = useState(false);
   const reduceMotion = useReducedMotion();
-  const href = getSafeAppHref(bookmark.href);
+  const href = bookmark.href ?? undefined;
   const hostname = bookmark.href ? getBookmarkHostname(bookmark.href) : undefined;
   const iconUrl = bookmark.iconUrl ?? getBookmarkFaviconUrl(bookmark.href);
   const iconOnly = orientation === "icon" || (!showTitle && !showHostname);
@@ -425,3 +523,7 @@ const bookmarkSpacingPixels = {
   lg: 20,
   xl: 32,
 } as const;
+
+const bookmarkGroupControlHeight = 28;
+const bookmarkGroupSpacing = 4;
+const bookmarkUngroupedHeadingHeight = 18;

@@ -3,8 +3,8 @@ import { setImmediate } from "node:timers/promises";
 
 import { createId, formatBytes } from "@homarr/common";
 import { env } from "@homarr/common/env";
-import { decryptSecret, encryptSecret } from "@homarr/common/server";
-import { fetchWithTrustedCertificatesAsync } from "@homarr/core/infrastructure/http";
+import { decryptSecret, encryptSecret, readBoundedResponseAsync, verifyKeyedFingerprint } from "@homarr/common/server";
+import { cancelBodyAsync, fetchGuardedAsync } from "@homarr/core/infrastructure/http";
 import { createLogger } from "@homarr/core/infrastructure/logs";
 import { ErrorWithMetadata } from "@homarr/core/infrastructure/logs/error";
 import { createGetSetChannel } from "@homarr/redis";
@@ -12,6 +12,8 @@ import { createGetSetChannel } from "@homarr/redis";
 const logger = createLogger({ module: "imageProxy" });
 
 export const IMAGE_PROXY_REDIS_TTL_SECONDS = 86400;
+export const IMAGE_PROXY_MAX_BYTES = 32 * 1024 * 1024;
+export const IMAGE_PROXY_TIMEOUT_MS = 10_000;
 
 const createHmacChannel = (hmac: `${string}.${string}`) => createGetSetChannel<string>(`image-proxy:hmac:${hmac}`);
 const createUrlByIdChannel = (id: string) =>
@@ -22,6 +24,7 @@ const createUrlByIdChannel = (id: string) =>
 
 export type ForwardImageResult =
   | { image: ArrayBuffer; contentType: string | null }
+  | { redirectUrl: string }
   | { error: "not-found" }
   | { error: "upstream-error"; statusCode: number }
   | { error: "fetch-error" };
@@ -83,22 +86,62 @@ export class ImageProxy {
     return links;
   }
 
-  public async forwardImageAsync(id: string): Promise<ForwardImageResult> {
+  public async forwardImageAsync(id: string, requestSignal?: AbortSignal): Promise<ForwardImageResult> {
+    if (id.startsWith("persistent.")) return this.getPersistentImageRedirect(id);
     const urlAndHeaders = await this.getImageUrlAndHeadersAsync(id);
     if (!urlAndHeaders) {
       return { error: "not-found" };
     }
 
     const proxyUrl = this.createImageUrl(id);
-    let response: Awaited<ReturnType<typeof fetchWithTrustedCertificatesAsync>>;
+    const controller = new AbortController();
+    const signal = requestSignal ? AbortSignal.any([controller.signal, requestSignal]) : controller.signal;
+    const deadline = setTimeout(
+      () => controller.abort(new DOMException("Image forwarding deadline exceeded", "TimeoutError")),
+      IMAGE_PROXY_TIMEOUT_MS,
+    );
     try {
-      response = await fetchWithTrustedCertificatesAsync(urlAndHeaders.url, {
-        headers: urlAndHeaders.headers ?? {},
-      });
+      signal.throwIfAborted();
+      return await fetchGuardedAsync(
+        new URL(urlAndHeaders.url),
+        {
+          headers: urlAndHeaders.headers ?? undefined,
+          trustedOrigin: urlAndHeaders.trustedOrigin,
+          timeout: IMAGE_PROXY_TIMEOUT_MS,
+          signal,
+        },
+        async (response) => {
+          if (!response.ok) {
+            await cancelBodyAsync(response);
+            logger.error(
+              new ErrorWithMetadata("Failed to fetch image", {
+                id,
+                url: this.redactUrl(urlAndHeaders.url),
+                headers: this.redactHeaders(urlAndHeaders.headers),
+                proxyUrl,
+                statusCode: response.status,
+              }),
+            );
+            return { error: "upstream-error", statusCode: response.status };
+          }
+
+          const body = await readBoundedResponseAsync(response, IMAGE_PROXY_MAX_BYTES, "Image", signal);
+          const image = body?.buffer ?? new ArrayBuffer(0);
+          logger.debug("Forwarding image succeeded", {
+            id,
+            url: this.redactUrl(urlAndHeaders.url),
+            headers: this.redactHeaders(urlAndHeaders.headers),
+            proxyUrl,
+            size: formatBytes(image.byteLength),
+          });
+
+          return { image, contentType: response.headers.get("content-type") };
+        },
+      );
     } catch (error) {
       logger.error(
         new ErrorWithMetadata(
-          "Failed to connect to image source",
+          "Failed to forward image",
           {
             id,
             url: this.redactUrl(urlAndHeaders.url),
@@ -109,35 +152,29 @@ export class ImageProxy {
         ),
       );
       return { error: "fetch-error" };
+    } finally {
+      clearTimeout(deadline);
+      controller.abort();
     }
-
-    if (!response.ok) {
-      logger.error(
-        new ErrorWithMetadata("Failed to fetch image", {
-          id,
-          url: this.redactUrl(urlAndHeaders.url),
-          headers: this.redactHeaders(urlAndHeaders.headers),
-          proxyUrl,
-          statusCode: response.status,
-        }),
-      );
-      return { error: "upstream-error", statusCode: response.status };
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-    logger.debug("Forwarding image succeeded", {
-      id,
-      url: this.redactUrl(urlAndHeaders.url),
-      headers: this.redactHeaders(urlAndHeaders.headers),
-      proxyUrl,
-      size: formatBytes(arrayBuffer.byteLength),
-    });
-
-    return { image: arrayBuffer, contentType: response.headers.get("content-type") };
   }
 
   private createImageUrl(id: string): string {
     return `/api/image-proxy/${id}`;
+  }
+
+  private getPersistentImageRedirect(id: string): ForwardImageResult {
+    const parts = /^persistent\.([a-f0-9]{64})\.([a-f0-9]+)\.([a-f0-9]{32})$/.exec(id);
+    if (!parts) return { error: "not-found" };
+    const [, signature = "", ciphertext = "", initializationVector = ""] = parts;
+    const encryptedUrl = `${ciphertext}.${initializationVector}` as const;
+    if (!verifyKeyedFingerprint(`image-proxy:persistent:${encryptedUrl}`, signature)) return { error: "not-found" };
+    try {
+      const url = URL.parse(decryptSecret(encryptedUrl));
+      if (!url || (url.protocol !== "http:" && url.protocol !== "https:")) return { error: "not-found" };
+      return { redirectUrl: url.href };
+    } catch {
+      return { error: "not-found" };
+    }
   }
 
   private async getImageUrlAndHeadersAsync(id: string) {
@@ -148,9 +185,11 @@ export class ImageProxy {
       return null;
     }
 
+    const url = decryptSecret(urlHeader.url);
     return {
-      url: decryptSecret(urlHeader.url),
+      url,
       headers: JSON.parse(decryptSecret(urlHeader.headers)) as Record<string, string> | null,
+      trustedOrigin: new URL(url).origin,
     };
   }
 

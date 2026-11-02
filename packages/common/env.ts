@@ -32,6 +32,10 @@ export const env = createEnv({
     // the probe falls back to the instance's own list and gives up quietly if that is empty —
     // "I do not know which model to ask" is a misconfiguration, not an outage.
     OHMZAI_MODEL: z.string().optional(),
+    HOMARR_REQUEST_IDENTITY_SECRET: z
+      .string()
+      .regex(/^[a-fA-F0-9]{64}$/)
+      .optional(),
   },
   runtimeEnv: {
     SECRET_ENCRYPTION_KEY: process.env.SECRET_ENCRYPTION_KEY,
@@ -39,5 +43,6 @@ export const env = createEnv({
     NO_EXTERNAL_CONNECTION: process.env.NO_EXTERNAL_CONNECTION,
     OHMZAI_URL: process.env.OHMZAI_URL,
     OHMZAI_MODEL: process.env.OHMZAI_MODEL,
+    HOMARR_REQUEST_IDENTITY_SECRET: process.env.HOMARR_REQUEST_IDENTITY_SECRET,
   },
 });

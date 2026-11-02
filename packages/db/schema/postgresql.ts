@@ -56,6 +56,10 @@ export * from "@homarr/core/infrastructure/certificates/hostnames/db/postgresql"
 export const apiKeys = pgTable("apiKey", {
   id: varchar({ length: 64 }).notNull().primaryKey(),
   apiKey: text().notNull(),
+  oauthClientId: text(),
+  oauthClientName: text(),
+  oauthRedirectUri: text(),
+  oauthIssuedAt: timestamp({ mode: "date" }),
   userId: varchar({ length: 64 })
     .notNull()
     .references((): AnyPgColumn => users.id, {
@@ -80,7 +84,7 @@ export const users = pgTable("user", {
   defaultSearchEngineId: varchar({ length: 64 }).references(() => searchEngines.id, {
     onDelete: "set null",
   }),
-  openSearchInNewTab: boolean().default(false).notNull(),
+  openSearchInNewTab: boolean().default(true).notNull(),
   ddgBangs: boolean().default(true).notNull(),
   colorScheme: varchar({ length: 5 }).$type<ColorScheme>().default("dark").notNull(),
   byteUnitSystem: varchar({ length: 7 }).$type<ByteUnitSystem>().default(defaultByteUnitSystem).notNull(),
@@ -439,6 +443,23 @@ export const items = pgTable("item", {
   options: text().default(emptySuperJSON).notNull(),
   advancedOptions: text().default(emptySuperJSON).notNull(),
 });
+
+export const userItemStates = pgTable(
+  "user_item_state",
+  {
+    userId: varchar({ length: 64 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    itemId: varchar({ length: 64 })
+      .notNull()
+      .references(() => items.id, { onDelete: "cascade" }),
+    key: text().notNull(),
+    value: text().notNull(),
+  },
+  (table) => ({
+    compoundKey: primaryKey({ columns: [table.userId, table.itemId, table.key] }),
+  }),
+);
 
 export const apps = pgTable("app", {
   id: varchar({ length: 64 }).notNull().primaryKey(),

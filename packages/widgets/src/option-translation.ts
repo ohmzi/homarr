@@ -1,19 +1,7 @@
 import type { WidgetKind } from "@homarr/definitions";
+import { beszelMetricOptionKeys } from "@homarr/definitions/beszel";
 
-const BESZEL_OPTION_PROPERTIES = new Set([
-  "statusFilter",
-  "showCpu",
-  "showMemory",
-  "showDisk",
-  "showGpu",
-  "showLoadAvg",
-  "showNet",
-  "showTemp",
-  "showBattery",
-  "showServices",
-  "showUptime",
-  "showAgent",
-]);
+const BESZEL_OPTION_PROPERTIES = new Set<string>(["statusFilter", ...beszelMetricOptionKeys]);
 
 const TABLE_OPTION_PROPERTIES = new Set(["columnOrder", "columnWidths", "columns"]);
 
@@ -58,11 +46,18 @@ const getSharedOptionProperty = (kind: WidgetKind, property: string): string => 
 };
 
 const getSharedOptionNamespace = (kind: WidgetKind, property: string): string | undefined => {
+  if (kind.startsWith("thingport-") && (property === "showTitle" || property === "openInNewTab")) {
+    return "widget.common";
+  }
+
   if ((kind === "beszelSystemTable" || kind === "beszelSystemGrid") && BESZEL_OPTION_PROPERTIES.has(property)) {
     return "widget.beszel.options";
   }
 
-  if (["dockerContainers", "downloads", "beszelSystemTable"].includes(kind) && TABLE_OPTION_PROPERTIES.has(property)) {
+  if (
+    ["dockerContainers", "downloads", "beszelSystemTable", "wazuh"].includes(kind) &&
+    TABLE_OPTION_PROPERTIES.has(property)
+  ) {
     return "widget.common.tableOptions";
   }
 
@@ -82,7 +77,6 @@ const getSharedOptionNamespace = (kind: WidgetKind, property: string): string | 
     (kind === "bookmarks" && property === "title") ||
     (kind === "clock" && property === "customTitle") ||
     (kind === "minecraftServerStatus" && property === "title") ||
-    (kind === "app" && property === "openInNewTab") ||
     (kind === "bookmarks" && property === "openNewTab") ||
     (kind === "wud" && property === "showTitle") ||
     (kind === "anchorNote" && property === "showTitle") ||

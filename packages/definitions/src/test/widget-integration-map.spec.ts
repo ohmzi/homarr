@@ -33,7 +33,7 @@ describe("widget integration config", () => {
   });
 
   test("derives optional connections and server selection limits", () => {
-    expect(widgetKindsWithOptionalIntegrations).toEqual(new Set(["calendar"]));
+    expect(widgetKindsWithOptionalIntegrations).toEqual(new Set(["calendar", "releases"]));
     expect(widgetIntegrationLimits).toEqual({
       "smartHome-entityState": 1,
       "smartHome-executeAutomation": 1,
@@ -41,6 +41,10 @@ describe("widget integration config", () => {
       "immich-serverStats": 1,
       "immich-albumCarousel": 1,
       paperlessNgx: 1,
+      "thingport-libraryStats": 1,
+      "thingport-models": 1,
+      "thingport-featuredModel": 1,
+      "thingport-activityHeatmap": 1,
       patchmon: 1,
       bazarr: 1,
       audioStats: 1,
@@ -49,14 +53,7 @@ describe("widget integration config", () => {
       anchorNote: 1,
       wud: 1,
       llamacpp: 1,
-      wazuhAgents: 1,
-      wazuhAlerts: 1,
-      wazuhSummary: 1,
-      wazuhTimeline: 1,
-      wazuhTopList: 1,
-      wazuhVulnerabilities: 1,
-      wazuhFim: 1,
-      wazuhAuthFailures: 1,
+      wazuh: 1,
     });
   });
 });

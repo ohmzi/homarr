@@ -1,9 +1,9 @@
 export { CustomWidgetDomainError } from "./errors";
+export { getCustomWidgetAuthConfigurationError } from "./auth";
 export type { CustomWidgetDomainErrorCode } from "./errors";
 export {
   assertJsonBudget,
   assertSafeStaticHeaders,
-  classifyAddress,
   executeCustomWidgetRequest,
   invalidateCustomWidgetResponseCache,
   MAX_REQUEST_DURATION_MS,
@@ -11,7 +11,6 @@ export {
   MAX_RESPONSE_BODY_BYTES,
   MAX_RESPONSE_JSON_DEPTH,
   MAX_RESPONSE_JSON_NODES,
-  resolveAndValidateHost,
   resolveSameOriginTarget,
   validateCustomWidgetUrl,
 } from "./request-executor";

@@ -32,9 +32,12 @@ export const CertificateErrorDetails = ({ error, url }: CertificateErrorDetailsP
     clientApi.certificates.addCertificate.useMutation();
 
   const rootCertificate = getHeighestCertificate(error.data.certificate);
+  // The certificate can belong to a secondary endpoint of the integration (for example a separate indexer URL).
+  const certificateUrl = error.data.url;
+  const isSecondaryUrl = getOrigin(certificateUrl) !== getOrigin(url);
 
   const handleTrustHostname = async () => {
-    const { hostname } = new URL(url);
+    const { hostname } = new URL(certificateUrl);
     await trustHostnameAsync(
       {
         hostname,
@@ -59,7 +62,7 @@ export const CertificateErrorDetails = ({ error, url }: CertificateErrorDetailsP
   };
 
   const handleTrustSelfSigned = async () => {
-    const { hostname } = new URL(url);
+    const { hostname } = new URL(certificateUrl);
     const formData = new FormData();
     formData.append(
       "file",
@@ -84,7 +87,16 @@ export const CertificateErrorDetails = ({ error, url }: CertificateErrorDetailsP
     });
   };
 
-  const description = <Text size="md">{tError(`certificate.description.${error.data.reason}`)}</Text>;
+  const description = (
+    <>
+      <Text size="md">{tError(`certificate.description.${error.data.reason}`)}</Text>
+      {isSecondaryUrl && (
+        <Text size="sm" c="dimmed">
+          {tError("certificate.secondaryUrl", { url: certificateUrl })}
+        </Text>
+      )}
+    </>
+  );
   let trustConfirmLabel = tError("certificate.selfSigned.confirm.title");
   if (error.data.reason === "hostnameMismatch") {
     trustConfirmLabel = tError("certificate.hostnameMismatch.confirm.title");
@@ -279,6 +291,7 @@ export const CertificateDetailsCard = ({ certificate }: CertificateDetailsProps)
 
 const PemContentModal = createModal<{ content: string }>(({ actions, innerProps }) => {
   const tCommon = useI18n("common");
+  const tContent = useI18n("integration.testConnection.error.certificate.details.content");
 
   return (
     <Stack>
@@ -293,7 +306,14 @@ const PemContentModal = createModal<{ content: string }>(({ actions, innerProps 
         </pre>
         <CopyButton value={innerProps.content}>
           {({ copy, copied }) => (
-            <ActionIcon onClick={copy} pos="absolute" top={8} right={8} variant="default">
+            <ActionIcon
+              onClick={copy}
+              pos="absolute"
+              top={8}
+              right={8}
+              variant="default"
+              aria-label={`${tCommon(copied ? "action.copied" : "action.copy")}: ${tContent("title")}`}
+            >
               {copied ? (
                 <IconCheck size={16} stroke={1.5} color={getMantineColor("green", 6)} />
               ) : (
@@ -315,6 +335,14 @@ const PemContentModal = createModal<{ content: string }>(({ actions, innerProps 
   },
   size: "lg",
 });
+
+const getOrigin = (value: string) => {
+  try {
+    return new URL(value).origin;
+  } catch {
+    return value;
+  }
+};
 
 const getHeighestCertificate = (certificate: MappedCertificate): MappedCertificate => {
   if (certificate.issuerCertificate) return getHeighestCertificate(certificate.issuerCertificate);

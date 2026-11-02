@@ -38,6 +38,10 @@ export * from "@homarr/core/infrastructure/certificates/hostnames/db/sqlite";
 export const apiKeys = sqliteTable("apiKey", {
   id: text().notNull().primaryKey(),
   apiKey: text().notNull(),
+  oauthClientId: text(),
+  oauthClientName: text(),
+  oauthRedirectUri: text(),
+  oauthIssuedAt: int({ mode: "timestamp_ms" }),
   userId: text()
     .notNull()
     .references((): AnySQLiteColumn => users.id, {
@@ -424,6 +428,23 @@ export const items = sqliteTable("item", {
   options: text().default(emptySuperJSON).notNull(),
   advancedOptions: text().default(emptySuperJSON).notNull(),
 });
+
+export const userItemStates = sqliteTable(
+  "user_item_state",
+  {
+    userId: text()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    itemId: text()
+      .notNull()
+      .references(() => items.id, { onDelete: "cascade" }),
+    key: text().notNull(),
+    value: text().notNull(),
+  },
+  (table) => ({
+    compoundKey: primaryKey({ columns: [table.userId, table.itemId, table.key] }),
+  }),
+);
 
 export const apps = sqliteTable("app", {
   id: text().notNull().primaryKey(),

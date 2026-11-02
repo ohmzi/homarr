@@ -1,11 +1,8 @@
 import { resolveCustomWidgetSource } from "./source-resolver";
 import { createLogger } from "@homarr/core/infrastructure/logs";
-import {
-  getCustomWidgetRequiredSecretKinds,
-  getCustomWidgetSourceAuthType,
-  isCustomWidgetSourceUrlPlaceholder,
-} from "@homarr/custom-widgets/core";
+import { getCustomWidgetSourceAuthType, isCustomWidgetSourceUrlPlaceholder } from "@homarr/custom-widgets/core";
 import type { CustomJsxRequest } from "@homarr/custom-widgets/core";
+import { getCustomWidgetAuthConfigurationError } from "@homarr/custom-widgets/server";
 import { z } from "zod/v4";
 
 import { appendPreviewJournal } from "./preview-sessions";
@@ -59,13 +56,13 @@ export function getPreviewRequestSourceConfigurationFailure(
   if (isCustomWidgetSourceUrlPlaceholder(source.baseUrl)) {
     error = `Preview source '${request.source}' URL is a placeholder; complete secure source configuration before testing requests`;
   } else if (request.auth !== "none") {
-    const configuredKinds = new Set(getPreviewSessionSecrets(session, request.source).map(({ kind }) => kind));
-    const missingKinds = getCustomWidgetRequiredSecretKinds(getCustomWidgetSourceAuthType(source)).filter(
-      (kind) => !configuredKinds.has(kind),
-    );
-    if (missingKinds.length > 0) {
-      error = `Preview source '${request.source}' credentials are missing; complete secure source configuration before testing requests`;
-    }
+    let headerSlots;
+    if (typeof source.auth === "object" && source.auth.type === "headers") headerSlots = source.auth.headers;
+    error = getCustomWidgetAuthConfigurationError({
+      type: getCustomWidgetSourceAuthType(source),
+      secrets: getPreviewSessionSecrets(session, request.source),
+      headerSlots,
+    });
   }
   if (error === null) return null;
   return {

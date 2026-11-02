@@ -9,6 +9,40 @@
       "url": "http://localhost:3000"
     }
   ],
+  "tags": [
+    {
+      "name": "boards",
+      "x-displayName": "Build dashboards"
+    },
+    {
+      "name": "apps",
+      "x-displayName": "Manage apps"
+    },
+    {
+      "name": "users",
+      "x-displayName": "Manage users and preferences"
+    },
+    {
+      "name": "settings",
+      "x-displayName": "Configure the instance"
+    },
+    {
+      "name": "integrations",
+      "x-displayName": "Connect integrations"
+    },
+    {
+      "name": "invites",
+      "x-displayName": "Manage invitations"
+    },
+    {
+      "name": "certificates",
+      "x-displayName": "Manage trusted certificates"
+    },
+    {
+      "name": "info",
+      "x-displayName": "Inspect Homarr"
+    }
+  ],
   "externalDocs": {
     "url": "https://homarr.dev"
   },
@@ -75,36 +109,24 @@
                             "type": "string"
                           },
                           "description": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
+                            "type": [
+                              "string",
+                              "null"
                             ]
                           },
                           "iconUrl": {
                             "type": "string"
                           },
                           "href": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
+                            "type": [
+                              "string",
+                              "null"
                             ]
                           },
                           "pingUrl": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
+                            "type": [
+                              "string",
+                              "null"
                             ]
                           }
                         },
@@ -215,36 +237,24 @@
                         "type": "string"
                       },
                       "description": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       },
                       "iconUrl": {
                         "type": "string"
                       },
                       "href": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       },
                       "pingUrl": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       }
                     },
@@ -335,21 +345,9 @@
                     "minLength": 1
                   },
                   "href": {
-                    "anyOf": [
-                      {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "string",
-                            "const": ""
-                          }
-                        ]
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "pingUrl": {
@@ -389,73 +387,49 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "appId": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "appId"
-                      ],
-                      "additionalProperties": false
+                  "type": "object",
+                  "properties": {
+                    "appId": {
+                      "type": "string"
                     },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "description": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "iconUrl": {
-                          "type": "string"
-                        },
-                        "href": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "pingUrl": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "id",
-                        "name",
-                        "description",
-                        "iconUrl",
-                        "href",
-                        "pingUrl"
-                      ],
-                      "additionalProperties": false
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "iconUrl": {
+                      "type": "string"
+                    },
+                    "href": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "pingUrl": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     }
-                  ]
+                  },
+                  "required": [
+                    "appId",
+                    "id",
+                    "name",
+                    "description",
+                    "iconUrl",
+                    "href",
+                    "pingUrl"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -553,36 +527,24 @@
                         "type": "string"
                       },
                       "description": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       },
                       "iconUrl": {
                         "type": "string"
                       },
                       "href": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       },
                       "pingUrl": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       }
                     },
@@ -686,33 +648,21 @@
                         "type": "string"
                       },
                       "href": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       },
                       "pingUrl": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       },
                       "description": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       }
                     },
@@ -802,36 +752,24 @@
                       "type": "string"
                     },
                     "description": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "iconUrl": {
                       "type": "string"
                     },
                     "href": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "pingUrl": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     }
                   },
@@ -950,21 +888,9 @@
                     "minLength": 1
                   },
                   "href": {
-                    "anyOf": [
-                      {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "string",
-                            "const": ""
-                          }
-                        ]
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "pingUrl": {
@@ -1174,13 +1100,9 @@
                         "type": "string"
                       },
                       "logoImageUrl": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       },
                       "isPublic": {
@@ -1195,41 +1117,22 @@
                                 "type": "string"
                               },
                               "name": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "image": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              },
-                              "email": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               }
                             },
                             "required": [
                               "id",
                               "name",
-                              "image",
-                              "email"
+                              "image"
                             ],
                             "additionalProperties": false
                           },
@@ -2025,6 +1928,222 @@
       }
     },
     "/api/boards/{id}/settings": {
+      "get": {
+        "operationId": "boardRouter-getBoardSettings",
+        "summary": "Read board settings",
+        "description": "Read editable board settings. Requires modify access to the board.",
+        "tags": [
+          "boards"
+        ],
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "pageTitle": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "metaTitle": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "logoImageUrl": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "faviconImageUrl": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "backgroundImageUrl": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "backgroundImageAttachment": {
+                      "type": "string",
+                      "enum": [
+                        "fixed",
+                        "scroll"
+                      ]
+                    },
+                    "backgroundImageRepeat": {
+                      "type": "string",
+                      "enum": [
+                        "repeat",
+                        "repeat-x",
+                        "repeat-y",
+                        "no-repeat"
+                      ]
+                    },
+                    "backgroundImageSize": {
+                      "type": "string",
+                      "enum": [
+                        "cover",
+                        "contain"
+                      ]
+                    },
+                    "primaryColor": {
+                      "type": "string",
+                      "pattern": "^#[0-9A-Fa-f]{6}$"
+                    },
+                    "secondaryColor": {
+                      "type": "string",
+                      "pattern": "^#[0-9A-Fa-f]{6}$"
+                    },
+                    "opacity": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "customCss": {
+                      "type": "string",
+                      "maxLength": 16384
+                    },
+                    "iconColor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "itemRadius": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "const": "xs"
+                        },
+                        {
+                          "type": "string",
+                          "const": "sm"
+                        },
+                        {
+                          "type": "string",
+                          "const": "md"
+                        },
+                        {
+                          "type": "string",
+                          "const": "lg"
+                        },
+                        {
+                          "type": "string",
+                          "const": "xl"
+                        }
+                      ]
+                    },
+                    "disableStatus": {
+                      "type": "boolean"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "pageTitle",
+                    "metaTitle",
+                    "logoImageUrl",
+                    "faviconImageUrl",
+                    "backgroundImageUrl",
+                    "backgroundImageAttachment",
+                    "backgroundImageRepeat",
+                    "backgroundImageSize",
+                    "primaryColor",
+                    "secondaryColor",
+                    "opacity",
+                    "customCss",
+                    "iconColor",
+                    "itemRadius",
+                    "disableStatus",
+                    "id",
+                    "name"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      },
       "patch": {
         "operationId": "boardRouter-savePartialBoardSettings",
         "summary": "Update board settings",
@@ -2055,53 +2174,33 @@
                 "type": "object",
                 "properties": {
                   "pageTitle": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "metaTitle": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "logoImageUrl": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "faviconImageUrl": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "backgroundImageUrl": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "backgroundImageAttachment": {
@@ -2257,6 +2356,826 @@
         }
       }
     },
+    "/api/boards/{id}/layouts": {
+      "put": {
+        "operationId": "boardRouter-saveLayouts",
+        "summary": "Save dashboard layouts",
+        "description": "Save the same responsive layout settings used by the dashboard editor. Requires modify access.",
+        "tags": [
+          "boards"
+        ],
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "layouts": {
+                    "minItems": 2,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 32
+                        },
+                        "columnCount": {
+                          "type": "number",
+                          "minimum": 1,
+                          "maximum": 24
+                        },
+                        "leftGutterColumnCount": {
+                          "default": 0,
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 3
+                        },
+                        "rightGutterColumnCount": {
+                          "default": 0,
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 3
+                        },
+                        "breakpoint": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 32767
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "mobile",
+                            "base",
+                            "custom"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "columnCount",
+                        "breakpoint",
+                        "role"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "layouts"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "minItems": 2,
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 32
+                      },
+                      "columnCount": {
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 24
+                      },
+                      "leftGutterColumnCount": {
+                        "default": 0,
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 3
+                      },
+                      "rightGutterColumnCount": {
+                        "default": 0,
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 3
+                      },
+                      "breakpoint": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 32767
+                      },
+                      "role": {
+                        "type": "string",
+                        "enum": [
+                          "mobile",
+                          "base",
+                          "custom"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "columnCount",
+                      "leftGutterColumnCount",
+                      "rightGutterColumnCount",
+                      "breakpoint",
+                      "role"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/boards/{boardId}/layouts/{layoutId}/reset": {
+      "post": {
+        "operationId": "boardRouter-resetLayout",
+        "summary": "Reset a dashboard layout",
+        "description": "Reset a Mobile or custom layout from the Base layout. Requires modify access.",
+        "tags": [
+          "boards"
+        ],
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "boardId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "layoutId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/boards/{id}/content": {
+      "put": {
+        "operationId": "boardRouter-saveBoard",
+        "summary": "Save dashboard content",
+        "description": "Save the editor's complete sections and items arrays, including widget options and placements. Omitted items and sections are removed. Placements must fit their parent section's columns in each layout. Requires modify access; Custom Widget placement changes require admin access.",
+        "tags": [
+          "boards"
+        ],
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sections": {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "const": "empty"
+                            },
+                            "yOffset": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "xOffset": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "kind",
+                            "yOffset",
+                            "xOffset"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "const": "container"
+                            },
+                            "options": {
+                              "default": {
+                                "title": "",
+                                "customCssClasses": [],
+                                "borderColor": "",
+                                "showLabel": true,
+                                "collapsible": false,
+                                "showOpenAll": false,
+                                "scrollable": false
+                              },
+                              "type": "object",
+                              "properties": {
+                                "title": {
+                                  "default": "",
+                                  "type": "string",
+                                  "maxLength": 64
+                                },
+                                "customCssClasses": {
+                                  "default": [],
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "borderColor": {
+                                  "default": "",
+                                  "type": "string"
+                                },
+                                "showLabel": {
+                                  "default": true,
+                                  "type": "boolean"
+                                },
+                                "collapsible": {
+                                  "default": false,
+                                  "type": "boolean"
+                                },
+                                "showOpenAll": {
+                                  "default": false,
+                                  "type": "boolean"
+                                },
+                                "scrollable": {
+                                  "default": false,
+                                  "type": "boolean"
+                                }
+                              }
+                            },
+                            "collapsed": {
+                              "default": false,
+                              "type": "boolean"
+                            },
+                            "layouts": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "layoutId": {
+                                    "type": "string"
+                                  },
+                                  "yOffset": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 32767
+                                  },
+                                  "xOffset": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 32767
+                                  },
+                                  "width": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 32767
+                                  },
+                                  "height": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 32767
+                                  },
+                                  "parentSectionId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "layoutId",
+                                  "yOffset",
+                                  "xOffset",
+                                  "width",
+                                  "height",
+                                  "parentSectionId"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "kind",
+                            "layouts"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "const": "dynamic"
+                            },
+                            "options": {
+                              "default": {
+                                "title": "",
+                                "customCssClasses": [],
+                                "borderColor": "",
+                                "showLabel": true,
+                                "collapsible": false,
+                                "showOpenAll": false,
+                                "scrollable": false
+                              },
+                              "type": "object",
+                              "properties": {
+                                "title": {
+                                  "default": "",
+                                  "type": "string",
+                                  "maxLength": 64
+                                },
+                                "customCssClasses": {
+                                  "default": [],
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "borderColor": {
+                                  "default": "",
+                                  "type": "string"
+                                },
+                                "showLabel": {
+                                  "default": true,
+                                  "type": "boolean"
+                                },
+                                "collapsible": {
+                                  "default": false,
+                                  "type": "boolean"
+                                },
+                                "showOpenAll": {
+                                  "default": false,
+                                  "type": "boolean"
+                                },
+                                "scrollable": {
+                                  "default": false,
+                                  "type": "boolean"
+                                }
+                              }
+                            },
+                            "collapsed": {
+                              "default": false,
+                              "type": "boolean"
+                            },
+                            "layouts": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "layoutId": {
+                                    "type": "string"
+                                  },
+                                  "yOffset": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 32767
+                                  },
+                                  "xOffset": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 32767
+                                  },
+                                  "width": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 32767
+                                  },
+                                  "height": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 32767
+                                  },
+                                  "parentSectionId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "layoutId",
+                                  "yOffset",
+                                  "xOffset",
+                                  "width",
+                                  "height",
+                                  "parentSectionId"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "kind",
+                            "layouts"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "stats",
+                            "clock",
+                            "weather",
+                            "airQuality",
+                            "countdown",
+                            "timer",
+                            "app",
+                            "iframe",
+                            "video",
+                            "notebook",
+                            "anchorNote",
+                            "dnsHoleSummary",
+                            "dnsHoleControls",
+                            "smartHome-entityState",
+                            "smartHome-executeAutomation",
+                            "stockPrice",
+                            "mediaServer",
+                            "calendar",
+                            "downloads",
+                            "mediaRequests-requestList",
+                            "mediaRequests-requestStats",
+                            "mediaTranscoding",
+                            "mediaMissing",
+                            "minecraftServerStatus",
+                            "networkControllerSummary",
+                            "networkControllerStatus",
+                            "rssFeed",
+                            "bookmarks",
+                            "indexerManager",
+                            "healthMonitoring",
+                            "releases",
+                            "mediaReleases",
+                            "dockerContainers",
+                            "firewall",
+                            "notifications",
+                            "systemResources",
+                            "coolify",
+                            "systemDisks",
+                            "timetable",
+                            "immich-serverStats",
+                            "immich-albumCarousel",
+                            "paperlessNgx",
+                            "thingport-libraryStats",
+                            "thingport-models",
+                            "thingport-featuredModel",
+                            "thingport-activityHeatmap",
+                            "patchmon",
+                            "bazarr",
+                            "tracearr",
+                            "speedtestTracker",
+                            "uptimeKuma",
+                            "audioStats",
+                            "umami",
+                            "vpn",
+                            "archiveTeamWarrior",
+                            "ups",
+                            "beszelSystemTable",
+                            "beszelSystemGrid",
+                            "beszelAlerts",
+                            "beszelSystemStats",
+                            "traefik",
+                            "customApi",
+                            "assistant",
+                            "wud",
+                            "llamacpp",
+                            "wazuh"
+                          ]
+                        },
+                        "options": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {}
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "layouts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "layoutId": {
+                                "type": "string"
+                              },
+                              "yOffset": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 32767
+                              },
+                              "xOffset": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 32767
+                              },
+                              "width": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 32767
+                              },
+                              "height": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 32767
+                              },
+                              "sectionId": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "layoutId",
+                              "yOffset",
+                              "xOffset",
+                              "width",
+                              "height",
+                              "sectionId"
+                            ]
+                          }
+                        },
+                        "integrationIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "advancedOptions": {
+                          "type": "object",
+                          "properties": {
+                            "title": {
+                              "default": null,
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 64
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "customCssClasses": {
+                              "default": [],
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "borderColor": {
+                              "default": "",
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "options",
+                        "id",
+                        "layouts",
+                        "integrationIds",
+                        "advancedOptions"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "sections",
+                  "items"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/boards/items": {
       "post": {
         "operationId": "boardRouter-addItem",
@@ -2326,6 +3245,10 @@
                       "immich-serverStats",
                       "immich-albumCarousel",
                       "paperlessNgx",
+                      "thingport-libraryStats",
+                      "thingport-models",
+                      "thingport-featuredModel",
+                      "thingport-activityHeatmap",
                       "patchmon",
                       "bazarr",
                       "tracearr",
@@ -2345,14 +3268,7 @@
                       "assistant",
                       "wud",
                       "llamacpp",
-                      "wazuhAgents",
-                      "wazuhAlerts",
-                      "wazuhSummary",
-                      "wazuhTimeline",
-                      "wazuhTopList",
-                      "wazuhVulnerabilities",
-                      "wazuhFim",
-                      "wazuhAuthFailures"
+                      "wazuh"
                     ]
                   },
                   "options": {
@@ -2743,13 +3659,9 @@
                         "type": "object",
                         "properties": {
                           "name": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
+                            "type": [
+                              "string",
+                              "null"
                             ]
                           },
                           "id": {
@@ -2827,9 +3739,17 @@
                 "type": "object",
                 "properties": {
                   "expirationDate": {
-                    "type": "string",
-                    "format": "date-time",
-                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                      }
+                    ]
                   }
                 },
                 "required": [
@@ -3015,23 +3935,15 @@
                   "type": "object",
                   "properties": {
                     "homeBoardId": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "mobileHomeBoardId": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "enableStatusByDefault": {
@@ -3105,23 +4017,15 @@
                 "type": "object",
                 "properties": {
                   "homeBoardId": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "mobileHomeBoardId": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "enableStatusByDefault": {
@@ -3144,23 +4048,15 @@
                   "type": "object",
                   "properties": {
                     "homeBoardId": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "mobileHomeBoardId": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "enableStatusByDefault": {
@@ -3376,43 +4272,27 @@
                         "type": "string"
                       },
                       "name": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       },
                       "email": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       },
                       "emailVerified": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       },
                       "image": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       }
                     },
@@ -3613,33 +4493,21 @@
                         "type": "string"
                       },
                       "name": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       },
                       "image": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       },
                       "email": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       }
                     },
@@ -3760,33 +4628,21 @@
                         "type": "string"
                       },
                       "name": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       },
                       "image": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       },
                       "email": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       }
                     },
@@ -3845,6 +4701,462 @@
         }
       }
     },
+    "/api/users/preferences": {
+      "get": {
+        "operationId": "userRouter-getPreferences",
+        "summary": "Get user preferences",
+        "description": "Read every preference as structured JSON. Omit userId for the current user; reading another user requires admin permission.",
+        "tags": [
+          "users"
+        ],
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "userId",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPreferences"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "userRouter-updatePreferences",
+        "summary": "Update user preferences",
+        "description": "Update only supplied preferences and return the result. Omitted fields remain unchanged; null clears nullable references. Header fields and zones merge, while each supplied zone array replaces that zone. The complete merged header must retain unique items and account access. New board shortcuts must be accessible to the target user. Omit userId for yourself; another user requires admin permission. All validation completes before one write.",
+        "tags": [
+          "users"
+        ],
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "colorScheme": {
+                    "type": "string",
+                    "enum": [
+                      "auto",
+                      "light",
+                      "dark"
+                    ]
+                  },
+                  "byteUnitSystem": {
+                    "type": "string",
+                    "enum": [
+                      "binary",
+                      "decimal"
+                    ]
+                  },
+                  "firstDayOfWeek": {
+                    "type": "number",
+                    "enum": [
+                      0,
+                      1,
+                      2,
+                      3,
+                      4,
+                      5,
+                      6
+                    ]
+                  },
+                  "pingIconsEnabled": {
+                    "type": "boolean"
+                  },
+                  "enableRightClickOnWidgets": {
+                    "type": "boolean"
+                  },
+                  "homeBoardId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "mobileHomeBoardId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "defaultSearchEngineId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "openSearchInNewTab": {
+                    "type": "boolean"
+                  },
+                  "ddgBangs": {
+                    "type": "boolean"
+                  },
+                  "headerPreferences": {
+                    "type": "object",
+                    "properties": {
+                      "version": {
+                        "type": "number",
+                        "const": 3
+                      },
+                      "visible": {
+                        "type": "boolean"
+                      },
+                      "searchDisplay": {
+                        "type": "string",
+                        "enum": [
+                          "input",
+                          "icon"
+                        ]
+                      },
+                      "logoDisplay": {
+                        "type": "string",
+                        "enum": [
+                          "logo",
+                          "logoAndText"
+                        ]
+                      },
+                      "zones": {
+                        "type": "object",
+                        "properties": {
+                          "left": {
+                            "maxItems": 100,
+                            "type": "array",
+                            "items": {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "builtin"
+                                    },
+                                    "id": {
+                                      "type": "string",
+                                      "enum": [
+                                        "logo",
+                                        "search",
+                                        "home",
+                                        "boardSwitcher",
+                                        "assistant",
+                                        "docker",
+                                        "boardEdit",
+                                        "boardSettings",
+                                        "settings",
+                                        "themeToggle",
+                                        "user"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "id"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "board"
+                                    },
+                                    "boardId": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 255
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "boardId"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            }
+                          },
+                          "center": {
+                            "maxItems": 100,
+                            "type": "array",
+                            "items": {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "builtin"
+                                    },
+                                    "id": {
+                                      "type": "string",
+                                      "enum": [
+                                        "logo",
+                                        "search",
+                                        "home",
+                                        "boardSwitcher",
+                                        "assistant",
+                                        "docker",
+                                        "boardEdit",
+                                        "boardSettings",
+                                        "settings",
+                                        "themeToggle",
+                                        "user"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "id"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "board"
+                                    },
+                                    "boardId": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 255
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "boardId"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            }
+                          },
+                          "right": {
+                            "maxItems": 100,
+                            "type": "array",
+                            "items": {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "builtin"
+                                    },
+                                    "id": {
+                                      "type": "string",
+                                      "enum": [
+                                        "logo",
+                                        "search",
+                                        "home",
+                                        "boardSwitcher",
+                                        "assistant",
+                                        "docker",
+                                        "boardEdit",
+                                        "boardSettings",
+                                        "settings",
+                                        "themeToggle",
+                                        "user"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "id"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "board"
+                                    },
+                                    "boardId": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 255
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "boardId"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": false,
+                "minProperties": 1,
+                "not": {
+                  "required": [
+                    "userId"
+                  ],
+                  "maxProperties": 1
+                }
+              },
+              "example": {
+                "colorScheme": "light"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPreferences"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/users/{userId}": {
       "get": {
         "operationId": "userRouter-getById",
@@ -3880,67 +5192,46 @@
                       "type": "string"
                     },
                     "name": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "email": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "emailVerified": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "image": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "provider": {
                       "type": "string"
                     },
                     "homeBoardId": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "mobileHomeBoardId": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
+                    },
+                    "colorScheme": {
+                      "type": "string"
                     },
                     "byteUnitSystem": {
                       "type": "string",
@@ -3964,13 +5255,9 @@
                       "type": "string"
                     },
                     "defaultSearchEngineId": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "openSearchInNewTab": {
@@ -3995,6 +5282,7 @@
                     "provider",
                     "homeBoardId",
                     "mobileHomeBoardId",
+                    "colorScheme",
                     "byteUnitSystem",
                     "firstDayOfWeek",
                     "pingIconsEnabled",
@@ -4403,23 +5691,15 @@
                 "type": "object",
                 "properties": {
                   "homeBoardId": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "mobileHomeBoardId": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "userId": {
@@ -5468,8 +6748,15 @@
                 "properties": {
                   "firstDayOfWeek": {
                     "type": "number",
-                    "minimum": 0,
-                    "maximum": 6
+                    "enum": [
+                      0,
+                      1,
+                      2,
+                      3,
+                      4,
+                      5,
+                      6
+                    ]
                   },
                   "id": {
                     "type": "string"
@@ -5528,6 +6815,273 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/certificates/{fileName}": {
+      "get": {
+        "operationId": "certificates-getCertificate",
+        "summary": "Inspect a named custom root CA certificate",
+        "description": "Return public metadata or null when absent. Requires admin permission. Does not return PEM contents.",
+        "tags": [
+          "certificates"
+        ],
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fileName",
+            "schema": {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*\\.(crt|pem)$"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "fileName": {
+                          "type": "string",
+                          "maxLength": 128,
+                          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*\\.(crt|pem)$"
+                        },
+                        "sha256": {
+                          "type": "string"
+                        },
+                        "fingerprint256": {
+                          "type": "string"
+                        },
+                        "ca": {
+                          "type": "boolean",
+                          "const": true
+                        },
+                        "validFrom": {
+                          "type": "string"
+                        },
+                        "validTo": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "fileName",
+                        "sha256",
+                        "fingerprint256",
+                        "ca",
+                        "validFrom",
+                        "validTo"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/certificates/root": {
+      "post": {
+        "operationId": "certificates-ensureRootCertificate",
+        "summary": "Ensure a named custom root CA certificate without overwriting",
+        "description": "Accept one currently valid self-signed PEM root CA (64 KiB maximum). Identical bytes are idempotent; different existing bytes return CONFLICT. Requires admin permission.",
+        "tags": [
+          "certificates"
+        ],
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fileName": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*\\.(crt|pem)$"
+                  },
+                  "certificate": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 65536
+                  }
+                },
+                "required": [
+                  "fileName",
+                  "certificate"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "created": {
+                      "type": "boolean"
+                    },
+                    "certificate": {
+                      "type": "object",
+                      "properties": {
+                        "fileName": {
+                          "type": "string",
+                          "maxLength": 128,
+                          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*\\.(crt|pem)$"
+                        },
+                        "sha256": {
+                          "type": "string"
+                        },
+                        "fingerprint256": {
+                          "type": "string"
+                        },
+                        "ca": {
+                          "type": "boolean",
+                          "const": true
+                        },
+                        "validFrom": {
+                          "type": "string"
+                        },
+                        "validTo": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "fileName",
+                        "sha256",
+                        "fingerprint256",
+                        "ca",
+                        "validFrom",
+                        "validTo"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "created",
+                    "certificate"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
                 }
               }
             }
@@ -5621,6 +7175,7 @@
                       "aria2",
                       "slskd",
                       "sonarr",
+                      "sportarr",
                       "radarr",
                       "lidarr",
                       "readarr",
@@ -5655,6 +7210,7 @@
                       "coolify",
                       "immich",
                       "paperlessNgx",
+                      "thingport",
                       "patchmon",
                       "tracearr",
                       "speedtestTracker",
@@ -5796,6 +7352,7 @@
                             "aria2",
                             "slskd",
                             "sonarr",
+                            "sportarr",
                             "radarr",
                             "lidarr",
                             "readarr",
@@ -5830,6 +7387,7 @@
                             "coolify",
                             "immich",
                             "paperlessNgx",
+                            "thingport",
                             "patchmon",
                             "tracearr",
                             "speedtestTracker",
@@ -6304,6 +7862,358 @@
           "code": "INTERNAL_SERVER_ERROR",
           "message": "Internal server error",
           "issues": []
+        }
+      },
+      "UserPreferences": {
+        "type": "object",
+        "properties": {
+          "colorScheme": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "light",
+              "dark"
+            ]
+          },
+          "byteUnitSystem": {
+            "type": "string",
+            "enum": [
+              "binary",
+              "decimal"
+            ]
+          },
+          "firstDayOfWeek": {
+            "type": "number",
+            "enum": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          },
+          "pingIconsEnabled": {
+            "type": "boolean"
+          },
+          "enableRightClickOnWidgets": {
+            "type": "boolean"
+          },
+          "homeBoardId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mobileHomeBoardId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "defaultSearchEngineId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "openSearchInNewTab": {
+            "type": "boolean"
+          },
+          "ddgBangs": {
+            "type": "boolean"
+          },
+          "headerPreferences": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "type": "number",
+                "const": 3
+              },
+              "visible": {
+                "type": "boolean"
+              },
+              "searchDisplay": {
+                "type": "string",
+                "enum": [
+                  "input",
+                  "icon"
+                ]
+              },
+              "logoDisplay": {
+                "default": "logoAndText",
+                "type": "string",
+                "enum": [
+                  "logo",
+                  "logoAndText"
+                ]
+              },
+              "zones": {
+                "type": "object",
+                "properties": {
+                  "left": {
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "builtin"
+                            },
+                            "id": {
+                              "type": "string",
+                              "enum": [
+                                "logo",
+                                "search",
+                                "home",
+                                "boardSwitcher",
+                                "assistant",
+                                "docker",
+                                "boardEdit",
+                                "boardSettings",
+                                "settings",
+                                "themeToggle",
+                                "user"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "id"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "board"
+                            },
+                            "boardId": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 255
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "boardId"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "center": {
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "builtin"
+                            },
+                            "id": {
+                              "type": "string",
+                              "enum": [
+                                "logo",
+                                "search",
+                                "home",
+                                "boardSwitcher",
+                                "assistant",
+                                "docker",
+                                "boardEdit",
+                                "boardSettings",
+                                "settings",
+                                "themeToggle",
+                                "user"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "id"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "board"
+                            },
+                            "boardId": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 255
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "boardId"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "right": {
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "builtin"
+                            },
+                            "id": {
+                              "type": "string",
+                              "enum": [
+                                "logo",
+                                "search",
+                                "home",
+                                "boardSwitcher",
+                                "assistant",
+                                "docker",
+                                "boardEdit",
+                                "boardSettings",
+                                "settings",
+                                "themeToggle",
+                                "user"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "id"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "board"
+                            },
+                            "boardId": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 255
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "boardId"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ],
+                      "type": "object"
+                    }
+                  }
+                },
+                "required": [
+                  "left",
+                  "center",
+                  "right"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "version",
+              "visible",
+              "searchDisplay",
+              "logoDisplay",
+              "zones"
+            ],
+            "additionalProperties": false
+          },
+          "userId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "colorScheme",
+          "byteUnitSystem",
+          "firstDayOfWeek",
+          "pingIconsEnabled",
+          "enableRightClickOnWidgets",
+          "homeBoardId",
+          "mobileHomeBoardId",
+          "defaultSearchEngineId",
+          "openSearchInNewTab",
+          "ddgBangs",
+          "headerPreferences",
+          "userId"
+        ],
+        "additionalProperties": false,
+        "example": {
+          "userId": "example-user",
+          "colorScheme": "light",
+          "byteUnitSystem": "binary",
+          "firstDayOfWeek": 0,
+          "pingIconsEnabled": true,
+          "enableRightClickOnWidgets": true,
+          "homeBoardId": null,
+          "mobileHomeBoardId": null,
+          "defaultSearchEngineId": null,
+          "openSearchInNewTab": true,
+          "ddgBangs": true,
+          "headerPreferences": {
+            "version": 3,
+            "visible": true,
+            "searchDisplay": "input",
+            "logoDisplay": "logoAndText",
+            "zones": {
+              "left": [
+                {
+                  "type": "builtin",
+                  "id": "logo"
+                }
+              ],
+              "center": [
+                {
+                  "type": "builtin",
+                  "id": "search"
+                }
+              ],
+              "right": [
+                {
+                  "type": "builtin",
+                  "id": "boardEdit"
+                },
+                {
+                  "type": "builtin",
+                  "id": "boardSettings"
+                },
+                {
+                  "type": "builtin",
+                  "id": "user"
+                }
+              ]
+            }
+          }
         }
       },
       "__schema1": {

@@ -2,6 +2,8 @@ import { TRPCError } from "@trpc/server";
 import { observable } from "@trpc/server/observable";
 import { z } from "zod/v4";
 
+import { createKeyedFingerprint } from "@homarr/common/server";
+import { getReleaseSourceFromDockerImage } from "@homarr/definitions";
 import type { ContainerState, DockerContainerTarget, Port } from "@homarr/docker";
 import { DockerSingleton } from "@homarr/docker";
 import {
@@ -56,6 +58,7 @@ export const dockerRouter = createTRPCRouter({
     .meta({
       mcp: {
         enabled: true,
+        effect: "additive",
         description:
           "Invalidate the cached Docker inventory so the next Docker query performs a fresh user-requested discovery. Requires admin permission.",
       },
@@ -83,7 +86,16 @@ export const dockerRouter = createTRPCRouter({
       const { data, timestamp } = result;
 
       return {
-        containers: data.containers satisfies DockerContainer[],
+        containers: data.containers.map((container): DockerContainer => {
+          const source = getReleaseSourceFromDockerImage(container.image);
+          let releaseSourceToken: string | undefined;
+          if (source) {
+            releaseSourceToken = createKeyedFingerprint(
+              JSON.stringify(["releases-docker-suggestion-v1", source.provider, source.identifier]),
+            );
+          }
+          return { ...container, releaseSourceToken };
+        }),
         endpoints: data.endpoints,
         timestamp,
       };
@@ -103,6 +115,7 @@ export const dockerRouter = createTRPCRouter({
     .meta({
       mcp: {
         enabled: true,
+        effect: "destructive",
         description: "Start Docker containers. REQUIRED: targets (endpointId and id pairs from docker_getContainers)",
       },
     })
@@ -116,6 +129,7 @@ export const dockerRouter = createTRPCRouter({
     .meta({
       mcp: {
         enabled: true,
+        effect: "destructive",
         description: "Stop Docker containers. REQUIRED: targets (endpointId and id pairs from docker_getContainers)",
       },
     })
@@ -129,6 +143,7 @@ export const dockerRouter = createTRPCRouter({
     .meta({
       mcp: {
         enabled: true,
+        effect: "destructive",
         description: "Restart Docker containers. REQUIRED: targets (endpointId and id pairs from docker_getContainers)",
       },
     })
@@ -142,6 +157,7 @@ export const dockerRouter = createTRPCRouter({
     .meta({
       mcp: {
         enabled: true,
+        effect: "destructive",
         description:
           "Remove/delete Docker containers. REQUIRED: targets (endpointId and id pairs from docker_getContainers)",
       },
@@ -287,6 +303,7 @@ const assertDockerEndpointCapability = (
 };
 
 interface DockerContainer {
+  releaseSourceToken?: string;
   endpointId: string;
   endpointName: string;
   resourceId: string;

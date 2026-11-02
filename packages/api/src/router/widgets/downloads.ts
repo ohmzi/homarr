@@ -52,16 +52,53 @@ export const downloadsRouter = createTRPCRouter({
       mcp: {
         enabled: true,
         description:
-          "Get active download jobs and queue status from connected download clients (qBittorrent, SABnzbd, Transmission, Deluge, NZBGet). REQUIRED: integrationIds (array of download client integration IDs from integration_all). OPTIONAL: limitPerIntegration (number, default 50)",
+          "Get active download jobs and queue status from connected download clients (qBittorrent, SABnzbd, Transmission, Deluge, NZBGet). REQUIRED: integrationIds (array of download client integration IDs from integration_all). OPTIONAL: limitPerIntegration (number, default 50). For qBittorrent, Transmission and Deluge, optional selection applies completed/category filters and supported sorting before the display limit. qBittorrent scans at most 100 pages of at most 100 torrents; Transmission and Deluge select from their full RPC responses. Unsupported sort fields and other providers still sort the returned window locally. For SABnzbd, includeArchivedHistory includes archived jobs when true and defaults to false; historyWindowDays is a positive whole number of days and defaults to 7. Archived history is scanned in pages of 100, up to 100 pages.",
       },
     })
     .concat(createManyWidgetIntegrationMiddleware("query", "downloads"))
-    .input(z.object({ limitPerIntegration: z.number().default(50) }))
+    .input(
+      z.object({
+        limitPerIntegration: z.number().default(50),
+        selection: z
+          .object({
+            sort: z.enum([
+              "name",
+              "progress",
+              "size",
+              "downSpeed",
+              "upSpeed",
+              "time",
+              "added",
+              "ratio",
+              "received",
+              "sent",
+              "index",
+              "type",
+              "state",
+              "category",
+              "integration",
+            ]),
+            descending: z.boolean(),
+            categoryFilter: z.array(z.string().max(1000)).max(100),
+            filterIsWhitelist: z.boolean(),
+            showCompletedTorrent: z.boolean(),
+            activeTorrentThreshold: z.number().min(0),
+          })
+          .optional(),
+        includeArchivedHistory: z.boolean().default(false),
+        historyWindowDays: z.number().int().min(1).default(7),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       return await settleIntegrationQueries<(typeof ctx.integrations)[number], DownloadClientQueryResult>(
         ctx.integrations,
         async (integration) => {
-          const innerHandler = downloadClientRequestHandler.handler(integration, { limit: input.limitPerIntegration });
+          const innerHandler = downloadClientRequestHandler.handler(integration, {
+            limit: input.limitPerIntegration,
+            selection: input.selection,
+            includeArchivedHistory: input.includeArchivedHistory,
+            historyWindowDays: input.historyWindowDays,
+          });
           const { data, timestamp } = await innerHandler.getDataAsync();
           return {
             integrationId: integration.id,

@@ -59,7 +59,7 @@ export const inviteRouter = createTRPCRouter({
     .requiresPermission("admin")
     .input(
       z.object({
-        expirationDate: z.iso.datetime({ offset: true }),
+        expirationDate: z.union([z.iso.datetime({ offset: true }), z.iso.datetime({ offset: true, precision: -1 })]),
       }),
     )
     .output(z.object({ id: z.string(), token: z.string() }))
@@ -75,6 +75,7 @@ export const inviteRouter = createTRPCRouter({
       },
       mcp: {
         enabled: true,
+        effect: "additive",
         description:
           "Create a new user invite link. REQUIRED: expirationDate (ISO date string for when the invite expires). Returns the invite ID and token",
       },
@@ -114,7 +115,11 @@ export const inviteRouter = createTRPCRouter({
         description:
           "Revoke an invitation by ID. Requires admin permission and credentials authentication to be enabled. Returns not found if the invitation does not exist.",
       },
-      mcp: { enabled: true, description: "Delete an invite by ID. REQUIRED: id (invite ID string)" },
+      mcp: {
+        enabled: true,
+        effect: "destructive",
+        description: "Delete an invite by ID. REQUIRED: id (invite ID string)",
+      },
     })
     .mutation(async ({ ctx, input }) => {
       throwIfCredentialsDisabled();

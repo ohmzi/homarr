@@ -18,7 +18,12 @@ import {
   integrationSecrets,
   integrationUserPermissions,
 } from "@homarr/db/schema";
-import type { GroupPermissionKey, IntegrationPermission, IntegrationSecretKind } from "@homarr/definitions";
+import type {
+  GroupPermissionKey,
+  IntegrationKindByCategory,
+  IntegrationPermission,
+  IntegrationSecretKind,
+} from "@homarr/definitions";
 import {
   getIntegrationKindsByCategory,
   getPermissionsWithParents,
@@ -28,6 +33,7 @@ import {
   integrationSecretKindObject,
 } from "@homarr/definitions";
 import { createIntegrationAsync } from "@homarr/integrations/factory";
+import type { IntegrationInstanceOfKind } from "@homarr/integrations/factory";
 import { invalidateIntegrationCacheAsync } from "@homarr/redis";
 import { mediaRequestListRequestHandler } from "@homarr/request-handler/media-request-list";
 import { mediaRequestStatsRequestHandler } from "@homarr/request-handler/media-request-stats";
@@ -46,6 +52,11 @@ import { integrationRequestProcedure } from "./integration-request";
 import { MissingSecretError, testConnectionAsync } from "./integration-test-connection";
 import { integrationTestStoredConnectionProcedure } from "./integration-test-stored-connection";
 import { mapTestConnectionError } from "./map-test-connection-error";
+
+// Calling `searchAsync` on a union of integration classes types the result as only one member's, so the union is
+// spelled out per kind: Overseerr's results keep their media type, Thingport's keep their own shape.
+type IntegrationSearchResult<TKind extends IntegrationKindByCategory<"search"> = IntegrationKindByCategory<"search">> =
+  TKind extends unknown ? Awaited<ReturnType<IntegrationInstanceOfKind<TKind>["searchAsync"]>>[number] : never;
 
 const logger = createLogger({ module: "integrationRouter" });
 const mediaRequestSearchKinds = getIntegrationKindsByCategory("mediaSearch");
@@ -227,6 +238,7 @@ export const integrationRouter = createTRPCRouter({
     .meta({
       mcp: {
         enabled: true,
+        effect: "additive",
         description:
           "Create a new integration (connection to an external service). REQUIRED fields: name, url (http/https), kind, secrets, attemptSearchEngineCreation. The 'secrets' field is REQUIRED and must be a non-empty array — call integration_getKinds first to see which secret kinds each integration type needs. Example for Radarr: secrets=[{kind:'apiKey', value:'your-radarr-api-key'}]. Example for Proxmox: secrets=[{kind:'tokenId', value:'...'}, {kind:'personalAccessToken', value:'...'}, {kind:'realm', value:'pam'}]. The connection is tested before saving — if secrets are wrong, an error is returned. Set attemptSearchEngineCreation to false unless explicitly requested. The 'app' field is optional — pass {id:'...'} to link to an existing app, or omit it. Returns integration details and appId, which is null when no app is linked or created.",
       },
@@ -335,7 +347,7 @@ export const integrationRouter = createTRPCRouter({
         kind: integration.kind,
         secrets: input.secrets,
       },
-      integration.secrets,
+      isSameUrl(integration.url, input.url) ? integration.secrets : [],
     ).catch((error) => {
       if (!(error instanceof MissingSecretError)) throw error;
 
@@ -414,7 +426,11 @@ export const integrationRouter = createTRPCRouter({
   }),
   delete: protectedProcedure
     .meta({
-      mcp: { enabled: true, description: "Delete an integration by ID. REQUIRED: id (integration ID string)" },
+      mcp: {
+        enabled: true,
+        effect: "destructive",
+        description: "Delete an integration by ID. REQUIRED: id (integration ID string)",
+      },
     })
     .input(byIdSchema)
     .mutation(async ({ ctx, input }) => {
@@ -610,7 +626,7 @@ export const integrationRouter = createTRPCRouter({
     })
     .concat(createOneIntegrationMiddleware("query", ...getIntegrationKindsByCategory("search")))
     .input(z.object({ integrationId: z.string(), query: z.string() }))
-    .query(async ({ ctx, input }) => {
+    .query(async ({ ctx, input }): Promise<IntegrationSearchResult[]> => {
       const integrationInstance = await createIntegrationAsync(ctx.integration);
       return await integrationInstance.searchAsync(encodeURI(input.query));
     }),
@@ -710,6 +726,7 @@ export const integrationRouter = createTRPCRouter({
     .meta({
       mcp: {
         enabled: true,
+        effect: "additive",
         description:
           "Submit a media request to Overseerr/Jellyseerr/Seerr. REQUIRED: integrationId (Overseerr/Jellyseerr ID), mediaId (number), mediaType ('tv' or 'movie'). OPTIONAL: seasons (array of season numbers — for TV only, omit to request all). Workflow: searchMediaRequests → (getMediaRequestOptions for TV) → requestMedia",
       },
@@ -731,6 +748,14 @@ export const integrationRouter = createTRPCRouter({
       return result;
     }),
 });
+
+const isSameUrl = (storedUrl: string, submittedUrl: string) => {
+  try {
+    return new URL(storedUrl).href === new URL(submittedUrl).href;
+  } catch {
+    return false;
+  }
+};
 
 const globalIntegrationPermissions = [
   "integration-use-all",
@@ -816,7 +841,9 @@ const getAccessibleMediaRequestSearchIntegrationsAsync = async (
       secrets: true,
       items: {
         with: {
-          item: true,
+          item: {
+            columns: { boardId: true },
+          },
         },
       },
       userPermissions: {

@@ -20,6 +20,7 @@ export { LidarrIntegration } from "./media-organizer/lidarr/lidarr-integration";
 export { RadarrIntegration } from "./media-organizer/radarr/radarr-integration";
 export { ReadarrIntegration } from "./media-organizer/readarr/readarr-integration";
 export { SonarrIntegration } from "./media-organizer/sonarr/sonarr-integration";
+export { SportarrIntegration } from "./media-organizer/sportarr/sportarr-integration";
 export { NextcloudIntegration } from "./nextcloud/nextcloud.integration";
 export { GotifyIntegration } from "./gotify/gotify-integration";
 export { NTFYIntegration } from "./ntfy/ntfy-integration";
@@ -49,7 +50,7 @@ export { TdayIntegration } from "./tday/tday-integration";
 export { PeaNutIntegration } from "./peanut/peanut-integration";
 export { BazarrIntegration } from "./bazarr/bazarr-integration";
 export { TraefikIntegration } from "./traefik/traefik-integration";
-export { mockWidgetData } from "./mock/widget-data";
+export { createThingportMockActivity, mockWidgetData } from "./mock/widget-data";
 
 // Types
 export type { IntegrationInput } from "./base/integration";
@@ -77,6 +78,17 @@ export type {
 export type { Notification } from "./interfaces/notifications/notification-types";
 export type { ImmichServerStats, ImmichAlbum, ImmichAsset } from "./immich/immich-integration";
 export type { PaperlessNgxStats } from "./paperless-ngx/paperless-ngx-types";
+export type {
+  ThingportActivity,
+  ThingportActivityDay,
+  ThingportActivityKind,
+  ThingportFeaturedModel,
+  ThingportLibraryStats,
+  ThingportModel,
+  ThingportModelList,
+  ThingportSearchResult,
+} from "./thingport/thingport-types";
+export { thingportActivityKinds, thingportModelLists } from "./thingport/thingport-types";
 export type { PatchMonStats, PatchMonOsDistributionEntry } from "./patchmon/patchmon-types";
 export { toWazuhPublicError } from "./wazuh/wazuh-errors";
 export type { WazuhErrorReason, WazuhPublicError } from "./wazuh/wazuh-errors";
@@ -91,7 +103,7 @@ export type { TracearrDashboardData } from "./tracearr/tracearr-types";
 export type { SpeedtestTrackerDashboardData } from "./speedtest-tracker/speedtest-tracker-types";
 export type { AudiobookshelfDashboardData } from "./audiobookshelf/audiobookshelf-types";
 export type { NavidromeDashboardData } from "./navidrome/navidrome-types";
-export type { UptimeKumaDashboardData } from "./uptime-kuma/uptime-kuma-types";
+export type { UptimeKumaStatusPage } from "./uptime-kuma/uptime-kuma-types";
 export type { UmamiVisitorStats } from "./umami/umami-types";
 export type { BazarrBadges } from "./bazarr/bazarr-types";
 export type { TraefikDashboardData, TraefikProtocolSummary, TraefikResourceSummary } from "./traefik/traefik-types";

@@ -75,8 +75,8 @@ const sourceOverridesSchema = z.record(
   customWidgetIdentifierSchema,
   z.strictObject({
     baseUrl: z.string().optional(),
+    networkScope: z.unknown().optional(),
     integrationId: z.string().min(1).max(100).optional(),
-    networkScope: z.enum(["public", "private", "loopback"]).optional(),
   }),
 );
 
@@ -143,7 +143,9 @@ export const workshopProcedures = {
 
   workshopInstall: permissionRequiredProcedure
     .requiresPermission("admin")
-    .meta({ mcp: { enabled: true, description: "Install one validated Workshop Custom JSX widget." } })
+    .meta({
+      mcp: { enabled: true, effect: "additive", description: "Install one validated Workshop Custom JSX widget." },
+    })
     .input(
       z.object({
         submissionId: z.string().min(1),
@@ -169,7 +171,6 @@ export const workshopProcedures = {
               {
                 baseUrl: source.baseUrl,
                 integrationId: source.integrationId,
-                networkScope: source.networkScope ?? widget.sources[sourceId]?.networkScope ?? "public",
               },
             ]),
           ),

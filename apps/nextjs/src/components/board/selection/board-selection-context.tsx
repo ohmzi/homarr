@@ -61,7 +61,10 @@ export const BoardSelectionProvider = ({ children }: PropsWithChildren) => {
   // Clear selection if leaving edit mode
   useEffect(() => {
     if (!isEditMode) {
-      setSelectedItemIds(new Set());
+      setSelectedItemIds((previous) => {
+        if (previous.size === 0) return previous;
+        return new Set();
+      });
     }
   }, [isEditMode]);
 
@@ -190,16 +193,15 @@ export const BoardSelectionProvider = ({ children }: PropsWithChildren) => {
   const removeSelectedItems = useCallback(() => {
     if (selectedItemIds.size === 0) return;
 
-    const idsToRemove = Array.from(selectedItemIds);
-    const count = idsToRemove.length;
-    const removedItems = board.items.filter((item) => idsToRemove.includes(item.id));
+    const count = selectedItemIds.size;
+    const removedItems = board.items.filter((item) => selectedItemIds.has(item.id));
 
     playTrashSound();
     clearSelection();
 
     persistBoard((previous) => ({
       ...previous,
-      items: previous.items.filter((item) => !idsToRemove.includes(item.id)),
+      items: previous.items.filter((item) => !selectedItemIds.has(item.id)),
     }));
 
     const notificationId = `batch-remove-${Date.now()}`;

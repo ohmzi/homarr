@@ -20,6 +20,7 @@ import { IconServerOff } from "@tabler/icons-react";
 import { clientApi } from "@homarr/api/client";
 import { useRequiredBoard } from "@homarr/boards/context";
 import { invariantTechnicalLabels } from "@homarr/definitions";
+import type { BeszelMetricOptionKey } from "@homarr/definitions/beszel";
 import { useModalAction } from "@homarr/modals";
 import { useByteFormatter } from "@homarr/settings";
 import { useI18n } from "@homarr/translation/client";
@@ -174,13 +175,14 @@ interface SystemCardProps {
 }
 
 type BeszelMetricRenderer = {
-  key: string;
+  key: BeszelMetricOptionKey;
   render: (
     system: BeszelSystemRow,
     t: SystemCardProps["t"],
     size: SizeConfig,
     tCommon: SystemCardProps["tCommon"],
     formatByteRate: (bytes: number) => string,
+    fahrenheit: boolean,
   ) => React.ReactNode;
   visible: (system: BeszelSystemRow, options: SystemCardProps["options"], advanced: boolean) => boolean;
 };
@@ -281,12 +283,19 @@ const metricRenderers: BeszelMetricRenderer[] = [
   },
   {
     key: "showTemp",
-    render: (s: BeszelSystemRow, t: SystemCardProps["t"], sz: SizeConfig) => (
+    render: (
+      s: BeszelSystemRow,
+      t: SystemCardProps["t"],
+      sz: SizeConfig,
+      _tCommon: SystemCardProps["tCommon"],
+      _formatByteRate: (bytes: number) => string,
+      fahrenheit: boolean,
+    ) => (
       <MetricRow
         key="temp"
         icon={<Thermometer style={zoomCompensatedSize(sz.iconSize)} />}
         label={t("metric.temp")}
-        value={formatTemp(s.temp, false)}
+        value={formatTemp(s.temp, fahrenheit)}
         size={sz}
       />
     ),
@@ -419,7 +428,7 @@ const SystemCard = ({
       )}
 
       <Stack gap={0} style={{ flex: 1 }} justify="space-evenly">
-        {visibleMetrics.map((m) => m.render(system, t, size, tCommon, formatByteRate))}
+        {visibleMetrics.map((m) => m.render(system, t, size, tCommon, formatByteRate, options.fahrenheit))}
       </Stack>
       {hiddenMetricCount > 0 && (
         <Text size="xs" c="dimmed" ta="right">

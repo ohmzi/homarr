@@ -19,6 +19,7 @@
     "./custom-api/component": "./src/custom-api/component.tsx",
     "./custom-api/custom-jsx-display": "./src/custom-api/custom-jsx-display.tsx",
     "./custom-api/extract-display-data": "./src/custom-api/extract-display-data.ts",
+    "./demo-read-only": "./src/demo-read-only.tsx",
     "./assistant/context": "./src/assistant/context.tsx",
     "./catalog": "./src/catalog.ts",
     "./definition": "./src/definition.ts",
@@ -71,6 +72,7 @@
     "@mantine/dates": "catalog:",
     "@mantine/form": "catalog:",
     "@mantine/hooks": "catalog:",
+    "@mantine/schedule": "catalog:",
     "@rexa-developer/tiks": "catalog:",
     "@tabler/icons-react": "catalog:",
     "@tiptap/extension-color": "catalog:",
@@ -95,10 +97,12 @@
     "acorn-jsx": "catalog:",
     "clsx": "catalog:",
     "dayjs": "catalog:",
+    "isomorphic-dompurify": "catalog:",
     "lucide-react": "catalog:",
     "mantine-datatable": "catalog:",
     "mantine-react-table": "catalog:",
     "next": "catalog:",
+    "next-intl": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-markdown": "catalog:",
@@ -107,11 +111,13 @@
     "rehype-raw": "catalog:",
     "rehype-sanitize": "catalog:",
     "remark-gfm": "catalog:",
+    "three": "catalog:",
     "video.js": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@homarr/tsconfig": "workspace:^0.1.0",
+    "@types/three": "catalog:",
     "@types/video.js": "catalog:",
     "typescript": "catalog:"
   }

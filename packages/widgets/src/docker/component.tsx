@@ -44,13 +44,14 @@ import { AddDockerAppToHomarr, useDockerContainerRemovalConfirmation } from "@ho
 import { showErrorNotification, showSuccessNotification } from "@homarr/notifications";
 import { useByteFormatter } from "@homarr/settings";
 import { useI18n } from "@homarr/translation/client";
-import { zoomCompensatedSize } from "@homarr/ui";
+import { iconSizes, zoomCompensatedSize } from "@homarr/ui";
 
 import type { WidgetComponentProps } from "../definition";
 import { getUsableWidgetQueryData } from "../common/query-state";
 import actionTargetClasses from "../common/action-target.module.css";
 import { HomarrDataTable } from "../common/homarr-data-table";
 import { usePersistedTableLayout, useTableLayoutPersistence } from "../common/use-persisted-table-layout";
+import { matchesContainerFilter } from "./filter";
 import { getDockerColumnVisibility, getDockerFooterVisibility } from "./layout";
 
 type DockerContainer = RouterOutputs["docker"]["getContainers"]["containers"][number];
@@ -94,12 +95,6 @@ const getContainersQueryInput = (endpointIds: string[]) => {
   if (endpointIds.length === 0) return undefined;
   return { endpointIds };
 };
-
-function matchesContainerFilter(name: string, containerFilter: string[], filterIsWhitelist: boolean): boolean {
-  if (containerFilter.length === 0) return true;
-  const matches = containerFilter.includes(name);
-  return filterIsWhitelist === matches;
-}
 
 const ContainerStateBadge = ({ state }: { state: ContainerState }) => {
   const t = useI18n("docker.field.state.option");
@@ -151,14 +146,14 @@ const createColumns = (
   {
     accessor: "state",
     title: t("field.state.label"),
-    width: 100,
+    width: 80,
     sortable: sortingEnabled,
     render: (container) => <ContainerStateBadge state={container.state} />,
   },
   {
     accessor: "host",
     title: t("field.host.label"),
-    width: 120,
+    width: 100,
     sortable: sortingEnabled,
     ellipsis: true,
     render: (container) => (
@@ -170,7 +165,7 @@ const createColumns = (
   {
     accessor: "cpuUsage",
     title: invariantTechnicalLabels.cpu,
-    width: 80,
+    width: 64,
     sortable: sortingEnabled,
     render: (container) => {
       const cpuUsage = safeValue(container.cpuUsage);
@@ -184,7 +179,7 @@ const createColumns = (
   {
     accessor: "memoryUsage",
     title: t("field.stats.memory.label"),
-    width: 100,
+    width: 80,
     sortable: sortingEnabled,
     render: (container) => {
       const memoryUsage = safeValue(container.memoryUsage);
@@ -289,9 +284,20 @@ export default function DockerWidget({
   const containers = useMemo(
     () =>
       (data?.containers ?? []).filter((container) =>
-        matchesContainerFilter(container.name, options.containerFilter, options.filterIsWhitelist),
+        matchesContainerFilter(container.name, {
+          containerFilter: options.containerFilter,
+          filterIsWhitelist: options.filterIsWhitelist,
+          filterCaseSensitive: options.filterCaseSensitive,
+          filterAllowWildcards: options.filterAllowWildcards,
+        }),
       ),
-    [data?.containers, options.containerFilter, options.filterIsWhitelist],
+    [
+      data?.containers,
+      options.containerFilter,
+      options.filterIsWhitelist,
+      options.filterCaseSensitive,
+      options.filterAllowWildcards,
+    ],
   );
   const timestamp = useMemo(() => data?.timestamp ?? new Date(), [data?.timestamp]);
   const relativeTime = useTimeAgo(timestamp);
@@ -358,7 +364,7 @@ export default function DockerWidget({
 
   const sortedContainers = useMemo(() => {
     const multiplier = sortStatus.direction === "desc" ? -1 : 1;
-    return [...containers].toSorted(
+    return containers.toSorted(
       (first, second) => compareContainers(first, second, sortStatus.columnAccessor) * multiplier,
     );
   }, [containers, sortStatus]);
@@ -377,8 +383,8 @@ export default function DockerWidget({
   );
 
   const columnVisibility = useMemo(
-    () => getDockerColumnVisibility(options.columns, responsiveWidth, isAdvanced),
-    [isAdvanced, options.columns, responsiveWidth],
+    () => getDockerColumnVisibility(options.columns, isAdvanced),
+    [isAdvanced, options.columns],
   );
   const columns = useMemo(() => {
     const sortingEnabled = (isAdvanced || options.enableRowSorting) && !isEditMode;
@@ -386,7 +392,7 @@ export default function DockerWidget({
       ({ accessor }) => columnVisibility[String(accessor) as keyof typeof columnVisibility],
     );
   }, [actionHandlers, columnVisibility, formatBytes, isAdvanced, isEditMode, options.enableRowSorting, t, tCommon]);
-  const { effectiveColumns, storeKey } = usePersistedTableLayout({
+  const { effectiveColumns, storeKey, onColumnLayoutChange, setMultipleColumnWidths } = usePersistedTableLayout({
     columns,
     columnAccessors,
     columnOrder: options.columnOrder,
@@ -425,6 +431,10 @@ export default function DockerWidget({
     <Stack gap={0} h="100%" style={{ overflow: "hidden" }}>
       <Box style={{ flex: 1, minHeight: 0 }}>
         <HomarrDataTable
+          preserveColumnWidths
+          fillColumnAccessor="name"
+          defaultColumnWidths={columns}
+          onColumnWidthsChange={setMultipleColumnWidths}
           isEditMode={isEditMode}
           cellPadding={isAdvanced || width < 400 ? "2px 8px" : "4px 8px"}
           className="docker-table"
@@ -435,6 +445,7 @@ export default function DockerWidget({
           noRecordsText={tWidget("empty.noContainers")}
           columns={effectiveColumns}
           storeColumnsKey={storeKey}
+          onColumnLayoutChange={onColumnLayoutChange}
           sortStatus={sortStatus}
           onSortStatusChange={(isAdvanced || options.enableRowSorting) && !isEditMode ? setSortStatus : undefined}
           idAccessor="resourceId"
@@ -456,7 +467,7 @@ export default function DockerWidget({
           wrap="nowrap"
         >
           <Group gap={4} wrap="nowrap">
-            <IconBrandDocker size="var(--mantine-font-size-md)" style={{ flexShrink: 0 }} />
+            <IconBrandDocker style={{ ...iconSizes.md, flexShrink: 0 }} />
             <Text size="xs" truncate>
               {t("table.footer", { count: containers.length.toString() })}
             </Text>

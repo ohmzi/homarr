@@ -51,36 +51,29 @@ env:
 jobs:
   database-validation:
     name: Database validation
-    if: github.event_name != 'pull_request_target' && (github.event_name != 'release' || startsWith(github.event.release.tag_name, 'v2.')) && (github.event_name != 'workflow_dispatch' || inputs.operation != 'cleanup')
+    if: github.event_name != 'pull_request_target' && (github.event_name != 'workflow_dispatch' || inputs.operation != 'cleanup')
     uses: ./.github/workflows/database.yml
 
-  fast-gate:
-    name: Fast gate
-    needs: database-validation
-    if: ${{ !cancelled() && github.event_name != 'pull_request_target' && (github.event_name != 'release' || startsWith(github.event.release.tag_name, 'v2.')) && (github.event_name != 'workflow_dispatch' || inputs.operation != 'cleanup') }}
+  validation-plan:
+    name: Plan affected checks
+    if: github.event_name != 'pull_request_target' && (github.event_name != 'workflow_dispatch' || inputs.operation != 'cleanup')
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 5
+    outputs:
+      build-tasks: ${{ steps.plan.outputs.build-tasks }}
+      builds-app: ${{ steps.plan.outputs.builds-app }}
+      typecheck-matrix: ${{ steps.plan.outputs.typecheck-matrix }}
+      has-typechecks: ${{ steps.plan.outputs.has-typechecks }}
     env:
-      TURBO_API: ${{ secrets.TURBO_API }}
-      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-      TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
       TURBO_SCM_BASE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before || 'HEAD~1' }}
       TURBO_SCM_HEAD: ${{ github.sha }}
-      TURBO_PLATFORM: linux/amd64
     steps:
-      - name: Require database validation
-        env:
-          DATABASE_RESULT: ${{ needs.database-validation.result }}
-        run: test "$DATABASE_RESULT" = success
-
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: "!env.ACT"
         with:
           fetch-depth: 0
           persist-credentials: false
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || '' }}
-
       - name: Validate manual inputs
         if: github.event_name == 'workflow_dispatch' && inputs.operation == 'publish'
         env:
@@ -89,29 +82,141 @@ jobs:
         run: |
           test -n "$PR_NUMBER" || { echo "pr_number is required for publish"; exit 1; }
           test -n "$BUILD_REF" || { echo "ref is required for publish"; exit 1; }
-
       - name: Setup
         uses: ./tooling/github/setup
-
-      - name: Copy environment defaults
-        run: cp .env.example .env
-
-      - name: Lint, typecheck, and build affected workspaces
-        run: pnpm turbo run lint typecheck build --affected --continue=dependencies-successful --concurrency=2
-
-      - name: Validate workspace configuration
-        run: pnpm lint:ws
-
-      - name: Validate Custom Widget architecture
-        run: pnpm check:custom-widgets
-
-      - name: Validate checked-in OpenAPI schema
-        run: pnpm check:openapi
-
-      - name: Validate Custom Widget bundle budget
+      - name: Plan validation
+        id: plan
         run: |
-          pnpm turbo run build --filter=@homarr/nextjs
-          pnpm check:custom-widget-bundle
+          cp .env.example .env
+          scope=(--affected)
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            scope=()
+          fi
+          bun run turbo run typecheck build "${scope[@]}" --dry=json > "$RUNNER_TEMP/turbo-plan.json"
+          jq -r '
+            [.tasks[] | select(.command != null and .command != "" and .command != "<NONEXISTENT>")] as $tasks |
+            [$tasks[] | select(.task == "build") | .taskId] as $workspace |
+            ([$tasks[] | select(.task == "typecheck") | .taskId] | sort) as $typechecks |
+            {include: ($typechecks | to_entries | group_by(.key % 4) | map({
+              shard: (.[0].key % 4 + 1 | tostring), tasks: map(.value)
+            }))} as $matrix |
+            "build-tasks=\($workspace | tojson)",
+            "builds-app=\($workspace | index("@homarr/nextjs#build") != null)",
+            "typecheck-matrix=\($matrix | tojson)",
+            "has-typechecks=\($typechecks | length > 0)"
+          ' "$RUNNER_TEMP/turbo-plan.json" >> "$GITHUB_OUTPUT"
+
+  workspace-checks:
+    name: Lint and build
+    needs: validation-plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TURBO_API: ${{ secrets.TURBO_API }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: "!env.ACT"
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || '' }}
+      - name: Setup
+        uses: ./tooling/github/setup
+        with:
+          next-cache: "all"
+          turbo-cache: "true"
+      - name: Lint changed files
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+        run: |
+          if [[ -n "$BASE_SHA" ]] && git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null &&
+             git diff --quiet "$BASE_SHA...HEAD" -- '.oxlintrc*' '**/.oxlintrc*' '**/oxlint.config.*' \
+               package.json '**/package.json' bun.lock bunfig.toml patches tooling/typescript '**/tsconfig*.json'; then
+            git diff --name-only --diff-filter=ACMR -z "$BASE_SHA...HEAD" -- \
+              '*.js' '*.jsx' '*.mjs' '*.cjs' '*.ts' '*.tsx' '*.mts' '*.cts' \
+              | xargs -0 -r bun x oxlint --no-error-on-unmatched-pattern --
+          else
+            bun run turbo run lint --continue=dependencies-successful --concurrency=2
+          fi
+      - name: Build selected workspaces
+        env:
+          TASKS: ${{ needs.validation-plan.outputs.build-tasks }}
+        run: |
+          cp .env.example .env
+          mapfile -t tasks < <(node -e 'for (const task of JSON.parse(process.env.TASKS)) console.log(task)')
+          if [[ ${#tasks[@]} -gt 0 ]]; then
+            bun run turbo run "${tasks[@]}" --continue=dependencies-successful --concurrency=2
+          fi
+      - name: Validate workspace configuration
+        run: bun run lint:ws
+      - name: Validate Custom Widget architecture
+        run: bun run check:custom-widgets
+      - name: Validate checked-in OpenAPI schema
+        run: bun run check:openapi
+      - name: Validate Custom Widget bundle budget
+        if: needs.validation-plan.outputs.builds-app == 'true'
+        run: bun run check:custom-widget-bundle
+
+  typecheck:
+    name: Typecheck (${{ matrix.shard }})
+    needs: validation-plan
+    if: needs.validation-plan.outputs.has-typechecks == 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.validation-plan.outputs.typecheck-matrix) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TURBO_API: ${{ secrets.TURBO_API }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: "!env.ACT"
+        with:
+          persist-credentials: false
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || '' }}
+      - name: Setup
+        uses: ./tooling/github/setup
+        with:
+          turbo-cache: "true"
+          typecheck-cache: "true"
+          typecheck-cache-scope: ${{ matrix.shard }}
+      - name: Typecheck selected workspaces
+        env:
+          TASKS: ${{ toJSON(matrix.tasks) }}
+        run: |
+          cp .env.example .env
+          mapfile -t tasks < <(node -e 'for (const task of JSON.parse(process.env.TASKS)) console.log(task)')
+          bun run turbo run "${tasks[@]}" --continue=dependencies-successful --concurrency=1
+
+  fast-gate:
+    name: Fast gate
+    needs: [database-validation, validation-plan, workspace-checks, typecheck]
+    if: ${{ !cancelled() && github.event_name != 'pull_request_target' && (github.event_name != 'workflow_dispatch' || inputs.operation != 'cleanup') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require all validation jobs
+        env:
+          DATABASE_RESULT: ${{ needs.database-validation.result }}
+          PLAN_RESULT: ${{ needs.validation-plan.result }}
+          WORKSPACE_RESULT: ${{ needs.workspace-checks.result }}
+          TYPECHECK_RESULT: ${{ needs.typecheck.result }}
+          HAS_TYPECHECKS: ${{ needs.validation-plan.outputs.has-typechecks }}
+        run: |
+          test "$DATABASE_RESULT" = success
+          test "$PLAN_RESULT" = success
+          test "$WORKSPACE_RESULT" = success
+          if [[ "$HAS_TYPECHECKS" == true ]]; then
+            test "$TYPECHECK_RESULT" = success
+          else
+            test "$TYPECHECK_RESULT" = skipped
+          fi
 
   container:
     name: Container and migration smoke
@@ -126,7 +231,7 @@ jobs:
       contents: read
       packages: read
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: "!env.ACT"
         with:
           persist-credentials: false
@@ -139,18 +244,20 @@ jobs:
         if: needs.preview-amd64.outputs.digest != '' && !env.ACT
         env:
           DIGEST: ${{ needs.preview-amd64.outputs.digest }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_ACTOR: ${{ github.actor }}
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_ACTOR" --password-stdin
           docker pull "${PREVIEW_IMAGE}@${DIGEST}"
           docker tag "${PREVIEW_IMAGE}@${DIGEST}" homarr-e2e
 
       - name: Set up Docker Buildx
         if: needs.preview-amd64.outputs.digest == '' && !env.ACT
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - name: Build container once
         if: needs.preview-amd64.outputs.digest == '' && !env.ACT
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           network: host
@@ -164,8 +271,11 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.ref.name=pr-${{ github.event.pull_request.number || inputs.pr_number || 'none' }}
-          cache-from: type=gha,scope=homarr-e2e
-          cache-to: type=gha,scope=homarr-e2e,mode=max
+          # Scoped to the ref actually checked out (the dispatch input when
+          # set), so a cache written for one ref never seeds the image built
+          # for another.
+          cache-from: type=gha,scope=homarr-e2e-${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref_name }}
+          cache-to: type=gha,scope=homarr-e2e-${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref_name }},mode=max
           secrets: |
             TURBO_API=${{ secrets.TURBO_API }}
             TURBO_TEAM=${{ secrets.TURBO_TEAM }}
@@ -180,43 +290,39 @@ jobs:
           TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
           TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
         run: |
-          secret_args=()
-          for secret in TURBO_API TURBO_TEAM TURBO_TOKEN TURBO_REMOTE_CACHE_SIGNATURE_KEY; do
-            if [ -n "${!secret:-}" ]; then
-              secret_args+=(--secret "id=${secret},env=${secret}")
-            fi
-          done
-          DOCKER_BUILDKIT=1 docker build --platform linux/amd64 \
-            --tag homarr-ci --tag homarr-e2e "${secret_args[@]}" .
+          bash tooling/github/docker-build.sh --platform linux/amd64 \
+            --tag homarr-ci --tag homarr-e2e .
 
       - name: Cache Playwright browsers
         if: "!env.ACT"
         id: playwright-cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          # Ref-scoped for the same reason as the build cache above, this
+          # job can push a preview image after the browsers run.
+          key: playwright-${{ runner.os }}-${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref_name }}-${{ hashFiles('bun.lock') }}
 
       - name: Install Playwright Chromium
         if: steps.playwright-cache.outputs.cache-hit != 'true' || env.ACT
-        run: pnpm exec playwright install --with-deps chromium
+        run: bun x playwright install --with-deps chromium
 
       - name: Install Playwright system deps
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: pnpm exec playwright install-deps chromium
+        run: bun x playwright install-deps chromium
 
       - name: Install standalone converter test dependencies
-        run: npm ci --prefix tools/mysql-to-sqlite
+        run: bun install --cwd tools/mysql-to-sqlite --frozen-lockfile
 
       - name: Verify converted database boots and survives restart
         env:
           NODE_ENV: development
           CI: "true"
-        run: pnpm exec vitest run --project e2e e2e/mysql-conversion.spec.ts --maxWorkers 1
+        run: bun x vitest run --project e2e e2e/mysql-conversion.spec.ts --maxWorkers 1
 
       - name: Upload E2E artifacts
         if: failure() && !env.ACT
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: playwright-report
           path: e2e/test-results/
@@ -239,7 +345,7 @@ jobs:
     outputs:
       digest: ${{ steps.preview-build.outputs.digest }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: "!env.ACT"
         with:
           persist-credentials: false
@@ -247,7 +353,7 @@ jobs:
 
       - name: Log in to GHCR
         if: "!env.ACT"
-        uses: docker/login-action@v4
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -255,19 +361,19 @@ jobs:
 
       - name: Set up Docker Buildx
         if: "!env.ACT"
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - name: Build and push amd64 preview image by digest
         id: preview-build
         if: "!env.ACT"
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           network: host
           platforms: linux/amd64
           outputs: type=image,"name=${{ env.PREVIEW_IMAGE }}",push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha,scope=homarr-linux-amd64
-          cache-to: type=gha,scope=homarr-linux-amd64,mode=max
+          cache-from: type=gha,scope=homarr-linux-amd64-${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref_name }}
+          cache-to: type=gha,scope=homarr-linux-amd64-${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref_name }},mode=max
           secrets: |
             TURBO_API=${{ secrets.TURBO_API }}
             TURBO_TEAM=${{ secrets.TURBO_TEAM }}
@@ -283,7 +389,7 @@ jobs:
         (github.event_name == 'push' && github.ref == 'refs/heads/release/v2') ||
         (github.event_name == 'workflow_dispatch' && inputs.operation == 'publish')
       )
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 20
     permissions:
       contents: read
@@ -291,7 +397,7 @@ jobs:
     outputs:
       digest: ${{ steps.preview-build.outputs.digest }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: "!env.ACT"
         with:
           persist-credentials: false
@@ -299,7 +405,7 @@ jobs:
 
       - name: Log in to GHCR
         if: "!env.ACT"
-        uses: docker/login-action@v4
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -307,19 +413,19 @@ jobs:
 
       - name: Set up Docker Buildx
         if: "!env.ACT"
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - name: Build and push arm64 preview image by digest
         id: preview-build
         if: "!env.ACT"
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           network: host
           platforms: linux/arm64
           outputs: type=image,"name=${{ env.PREVIEW_IMAGE }}",push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha,scope=homarr-linux-arm64
-          cache-to: type=gha,scope=homarr-linux-arm64,mode=max
+          cache-from: type=gha,scope=homarr-linux-arm64-${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref_name }}
+          cache-to: type=gha,scope=homarr-linux-arm64-${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref_name }},mode=max
           secrets: |
             TURBO_API=${{ secrets.TURBO_API }}
             TURBO_TEAM=${{ secrets.TURBO_TEAM }}
@@ -344,13 +450,13 @@ jobs:
     permissions:
       contents: read
       packages: write
-      pull-requests: read
+      pull-requests: write
     env:
       PREVIEW_TAG: ${{ github.event_name == 'push' && 'v2' || format('pr-{0}', github.event.pull_request.number || inputs.pr_number) }}
     steps:
       - name: Log in to GHCR
         if: "!env.ACT"
-        uses: docker/login-action@v4
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -358,11 +464,11 @@ jobs:
 
       - name: Set up Docker Buildx
         if: "!env.ACT"
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - name: Verify PR head before publication
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         with:
@@ -406,6 +512,39 @@ jobs:
             docker buildx imagetools inspect "$image"
           done
 
+      - name: Comment with preview image
+        if: github.event_name == 'pull_request' && !env.ACT
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const marker = "<!-- homarr-preview-image -->";
+            const image = `${process.env.PREVIEW_IMAGE}:${process.env.PREVIEW_TAG}`;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = [
+              marker,
+              "**Homarr test image published**",
+              "",
+              `\`${image}\` — available for Linux amd64 and arm64.`,
+              "",
+              "```sh",
+              `docker pull ${image}`,
+              "```",
+              "",
+              `[Build details](${runUrl}) · Commit \`${context.sha.slice(0, 7)}\``,
+              "This comment updates when a new preview is published.",
+            ].join("\n");
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              ...context.repo, issue_number: context.issue.number, per_page: 100,
+            });
+            const existing = comments.find((comment) =>
+              comment.user?.login === "github-actions[bot]" && comment.body?.includes(marker),
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({ ...context.repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body });
+            }
+
   cleanup:
     name: Clean up preview image
     if: github.event_name == 'pull_request_target' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'cleanup')
@@ -424,7 +563,7 @@ jobs:
 
       - name: Delete GHCR package version
         if: "!env.ACT"
-        uses: actions/github-script@v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const packageName = "homarr-test";

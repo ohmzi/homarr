@@ -21,7 +21,7 @@ const snapshotRestoreBudgetMs = 50;
 const maxQueryBytes = 128 * 1024;
 const maxBeszelStatsBytes = 256 * 1024;
 const maxSnapshotBytes = 512 * 1024;
-const snapshotVersion = "board-widget-queries-v1";
+const snapshotVersion = "board-widget-queries-v2";
 
 type Integrations = Awaited<ReturnType<typeof getIntegrationsWithPermissionsAsync>>;
 type CachedQuery = PersistedClient["clientState"]["queries"][number];
@@ -56,10 +56,12 @@ const getQueryIntegrationIds = (queryKey: QueryKey, board: Board) => {
   if (path.join(".") === "widget.rssFeed.getFeeds") {
     if (!("urls" in input) || !Array.isArray(input.urls)) return null;
     if (!("maximumAmountPosts" in input) || typeof input.maximumAmountPosts !== "number") return null;
+    if (!("descriptionMaxLength" in input) || typeof input.descriptionMaxLength !== "number") return null;
     const urls: unknown[] = input.urls;
     const matchesBoardItem = board.items.some((item) => {
       if (item.kind !== "rssFeed" || !Array.isArray(item.options.feedUrls)) return false;
       if (Number(item.options.maximumAmountPosts ?? 100) !== input.maximumAmountPosts) return false;
+      if (Number(item.options.descriptionMaxLength ?? 250) !== input.descriptionMaxLength) return false;
       return (
         item.options.feedUrls.length === urls.length && item.options.feedUrls.every((url, index) => url === urls[index])
       );
@@ -84,6 +86,7 @@ const getShareableQueries = (
   let totalBytes = 0;
   return queries.filter((query) => {
     if (query.meta?.rscWidgetPrefetch !== true || query.state.status !== "success") return false;
+    if (query.state.dataUpdatedAt < Date.now() - snapshotMaxAgeMs) return false;
     const ids = getQueryIntegrationIds(query.queryKey, board);
     if (!ids?.every((id) => boardIntegrationIds.has(id) && allowedIds.has(id))) return false;
     const serialized = superjson.stringify({ key: query.queryKey, data: query.state.data });
@@ -157,10 +160,7 @@ export const createBoardQuerySnapshot = (board: Board, integrations: Integration
         ...snapshot,
         clientState: {
           mutations: [],
-          queries: queries.map((query) => ({
-            ...query,
-            state: { ...query.state, dataUpdatedAt: Date.now(), fetchStatus: "idle" as const },
-          })),
+          queries: queries.map((query) => ({ ...query, state: { ...query.state, fetchStatus: "idle" as const } })),
         },
       };
     },

@@ -11,11 +11,12 @@ import type { IntegrationKind } from "@homarr/definitions";
 import type {
   MediaRequest,
   MediaRequestStats,
+  ServiceVersion,
   SpeedtestTrackerDashboardData,
   TracearrDashboardData,
   TraefikDashboardData,
   UpsSummary,
-  UptimeKumaDashboardData,
+  UptimeKumaStatusPage,
 } from "@homarr/integrations/types";
 import type * as MediaRequestListHandlerModule from "@homarr/request-handler/media-request-list";
 
@@ -31,6 +32,7 @@ import { mediaRequestsRouter } from "../../widgets/media-requests";
 import { mediaServerRouter } from "../../widgets/media-server";
 import { networkControllerRouter } from "../../widgets/network-controller";
 import { notificationsRouter } from "../../widgets/notifications";
+import { releasesRouter } from "../../widgets/releases";
 import { speedtestTrackerRouter } from "../../widgets/speedtest-tracker";
 import { tracearrRouter } from "../../widgets/tracearr";
 import { traefikRouter } from "../../widgets/traefik";
@@ -204,6 +206,13 @@ vi.mock("@homarr/request-handler/ups", () => ({
   },
 }));
 
+vi.mock("@homarr/request-handler/service-version", () => ({
+  serviceVersionRequestHandler: {
+    handler: (integration: { name: string }) =>
+      createHandler(integration, { version: "4.0.20.3014" } satisfies ServiceVersion),
+  },
+}));
+
 vi.mock("@homarr/request-handler/traefik", () => {
   const emptySummary = { total: 0, enabled: 0, warnings: 0, errors: 0 };
   return {
@@ -226,13 +235,12 @@ vi.mock("@homarr/request-handler/uptime-kuma", () => ({
   uptimeKumaRequestHandler: {
     handler: (integration: { name: string }) =>
       createHandler(integration, {
-        totalMonitors: 1,
-        upCount: 1,
-        downCount: 0,
-        pausedCount: 0,
-        averageUptimePercent: 100,
-        monitors: [{ id: 1, name: "Healthy monitor", status: "up", uptimePercent24h: 100 }],
-      } satisfies UptimeKumaDashboardData),
+        title: "Healthy status page",
+        url: "https://kuma.example.com/status/default",
+        incidents: [],
+        maintenances: [],
+        groups: [{ id: 1, name: "Services", monitors: [] }],
+      } satisfies UptimeKumaStatusPage),
   },
 }));
 
@@ -336,6 +344,15 @@ const dashboardPartialFailureCases = [
         .getSummaries({ integrationIds: setup.integrationIds }),
   },
   {
+    kind: "sonarr" as const,
+    payloadKey: "version",
+    fallbackValue: null,
+    run: async (setup: IntegrationSetup) =>
+      await releasesRouter
+        .createCaller({ db: setup.db, deviceType: undefined, session: setup.session })
+        .getServiceVersions({ integrationIds: setup.integrationIds }),
+  },
+  {
     kind: "traefik" as const,
     payloadKey: "dashboard",
     fallbackValue: null,
@@ -346,12 +363,12 @@ const dashboardPartialFailureCases = [
   },
   {
     kind: "uptimeKuma" as const,
-    payloadKey: "dashboard",
+    payloadKey: "statusPage",
     fallbackValue: null,
     run: async (setup: IntegrationSetup) =>
       await uptimeKumaRouter
         .createCaller({ db: setup.db, deviceType: undefined, session: setup.session })
-        .getDashboard({ integrationIds: setup.integrationIds }),
+        .getStatusPages({ integrationIds: setup.integrationIds }),
   },
 ] as const;
 

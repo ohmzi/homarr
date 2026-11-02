@@ -59,13 +59,12 @@
       },
       "essentials": {
         "title": "Start with familiar defaults",
-        "description": "Set the language and appearance everyone sees first, then give Homarr the address pattern used by your services.",
+        "description": "Set the language and appearance everyone sees first.",
         "language": "Default language",
         "theme": "Default theme",
         "themeAuto": "System",
         "themeLight": "Light",
         "themeDark": "Dark",
-        "serverOriginHelp": "Homarr uses this address to prefill detected service URLs. You can still edit every service individually.",
         "serverDescription": "This is a shortcut, not a restriction. Every detected service remains editable.",
         "serverOrigin": "Domain, IP, or reverse-proxy path",
         "serverOriginDescription": "Examples: home.lan, 192.168.1.10, or https://home.example.com/services. Choose how each service is appended below.",
@@ -102,6 +101,8 @@
       "connect": {
         "title": "Connect what makes the board useful",
         "description": "Select several services at once. Docker labels take priority, image matching fills gaps, and every URL and credential stays reviewable.",
+        "confirmServerAddress": "This looks right",
+        "serverAddressReviewed": "Server address reviewed. You can still edit each service URL below.",
         "discoveredIntegrations": "Detected integration instances ({count})",
         "detectedIntegrationLabel": "Import {name}, detected as {kind}",
         "detectedAppLabel": "Import detected app {name}",
@@ -126,7 +127,8 @@
         "needsConfiguration": "Needs configuration",
         "tested": "Connection tested",
         "testFailed": "Connection test failed",
-        "incompleteConfirmation": "Unfinished integrations will be skipped. Continue without them?"
+        "incompleteConfirmation": "Apps without a URL and integrations missing a URL or credentials will be deselected and skipped. Continue without them?",
+        "skipIncomplete": "Skip unfinished connections"
       },
       "board": {
         "title": "Shape the board before it is built",
@@ -246,6 +248,82 @@
       "login": {
         "title": "Log in to your account",
         "subtitle": "Welcome back! Please enter your credentials"
+      },
+      "mcpConsent": {
+        "title": "Review client access",
+        "description": "Review this client's access before connecting.",
+        "viewingHint": "Viewing this page does not grant access.",
+        "identityTitle": "Account and client",
+        "loading": "Loading the access request",
+        "allow": "Allow access",
+        "deny": "Deny access",
+        "decisionHint": "Only allow access if you trust this client and callback.",
+        "requestExpires": "Request expires (UTC):",
+        "details": "Technical details",
+        "returnHome": "Return to Homarr",
+        "reload": "Reload consent page",
+        "account": {
+          "name": "Signed in as",
+          "id": "User ID",
+          "nameNotRecorded": "User name not recorded"
+        },
+        "client": {
+          "name": "Client",
+          "nameNotSupplied": "Client name not supplied",
+          "id": "Client ID",
+          "callbackHost": "Callback host",
+          "callbackUrl": "Full callback URL",
+          "hostUnavailable": "Callback host unavailable",
+          "unverifiedHint": "Client names are self-reported, not verified by Homarr.",
+          "destinationHint": "Your decision will return to this callback. If you allow access, the client can exchange the authorization code for an API credential."
+        },
+        "access": {
+          "title": "Account access",
+          "description": "Uses your current permissions, including shared resources.",
+          "details": "View permissions ({count})",
+          "noGlobalPermissions": "Uses your account and shared-resource access, with no global permissions."
+        },
+        "admin": {
+          "title": "Full administrator access",
+          "description": "Can manage Homarr and connected services, including destructive actions."
+        },
+        "credential": {
+          "title": "Credential scope and lifetime",
+          "breadth": "Works with Homarr's HTTP API and MCP, including outside this client.",
+          "lifetime": "No automatic expiry. Signing out does not revoke access.",
+          "manageConnections": "Revoke in General settings"
+        },
+        "error": {
+          "freshStart": "Start a fresh authorization request from the client. Homarr will ask you to review access again.",
+          "unavailable": {
+            "title": "Access request unavailable",
+            "description": "This request has expired, was already handled, or is no longer available. It cannot be approved from this page."
+          },
+          "invalid_browser": {
+            "title": "Access request belongs to a different browser",
+            "description": "This browser cannot verify the original request. Use the browser where you started authorization, or start a fresh request from the client."
+          },
+          "session_changed": {
+            "title": "Your sign-in session has changed",
+            "description": "This request was linked to a different user or sign-in session. It cannot be approved with the current session."
+          },
+          "invalid_request": {
+            "title": "Access request could not be verified",
+            "description": "The request is invalid, expired or no longer verifiable. No access was granted by this attempt."
+          },
+          "access_denied": {
+            "title": "Access was not granted",
+            "description": "The authorization attempt was refused. No access was granted by this attempt."
+          },
+          "server_error": {
+            "title": "Access request could not be completed",
+            "description": "Homarr could not complete this authorization attempt. Check your OAuth connections before starting again."
+          },
+          "unknown": {
+            "title": "Access request unavailable",
+            "description": "This page cannot confirm the authorization result. Check your OAuth connections before starting again."
+          }
+        }
       },
       "invite": {
         "title": "Join Homarr",
@@ -723,6 +801,11 @@
       }
     },
     "field": {
+      "url": {
+        "helpLabel": "URL format examples",
+        "examples": "Examples of accepted links",
+        "requiresHandler": "Custom protocols require an associated application on your device."
+      },
       "description": {
         "label": "Description"
       },
@@ -749,7 +832,10 @@
         "selectMultiple": "Select multiple",
         "cancelMultiple": "Exit multi-select",
         "customApplication": "Custom application",
-        "application": "Application"
+        "application": "Application",
+        "backToApps": "Back to apps",
+        "createAndAdd": "Create and add",
+        "createAnother": "Create and continue"
       },
       "create": {
         "title": "Create new app",
@@ -1433,7 +1519,8 @@
       "uptimeMonitoring": "Uptime Monitoring",
       "beszel": "Beszel",
       "systemMonitoring": "System Monitoring",
-      "security": "Security"
+      "security": "Security",
+      "serviceVersion": "Version"
     },
     "testConnection": {
       "action": {
@@ -1479,6 +1566,7 @@
             "untrusted": "The certificate is not trusted.",
             "hostnameMismatch": "The certificate hostname does not match the URL."
           },
+          "secondaryUrl": "This certificate was presented by {url}, an additional endpoint configured on this integration.",
           "alert": {
             "permission": {
               "title": "Not enough permissions",
@@ -1824,6 +1912,7 @@
       "tryAgain": "Try again",
       "loading": "Loading",
       "show": "Show",
+      "showAll": "Show all",
       "hide": "Hide",
       "undo": "Undo",
       "editNamed": "Edit {name}",
@@ -1833,12 +1922,18 @@
       "copied": "Copied",
       "refresh": "Refresh"
     },
+    "hidden": "Hidden",
     "pagination": {
       "pageOf": "Page {page} of {totalPages}"
+    },
+    "navigation": {
+      "toggle": "Toggle navigation"
     },
     "here": "here",
     "serviceUrlTemplate": {
       "serverTitle": "Usual server address",
+      "description": "Use your usual address and URL pattern to prefill the services below. Individual URL edits are kept.",
+      "example": "Example: {url}",
       "urlModeLabel": "Service address pattern",
       "hostPort": "Same host, different ports",
       "subdomain": "One subdomain per service",
@@ -1852,6 +1947,7 @@
       "clear": "Clear image",
       "uploadImage": "Upload image",
       "results": "Image search results",
+      "websiteIcon": "Icon of the website",
       "localImages": "Your images",
       "svgIcons": "SVG icons",
       "otherImages": "Other images",
@@ -2447,6 +2543,15 @@
         "appId": {
           "label": "Choose app"
         },
+        "openIn": {
+          "label": "Open app in",
+          "description": "Choose where this app opens. Your browser settings may override requests for a separate window.",
+          "option": {
+            "currentTab": "Current tab",
+            "newTab": "New tab",
+            "newWindow": "New window"
+          }
+        },
         "showTitle": {
           "label": "Show app name"
         },
@@ -2567,7 +2672,16 @@
           }
         }
       },
-      "empty": "Add a URL or App in the widget settings"
+      "empty": "Add a URL or App in the widget settings",
+      "groups": {
+        "label": "Categories",
+        "placeholder": "New category",
+        "add": "Add category",
+        "remove": "Remove {name} category",
+        "rename": "Category name for {name}",
+        "assign": "Category for {name}",
+        "ungrouped": "Ungrouped"
+      }
     },
     "archiveTeamWarrior": {
       "name": "ArchiveTeam Warrior",
@@ -3350,6 +3464,13 @@
         },
         "showUnmonitored": {
           "label": "Show unmonitored"
+        },
+        "viewMode": {
+          "label": "View"
+        },
+        "hideHeader": {
+          "label": "Hide header",
+          "description": "Hide the date navigation. Widgets that are too short always hide it."
         }
       },
       "advanced": {
@@ -3358,6 +3479,22 @@
         "eventCount": "{count, plural, one {# event} other {# events}}",
         "loading": "Loading calendar events...",
         "noEvents": "No events in this month"
+      },
+      "view": {
+        "compact": "Compact month",
+        "month": "Month",
+        "week": "Week",
+        "day": "Day",
+        "agenda": "Agenda"
+      },
+      "controls": {
+        "today": "Today",
+        "previous": "Previous period",
+        "next": "Next period",
+        "noEvents": "No events in this period",
+        "more": "{count} more",
+        "timeSlot": "Time slot",
+        "weekday": "Weekday"
       }
     },
     "weather": {
@@ -3510,6 +3647,11 @@
         "defaultTab": {
           "label": "Default tab"
         },
+        "tabOrder": {
+          "label": "Tab order",
+          "systemFirst": "System then Cluster",
+          "clusterFirst": "Cluster then System"
+        },
         "visibleClusterSections": {
           "label": "Visible cluster sections"
         },
@@ -3601,6 +3743,13 @@
         },
         "containerFilter": {
           "label": "Containers to filter"
+        },
+        "filterCaseSensitive": {
+          "label": "Case sensitive"
+        },
+        "filterAllowWildcards": {
+          "label": "Allow wildcards",
+          "description": "Use * for zero or more characters."
         },
         "filterIsWhitelist": {
           "label": "Filter as a whitelist"
@@ -3909,7 +4058,8 @@
       "app": {
         "noData": "No app found",
         "description": "Click <here></here> to create a new app",
-        "quickCreate": "Create app on the fly"
+        "quickCreate": "Create app on the fly",
+        "create": "Create app"
       },
       "error": {
         "noIntegration": "No integration selected",
@@ -4029,11 +4179,28 @@
         "paused": "Paused",
         "remaining": "{minutes} min left",
         "seasonEpisode": "S{season} E{episode}",
+        "state": {
+          "playing": "Playing",
+          "buffering": "Buffering"
+        },
+        "details": {
+          "device": "Device",
+          "location": "Location",
+          "sessionId": "Session ID",
+          "bitrate": "Bitrate",
+          "audioHandling": "Audio handling",
+          "direct": "Direct",
+          "transcode": "Transcoding to {target}",
+          "containerChanged": "{container} (remux)",
+          "position": "{position} / {duration}",
+          "unknown": "unknown format"
+        },
         "metadata": {
           "title": "Stats for nerds",
           "video": {
             "title": "Video",
-            "resolution": "Resolution"
+            "resolution": "Resolution",
+            "frameRate": "Frame rate"
           },
           "audio": {
             "title": "Audio",
@@ -4054,6 +4221,109 @@
         "playing": "{count} playing",
         "transcoding": "{count} transcoding"
       }
+    },
+    "thingport-libraryStats": {
+      "name": "Thingport Library Stats",
+      "description": "Totals for your Thingport 3D model library",
+      "title": "Library",
+      "option": {
+        "showModels": {
+          "label": "Show models"
+        },
+        "showCollections": {
+          "label": "Show collections"
+        },
+        "showCategories": {
+          "label": "Show categories"
+        },
+        "showAuthors": {
+          "label": "Show authors"
+        }
+      },
+      "models": "Models",
+      "collections": "Collections",
+      "categories": "Categories",
+      "authors": "Authors"
+    },
+    "thingport-featuredModel": {
+      "name": "Thingport Featured Model",
+      "description": "One model from your Thingport library each day, spinning in 3D",
+      "option": {
+        "autoRotate": {
+          "label": "Spin the model"
+        },
+        "showDetails": {
+          "label": "Show model details"
+        }
+      },
+      "title": "Featured model",
+      "empty": "No 3D models to feature yet",
+      "hint": "Drag to spin, click to open",
+      "noPreview": "No 3D preview for this model yet",
+      "views": "{count, plural, one {# view} other {# views}}",
+      "prints": "{count, plural, one {# print} other {# prints}}"
+    },
+    "thingport-activityHeatmap": {
+      "name": "Thingport Activity Heatmap",
+      "description": "A year of imports, downloads and slicer opens from your Thingport profile",
+      "title": "Activity",
+      "option": {
+        "weekStart": {
+          "label": "First day of the week",
+          "option": {
+            "sunday": "Sunday",
+            "monday": "Monday"
+          }
+        },
+        "showTotal": {
+          "label": "Show total"
+        },
+        "showLegend": {
+          "label": "Show legend"
+        }
+      },
+      "lastYear": "Last 12 months",
+      "totalLastYear": "{count, plural, one {# activity in the last year} other {# activities in the last year}}",
+      "totalInYear": "{count, plural, one {# activity in {year}} other {# activities in {year}}}",
+      "dayTotal": "{count, plural, one {# activity on {date}} other {# activities on {date}}}",
+      "dayEmpty": "No activity on {date}",
+      "kinds": {
+        "import": "Imported",
+        "upload": "Uploaded",
+        "download": "Downloaded",
+        "slicer": "Opened in slicer",
+        "delete": "Deleted"
+      },
+      "less": "Less",
+      "more": "More"
+    },
+    "thingport-models": {
+      "name": "Thingport Models",
+      "description": "Recently added, most viewed and most printed models from Thingport",
+      "title": "Models",
+      "option": {
+        "defaultTab": {
+          "label": "Default tab"
+        },
+        "itemCount": {
+          "label": "Number of models"
+        },
+        "showThumbnails": {
+          "label": "Show thumbnails"
+        }
+      },
+      "tab": {
+        "recentlyAdded": "Recent",
+        "topViewed": "Top viewed",
+        "topPrinted": "Top printed"
+      },
+      "empty": {
+        "recentlyAdded": "No models in your library yet",
+        "topViewed": "No viewed models yet",
+        "topPrinted": "No printed models yet"
+      },
+      "views": "{count, plural, one {# view} other {# views}}",
+      "prints": "{count, plural, one {# print} other {# prints}}"
     },
     "paperlessNgx": {
       "description": "Overview of your Paperless-ngx document archive",
@@ -4358,6 +4628,14 @@
         "showCompletedHttp": {
           "label": "Show Miscellaneous entries marked as completed"
         },
+        "includeArchivedHistory": {
+          "label": "Include archived SABnzbd history",
+          "description": "Show jobs moved to Archive."
+        },
+        "historyWindowDays": {
+          "label": "Archived history window (days)",
+          "description": "Limit finished SABnzbd history to this many days. Increase the item limit to show more results."
+        },
         "activeTorrentThreshold": {
           "label": "Hide completed torrent under this threshold"
         },
@@ -4652,7 +4930,7 @@
     },
     "mediaMissing": {
       "name": "Missing & Queued Media",
-      "description": "Shows missing and queued movies, episodes and books from {radarr}, {sonarr} and {bindery}",
+      "description": "Shows missing and queued movies, episodes, events and books from {radarr}, {sonarr}, {sportarr} and {bindery}",
       "option": {
         "showMissing": {
           "label": "Show missing items"
@@ -4693,6 +4971,10 @@
         "textLinesClamp": {
           "label": "Description line clamp"
         },
+        "descriptionMaxLength": {
+          "label": "Description max length",
+          "description": "Maximum number of characters to keep from the feed description"
+        },
         "maximumAmountPosts": {
           "label": "Amount posts limit"
         },
@@ -4713,29 +4995,61 @@
     },
     "releases": {
       "name": "Releases",
-      "description": "Displays a list of the current version of the given repositories with the given version regex.",
+      "description": "Tracks the latest releases of repositories and container images, and shows their changelogs.",
       "option": {
+        "layout": {
+          "label": "Layout",
+          "description": "Compact shows every repository on a single line.",
+          "option": {
+            "comfortable": "Comfortable",
+            "compact": "Compact"
+          }
+        },
+        "summary": {
+          "label": "Summary",
+          "description": "What to show above the list. The status bar adds one segment per repository that jumps to it when clicked.",
+          "option": {
+            "detailed": "Count and status bar",
+            "count": "Count only",
+            "hidden": "Hidden"
+          }
+        },
+        "groupReleases": {
+          "label": "Group releases by status",
+          "description": "Turn off to show a continuous list without section headings. Collapsed sections are ignored."
+        },
+        "sections": {
+          "label": "Sections",
+          "description": "Groups of repositories to show. Hidden groups are not listed at all."
+        },
         "newReleaseWithin": {
-          "label": "New Release Within",
-          "description": "Usage example: 1w (1 week), 10M (10 months). Accepted unit types h (hours), d (days), w (weeks), M (months), y (years). Leave empty for no highlighting of new releases."
+          "label": "Highlight new releases for",
+          "description": "Releases published within this period are listed under New until you mark them as viewed.",
+          "option": {
+            "never": "Never",
+            "1d": "1 day",
+            "3d": "3 days",
+            "1w": "1 week",
+            "2w": "2 weeks",
+            "1M": "1 month",
+            "3M": "3 months"
+          }
         },
         "staleReleaseWithin": {
-          "label": "Stale Release Within",
-          "description": "Usage example: 1w (1 week), 10M (10 months). Accepted unit types h (hours), d (days), w (weeks), M (months), y (years). Leave empty for no highlighting of stale releases."
+          "label": "Move to Quiet after",
+          "description": "Repositories without a release for this long are listed under Quiet.",
+          "option": {
+            "never": "Never",
+            "1M": "1 month",
+            "3M": "3 months",
+            "6M": "6 months",
+            "1y": "1 year",
+            "2y": "2 years"
+          }
         },
-        "showOnlyHighlighted": {
-          "label": "Show Only Highlighted",
-          "description": "Show only new or stale releases. As per the above."
-        },
-        "showDetails": {
-          "label": "Show Details"
-        },
-        "showOnlyIcon": {
-          "label": "Show Only Icon"
-        },
-        "topReleases": {
-          "label": "Top Releases",
-          "description": "The max number of latest releases to show. Zero means no limit."
+        "showChangelogPreview": {
+          "label": "Show changelog preview",
+          "description": "Preview the release notes under each release."
         },
         "repositories": {
           "label": "Repositories",
@@ -4759,12 +5073,19 @@
           "providerUrl": {
             "label": "Provider URL"
           },
+          "integrations": {
+            "label": "Linked Integrations"
+          },
           "identifier": {
             "label": "Identifier",
             "placeholder": "Name or Owner/Name"
           },
           "name": {
             "label": "Name"
+          },
+          "excludePrereleases": {
+            "label": "Exclude pre-releases",
+            "description": "Show the latest release not flagged as a pre-release by the provider."
           },
           "versionFilter": {
             "label": "Version Filter",
@@ -4806,32 +5127,110 @@
           }
         }
       },
-      "not-found": "Not Found",
-      "pre-release": "Pre-Release",
-      "archived": "Archived",
-      "forked": "Forked",
-      "starsCount": "Stars",
-      "forksCount": "Forks",
-      "issuesCount": "Open Issues",
-      "markViewed": "Mark as viewed",
-      "openProjectPage": "Open Project Page",
-      "openReleasePage": "Open Release Page",
-      "releaseDescription": "Release Description",
-      "projectDescription": "Project Description",
-      "created": "Created",
-      "error": {
-        "label": "Error",
-        "messages": {
-          "invalidIdentifier": "Invalid identifier",
-          "noMatchingVersion": "No matching version found",
-          "noReleasesFound": "No releases found",
-          "noProviderSelected": "No provider selected",
-          "noProviderResponse": "No response from provider",
-          "unexpected": "Unexpected provider error"
+      "summary": {
+        "newReleases": "{count, plural, one {new release} other {new releases}}",
+        "newShort": "new",
+        "tracked": "of {count} tracked",
+        "caughtUp": "All caught up",
+        "outdated": "{count, plural, one {running an older version} other {running older versions}}",
+        "outdatedShort": "outdated",
+        "failing": "could not be checked",
+        "failingShort": "failing",
+        "latest": "Latest: {name} {version}, {time}",
+        "issues": "{count, plural, one {# repository could not be checked} other {# repositories could not be checked}}"
+      },
+      "section": {
+        "new": {
+          "label": "New",
+          "description": "New releases you have not viewed yet"
+        },
+        "attention": {
+          "label": "Needs attention",
+          "description": "Integrations running an older version and repositories that could not be checked"
+        },
+        "upToDate": {
+          "label": "Up to date",
+          "description": "Nothing new to look at"
+        },
+        "quiet": {
+          "label": "Quiet",
+          "description": "No release for a long time"
         }
       },
-      "expandDetails": "Show details for {name}",
-      "collapseDetails": "Hide details for {name}"
+      "status": {
+        "new": "new, not viewed",
+        "outdated": "running an older version",
+        "error": "could not be checked",
+        "upToDate": "up to date",
+        "quiet": "quiet"
+      },
+      "tag": {
+        "new": "New",
+        "preRelease": "Pre-release",
+        "resolvedFrom": "from :{tag}",
+        "quiet": "Quiet",
+        "archived": "Archived",
+        "fork": "Fork"
+      },
+      "issue": {
+        "affected": "{count, plural, one {# repository affected} other {# repositories affected}}",
+        "rateLimited": {
+          "title": "Rate limited by {provider}",
+          "hint": "Add an access token in the widget settings to raise the limit, or wait for it to reset."
+        },
+        "notFound": {
+          "title": "Repository or image not found",
+          "hint": "Check the identifier and provider in the widget settings. Private projects need an access token."
+        },
+        "noMatchingVersion": {
+          "title": "No version matches the filter",
+          "hint": "Loosen the prefix, suffix or precision in the version filter of these repositories."
+        },
+        "noReleasesFound": {
+          "title": "No releases published yet",
+          "hint": "The provider has no releases or tags for this project yet."
+        },
+        "invalidIdentifier": {
+          "title": "Invalid identifier",
+          "hint": "Use the format of the provider, for example owner/name for GitHub or the full image path for registries."
+        },
+        "noProviderSelected": {
+          "title": "No provider selected",
+          "hint": "Choose a provider for these repositories in the widget settings."
+        },
+        "noProviderResponse": {
+          "title": "No response from {provider}",
+          "hint": "The provider returned nothing for these repositories. They are checked again on the next refresh."
+        },
+        "unexpected": {
+          "title": "Unexpected {provider} error",
+          "hint": "Something went wrong while checking. Try again later or check the server logs."
+        }
+      },
+      "markViewed": "Mark as viewed",
+      "markAllViewed": "Mark all as viewed",
+      "markEntryViewed": "Mark {name} {version} as viewed",
+      "viewed": "Viewed",
+      "copyVersion": "Copy version",
+      "copied": "Copied",
+      "published": "Published {time}",
+      "whatChanged": "What changed",
+      "noNotes": "{provider} does not publish release notes for this source.",
+      "changes": "{count, plural, one {# change} other {# changes}}",
+      "starsCount": "Stars",
+      "forksCount": "Forks",
+      "openIssues": "{count, plural, one {# open issue} other {# open issues}}",
+    "created": "Created {time}",
+      "releasePage": "Release",
+      "projectPage": "Project",
+      "runningVersions": "Running Versions",
+      "upToDate": "Up to date",
+      "updateAvailable": "Update available",
+      "unknownStatus": "Unknown",
+      "error": {
+        "collapsedSaveTitle": "Collapsed sections were not saved",
+        "collapsedSaveMessage": "The section could not be updated. Try again."
+      }
     },
     "networkControllerSummary": {
       "advanced": {
@@ -5002,47 +5401,118 @@
       }
     },
     "uptimeKuma": {
-      "description": "Monitor uptime statistics from your Uptime Kuma status page",
+      "description": "Live status, heartbeats and uptime of the monitors on an Uptime Kuma status page",
       "option": {
-        "showAverageUptime": {
-          "label": "Show average uptime",
-          "description": "Display the combined 24-hour average uptime percentage"
+        "statusPageSlug": {
+          "label": "Status page slug",
+          "description": "The part after /status/ in the page URL, such as homelab. Leave blank to use each integration's configured page."
         },
-        "showUptimeRing": {
-          "label": "Show uptime ring",
-          "description": "Display a progress ring alongside the average uptime value"
+        "summaryOnly": {
+          "label": "General status only",
+          "description": "Hide monitor rows and chips. Overrides Show summary; full details remain available in the advanced view."
         },
-        "showTotalMonitors": {
-          "label": "Show total monitors",
-          "description": "Display the total number of configured monitors"
+        "showSummary": {
+          "label": "Show summary",
+          "description": "Overall status, counts and averages"
         },
-        "showUpCount": {
-          "label": "Show up count",
-          "description": "Display how many monitors are currently up"
+        "showIncidents": {
+          "label": "Show incidents",
+          "description": "Incidents and active maintenance"
         },
-        "showDownCount": {
-          "label": "Show down count",
-          "description": "Display how many monitors are currently down"
+        "groupByStatusPageGroup": {
+          "label": "Group monitors",
+          "description": "Use the groups defined on the status page"
         },
-        "showPausedCount": {
-          "label": "Show paused count",
-          "description": "Display how many monitors are currently paused"
+        "showOnlyProblems": {
+          "label": "Only show issues",
+          "description": "Hide monitors that are up, except in the advanced view"
+        },
+        "sortBy": {
+          "label": "Sort monitors by",
+          "option": {
+            "status": "Status, issues first",
+            "statusPage": "Status page order",
+            "name": "Name",
+            "uptime": "Uptime, lowest first"
+          }
+        },
+        "showHeartbeatBar": {
+          "label": "Show heartbeat bar",
+          "description": "Recent checks as colored bars, newest on the right"
+        },
+        "showUptime": {
+          "label": "Show 24-hour uptime"
+        },
+        "showResponseTime": {
+          "label": "Show response time"
+        },
+        "showCertificateExpiry": {
+          "label": "Certificate warnings",
+          "description": "Flag certificates expiring within 14 days"
         }
-      },
-      "averageUptime": "Average uptime (24h)",
-      "stats": {
-        "totalMonitors": "Total monitors",
-        "upCount": "Up",
-        "downCount": "Down",
-        "pausedCount": "Paused"
-      },
-      "error": {
-        "internalServerError": "Failed to fetch uptime data"
       },
       "status": {
         "up": "Up",
         "down": "Down",
-        "paused": "Paused"
+        "pending": "Pending",
+        "maintenance": "Maintenance",
+        "stale": "No recent data",
+        "unknown": "No data"
+      },
+      "overall": {
+        "operational": "All systems operational",
+        "degraded": "Partially degraded service",
+        "outage": "Major outage",
+        "maintenance": "Under maintenance",
+        "unknown": "Waiting for first checks"
+      },
+      "short": {
+        "operational": "All up",
+        "down": "{count} down",
+        "pending": "{count} pending",
+        "maintenance": "Maintenance",
+        "unknown": "No data"
+      },
+      "summary": {
+        "upRatio": "{up} of {total} monitors up",
+        "upRatioShort": "{up}/{total} up",
+        "averageUptime": "uptime 24h",
+        "uptimeShort": "{value} uptime",
+        "statusCount": "{count} {status}"
+      },
+      "unit": {
+        "milliseconds": "{value} ms"
+      },
+      "heartbeatBar": {
+        "label": "{count, plural, one {# recent check} other {# recent checks}}, {down} down"
+      },
+      "detail": {
+        "checked": "checked {time}",
+        "certificate": "{count, plural, one {certificate expires in # day} other {certificate expires in # days}}"
+      },
+      "notice": {
+        "label": "{count, plural, one {# incident or maintenance} other {# incidents or maintenances}}",
+        "untitled": "Untitled"
+      },
+      "empty": {
+        "title": "No monitors",
+        "description": "Add monitors to the status page to see them here"
+      },
+      "allClear": "{count, plural, one {The monitor is up} other {All # monitors are up}}",
+      "error": {
+        "internalServerError": "Failed to fetch the Uptime Kuma status page"
+      },
+      "monitorType": {
+        "http": "HTTP",
+        "keyword": "HTTP keyword",
+        "jsonQuery": "HTTP JSON query",
+        "port": "TCP port",
+        "ping": "Ping",
+        "dns": "DNS",
+        "docker": "Docker container",
+        "push": "Push",
+        "group": "Group",
+        "realBrowser": "Browser"
       }
     },
     "uptimeStatus": {
@@ -5305,6 +5775,9 @@
       "name": "Beszel Systems (Table)",
       "description": "Table view of all Beszel-monitored systems with sortable columns and status indicators",
       "option": {
+        "fahrenheit": {
+          "label": "Temperature in Fahrenheit"
+        },
         "sortBy": {
           "label": "Sort by"
         },
@@ -5319,7 +5792,12 @@
     },
     "beszelSystemGrid": {
       "name": "Beszel Systems (Grid)",
-      "description": "Card grid view of all Beszel-monitored systems with real-time metrics"
+      "description": "Card grid view of all Beszel-monitored systems with real-time metrics",
+      "option": {
+        "fahrenheit": {
+          "label": "Temperature in Fahrenheit"
+        }
+      }
     },
     "beszelAlerts": {
       "name": "Beszel Alerts",
@@ -5346,7 +5824,7 @@
     },
     "beszelSystemStats": {
       "name": "Beszel System Stats",
-      "description": "Time-series charts for CPU, memory, disk, network, and Docker container metrics",
+      "description": "Time-series charts for CPU, memory, disk, network, GPU, and Docker container metrics",
       "option": {
         "systemId": {
           "label": "System",
@@ -5369,6 +5847,15 @@
         },
         "showNetwork": {
           "label": "Show network chart"
+        },
+        "showGpuUsage": {
+          "label": "Show GPU usage chart"
+        },
+        "showGpuMemory": {
+          "label": "Show GPU memory chart"
+        },
+        "showGpuPower": {
+          "label": "Show GPU power chart"
         },
         "showDockerCpu": {
           "label": "Show Docker CPU chart"
@@ -5423,6 +5910,18 @@
           "subtitle": "Network traffic of public interfaces",
           "sent": "Sent",
           "recv": "Received"
+        },
+        "gpuUsage": {
+          "title": "GPU Usage",
+          "subtitle": "Utilization by GPU"
+        },
+        "gpuMemory": {
+          "title": "GPU Memory",
+          "subtitle": "VRAM used by GPU"
+        },
+        "gpuPower": {
+          "title": "GPU Power",
+          "subtitle": "Power draw by GPU"
         },
         "dockerCpu": {
           "title": "Docker CPU Usage",
@@ -5662,6 +6161,8 @@
       "allHidden": "All metrics are hidden in this view. Use Customize this view to restore them."
     },
     "wazuh": {
+      "name": "Wazuh",
+      "description": "Wazuh security overview with tabs for alert severity, alerts, timeline, top lists, agents, vulnerabilities, file integrity and authentication failures",
       "target": {
         "api": "Wazuh server API",
         "indexer": "Wazuh indexer",
@@ -5680,7 +6181,15 @@
         },
         "certificate": {
           "title": "{target} certificate is not trusted",
-          "description": "Wazuh uses a self-signed certificate by default. Run \"Test connection\" on the integration and trust the certificate, or add your CA under Settings → Certificates."
+          "description": "Wazuh uses self-signed certificates by default, and the server API and the indexer use different ones. Run \"Test connection\" on the integration and trust each certificate, or add the Wazuh root CA under Management → Tools → Certificates."
+        },
+        "certificateHostname": {
+          "title": "{target} certificate does not match the URL",
+          "description": "The certificate is not issued for the host in the integration URL. Use a hostname or IP address listed in the certificate, reissue the certificate with that name, or trust the hostname with \"Test connection\"."
+        },
+        "certificateExpired": {
+          "title": "{target} certificate has expired or is not valid yet",
+          "description": "Renew the Wazuh certificate, and check that the clocks of the Homarr and Wazuh hosts are correct."
         },
         "unreachable": {
           "title": "Cannot reach {target}",
@@ -5705,7 +6214,9 @@
         "unknown": {
           "title": "Could not load data from {target}",
           "description": "Check the Homarr logs for details."
-        }
+        },
+        "viewSaveTitle": "Could not save the selected tab",
+        "viewSaveMessage": "The tab is shown for now but will reset when the board reloads."
       },
       "range": {
         "1h": "1h",
@@ -5713,93 +6224,138 @@
         "7d": "7d",
         "30d": "30d"
       },
-      "levelTooltip": "Rule level {level} ({severity})"
-    },
-    "wazuhAgents": {
-      "name": "Wazuh agents",
-      "description": "Sortable list of Wazuh agents with status, OS, version and last keepalive",
+      "levelTooltip": "Rule level {level} ({severity})",
+      "summary": {
+        "title": "Alert severity · {range}",
+        "alerts": "alerts",
+        "none": "No alerts",
+        "trend": {
+          "new": "new",
+          "tooltip": "Previous period: {previous}"
+        },
+        "previous": "Previous {range}: {count}",
+        "maxLevel": "Max level {level}",
+        "health": "Indexer health: {status}",
+        "manager": "Manager {version}"
+      },
+      "alerts": {
+        "title": "Alerts · level {level}+ · {hours}h",
+        "empty": "No alerts at this level. All quiet.",
+        "rule": "Rule {id}",
+        "openInDashboard": "Open this alert in the Wazuh dashboard"
+      },
+      "timeline": {
+        "title": "Alerts timeline · {range}",
+        "total": "{count} alerts",
+        "interval": "per {interval}"
+      },
+      "top": {
+        "title": {
+          "rules": "Top rules · {range}",
+          "agents": "Top agents · {range}",
+          "sourceIps": "Top source IPs · {range}",
+          "mitreTactics": "MITRE tactics · {range}",
+          "mitreTechniques": "MITRE techniques · {range}"
+        },
+        "empty": {
+          "rules": "No alerts in this period",
+          "agents": "No alerts in this period",
+          "sourceIps": "No alerts with a source IP in this period",
+          "mitreTactics": "No alerts mapped to MITRE ATT&CK in this period",
+          "mitreTechniques": "No alerts mapped to MITRE ATT&CK in this period"
+        },
+        "totalTooltip": "{count} matching alerts",
+        "private": "LAN",
+        "public": "Public",
+        "agents": "Seen on {count} agents",
+        "others": "{count} more alerts in other entries"
+      },
+      "agents": {
+        "title": "Agents",
+        "total": "{count} agents",
+        "status": {
+          "active": "Active",
+          "disconnected": "Disconnected",
+          "neverConnected": "Never connected",
+          "pending": "Pending"
+        },
+        "statusLabel": {
+          "active": "Active",
+          "disconnected": "Disconnected",
+          "never_connected": "Never connected",
+          "pending": "Pending",
+          "unknown": "Unknown"
+        },
+        "live": "Live",
+        "snapshot": "Snapshot {age} old",
+        "snapshotHint": "Read from the Wazuh dashboard's agent snapshot (wazuh-monitoring) taken at {time}. Add server API credentials for live data.",
+        "staleSnapshot": "The agent snapshot from {time} is outdated. Check that the Wazuh dashboard monitoring job is running, or add server API credentials.",
+        "noDisconnected": "All agents are connected",
+        "empty": "No agents match this filter",
+        "column": {
+          "status": "Status",
+          "name": "Name",
+          "ip": "IP",
+          "os": "OS",
+          "version": "Version",
+          "lastKeepAlive": "Keepalive",
+          "groups": "Groups"
+        },
+        "outdated": "Older than the newest agent version ({version})"
+      },
+      "vulnerabilities": {
+        "title": "Vulnerabilities",
+        "topCves": "Top CVEs",
+        "score": "Score",
+        "agentsShort": "Agents",
+        "topAgents": "Most vulnerable agents",
+        "criticalHigh": "Crit / High",
+        "totalTooltip": "{count} findings on {agents} agents",
+        "affected": "{count} agents",
+        "empty": "No vulnerabilities detected",
+        "distribution": "Severity distribution. {unscored} findings without a score are not shown.",
+        "worst": "Worst: {id} ({score}) on {agents} agents"
+      },
+      "fim": {
+        "title": "File integrity · {range}",
+        "event": {
+          "added": "Added",
+          "modified": "Modified",
+          "deleted": "Deleted",
+          "unknown": "Changed"
+        },
+        "empty": "No file integrity events in this period",
+        "user": "by {user}",
+        "registry": "Registry"
+      },
+      "authFailures": {
+        "title": "Auth failures · {hours}h",
+        "seriesTooltip": "All agents over the last {hours}h",
+        "peak": "Peak {count}/bucket",
+        "empty": "No failed logins in this period",
+        "failed": "Failed logins",
+        "failedHint": "Single authentication failures (sshd, PAM, Windows logon, invalid users)",
+        "bruteForce": "Brute force",
+        "bruteForceHint": "Correlated brute-force rules (multiple failures in a short period, MITRE T1110)",
+        "sourceIps": "Source IPs",
+        "ipTooltip": "{ip}: {count} failures",
+        "bruteForceCount": "{count} brute force"
+      },
+      "view": {
+        "overview": "Severity",
+        "alerts": "Alerts",
+        "timeline": "Timeline",
+        "top": "Top lists",
+        "agents": "Agents",
+        "vulnerabilities": "Vulnerabilities",
+        "fim": "File integrity",
+        "authFailures": "Auth failures"
+      },
       "option": {
-        "statusFilter": {
-          "label": "Show agents"
+        "visibleViews": {
+          "label": "Visible tabs",
+          "description": "Only these tabs are offered in the tab switcher. With a single tab, the switcher is hidden."
         },
-        "sortBy": {
-          "label": "Sort by"
-        },
-        "showVersion": {
-          "label": "Show Wazuh version column"
-        },
-        "showGroups": {
-          "label": "Show groups column"
-        }
-      },
-      "title": "Agents",
-      "total": "{count} agents",
-      "status": {
-        "active": "Active",
-        "disconnected": "Disconnected",
-        "neverConnected": "Never connected",
-        "pending": "Pending"
-      },
-      "statusLabel": {
-        "active": "Active",
-        "disconnected": "Disconnected",
-        "never_connected": "Never connected",
-        "pending": "Pending",
-        "unknown": "Unknown"
-      },
-      "live": "Live",
-      "snapshot": "Snapshot {age} old",
-      "snapshotHint": "Read from the Wazuh dashboard's agent snapshot (wazuh-monitoring) taken at {time}. Add server API credentials for live data.",
-      "staleSnapshot": "The agent snapshot from {time} is outdated. Check that the Wazuh dashboard monitoring job is running, or add server API credentials.",
-      "noDisconnected": "All agents are connected",
-      "empty": "No agents match this filter",
-      "column": {
-        "status": "Status",
-        "name": "Name",
-        "ip": "IP",
-        "os": "OS",
-        "version": "Version",
-        "lastKeepAlive": "Keepalive",
-        "groups": "Groups"
-      },
-      "outdated": "Older than the newest agent version ({version})"
-    },
-    "wazuhAlerts": {
-      "name": "Wazuh alerts feed",
-      "description": "Recent Wazuh alerts with level, MITRE ATT&CK techniques, agent and source IP",
-      "option": {
-        "minLevel": {
-          "label": "Minimum rule level",
-          "description": "Wazuh levels: 0-6 low, 7-11 medium, 12-14 high, 15+ critical"
-        },
-        "hours": {
-          "label": "Time window (hours)"
-        },
-        "limit": {
-          "label": "Number of alerts"
-        },
-        "showMitre": {
-          "label": "Show MITRE ATT&CK techniques"
-        },
-        "showAgent": {
-          "label": "Show agent"
-        },
-        "showSourceIp": {
-          "label": "Show source IP"
-        },
-        "showRuleId": {
-          "label": "Show rule ID"
-        }
-      },
-      "title": "Alerts · level {level}+ · {hours}h",
-      "empty": "No alerts at this level. All quiet.",
-      "rule": "Rule {id}",
-      "openInDashboard": "Open this alert in the Wazuh dashboard"
-    },
-    "wazuhSummary": {
-      "name": "Wazuh alert severity",
-      "description": "Alert severity breakdown with a trend against the previous period",
-      "option": {
         "range": {
           "label": "Time range"
         },
@@ -5808,26 +6364,6 @@
         },
         "showFooter": {
           "label": "Show footer"
-        }
-      },
-      "title": "Alert severity · {range}",
-      "alerts": "alerts",
-      "none": "No alerts",
-      "trend": {
-        "new": "new",
-        "tooltip": "Previous period: {previous}"
-      },
-      "previous": "Previous {range}: {count}",
-      "maxLevel": "Max level {level}",
-      "health": "Indexer health: {status}",
-      "manager": "Manager {version}"
-    },
-    "wazuhTimeline": {
-      "name": "Wazuh alerts timeline",
-      "description": "Stacked chart of Wazuh alerts over time by severity",
-      "option": {
-        "range": {
-          "label": "Time range"
         },
         "interval": {
           "label": "Interval"
@@ -5840,60 +6376,32 @@
           "description": "Square root keeps high and critical alerts visible next to thousands of low ones"
         },
         "minLevel": {
-          "label": "Minimum rule level"
+          "label": "Minimum rule level (timeline and top lists)"
         },
         "showLegend": {
           "label": "Show legend with totals"
-        }
-      },
-      "title": "Alerts timeline · {range}",
-      "total": "{count} alerts",
-      "interval": "per {interval}"
-    },
-    "wazuhTopList": {
-      "name": "Wazuh top list",
-      "description": "Top rules, agents, source IPs or MITRE ATT&CK tactics and techniques by alert count",
-      "option": {
-        "kind": {
+        },
+        "topKind": {
           "label": "Rank"
         },
-        "range": {
-          "label": "Time range"
-        },
-        "limit": {
-          "label": "Number of entries"
-        },
-        "minLevel": {
-          "label": "Minimum rule level"
+        "topLimit": {
+          "label": "Top list entries"
         },
         "showBars": {
           "label": "Show bars"
-        }
-      },
-      "title": {
-        "rules": "Top rules · {range}",
-        "agents": "Top agents · {range}",
-        "sourceIps": "Top source IPs · {range}",
-        "mitreTactics": "MITRE tactics · {range}",
-        "mitreTechniques": "MITRE techniques · {range}"
-      },
-      "empty": {
-        "rules": "No alerts in this period",
-        "agents": "No alerts in this period",
-        "sourceIps": "No alerts with a source IP in this period",
-        "mitreTactics": "No alerts mapped to MITRE ATT&CK in this period",
-        "mitreTechniques": "No alerts mapped to MITRE ATT&CK in this period"
-      },
-      "totalTooltip": "{count} matching alerts",
-      "private": "LAN",
-      "public": "Public",
-      "agents": "Seen on {count} agents",
-      "others": "{count} more alerts in other entries"
-    },
-    "wazuhVulnerabilities": {
-      "name": "Wazuh vulnerabilities",
-      "description": "Vulnerability counts, top CVEs and the most vulnerable agents",
-      "option": {
+        },
+        "agentStatusFilter": {
+          "label": "Show agents"
+        },
+        "agentSortBy": {
+          "label": "Sort by"
+        },
+        "showVersion": {
+          "label": "Agents: show Wazuh version column"
+        },
+        "showGroups": {
+          "label": "Agents: show groups column"
+        },
         "cveOrder": {
           "label": "Rank CVEs by"
         },
@@ -5908,73 +6416,42 @@
         },
         "showAgents": {
           "label": "Show most vulnerable agents"
-        }
-      },
-      "title": "Vulnerabilities",
-      "topCves": "Top CVEs",
-      "score": "Score",
-      "agentsShort": "Agents",
-      "topAgents": "Most vulnerable agents",
-      "criticalHigh": "Crit / High",
-      "totalTooltip": "{count} findings on {agents} agents",
-      "affected": "{count} agents",
-      "empty": "No vulnerabilities detected",
-      "distribution": "Severity distribution. {unscored} findings without a score are not shown.",
-      "worst": "Worst: {id} ({score}) on {agents} agents"
-    },
-    "wazuhFim": {
-      "name": "Wazuh file integrity",
-      "description": "Recent file integrity monitoring (syscheck) events",
-      "option": {
-        "range": {
-          "label": "Time range"
         },
-        "event": {
+        "fimEvent": {
           "label": "Events"
         },
-        "limit": {
-          "label": "Number of events"
+        "fimLimit": {
+          "label": "File integrity events"
         },
         "includeRegistry": {
           "label": "Include Windows registry events"
-        }
-      },
-      "title": "File integrity · {range}",
-      "event": {
-        "added": "Added",
-        "modified": "Modified",
-        "deleted": "Deleted",
-        "unknown": "Changed"
-      },
-      "empty": "No file integrity events in this period",
-      "user": "by {user}",
-      "registry": "Registry"
-    },
-    "wazuhAuthFailures": {
-      "name": "Wazuh authentication failures",
-      "description": "Failed logins and brute-force alerts per agent with hourly sparklines",
-      "option": {
-        "hours": {
-          "label": "Time window (hours)"
         },
-        "limit": {
-          "label": "Number of agents"
+        "authLimit": {
+          "label": "Authentication failure agents"
         },
         "showSourceIps": {
           "label": "Show top source IPs"
+        },
+        "alertsMinLevel": {
+          "label": "Alerts: minimum rule level",
+          "description": "Wazuh levels: 0-6 low, 7-11 medium, 12-14 high, 15+ critical"
+        },
+        "alertsLimit": {
+          "label": "Alerts: number of alerts"
+        },
+        "showMitre": {
+          "label": "Show MITRE ATT&CK techniques"
+        },
+        "showAgent": {
+          "label": "Show agent"
+        },
+        "showSourceIp": {
+          "label": "Show source IP"
+        },
+        "showRuleId": {
+          "label": "Show rule ID"
         }
-      },
-      "title": "Auth failures · {hours}h",
-      "seriesTooltip": "All agents over the last {hours}h",
-      "peak": "Peak {count}/bucket",
-      "empty": "No failed logins in this period",
-      "failed": "Failed logins",
-      "failedHint": "Single authentication failures (sshd, PAM, Windows logon, invalid users)",
-      "bruteForce": "Brute force",
-      "bruteForceHint": "Correlated brute-force rules (multiple failures in a short period, MITRE T1110)",
-      "sourceIps": "Source IPs",
-      "ipTooltip": "{ip}: {count} failures",
-      "bruteForceCount": "{count} brute force"
+      }
     }
   },
   "widgetPreview": {
@@ -5993,6 +6470,18 @@
       "addWidget": "Add widget",
       "addApp": "Add app",
       "connectService": "Connect service"
+    },
+    "urlDrop": {
+      "hint": "Drop to add as an app",
+      "resolving": "Adding app…",
+      "notification": {
+        "success": {
+          "message": "{name} was added to the board"
+        },
+        "full": {
+          "message": "Your board is full"
+        }
+      }
     },
     "setupChecklist": {
       "title": "Make this board useful",
@@ -6119,11 +6608,11 @@
         "label": "Favicon image URL"
       },
       "backgroundImageUrl": {
-        "label": "Background image URL",
-        "placeholder": "Start typing to search local images",
+        "label": "Background image or video URL",
+        "placeholder": "Start typing to search local images and videos",
         "group": {
-          "your": "Your images",
-          "other": "Other images"
+          "your": "Your media",
+          "other": "Other media"
         }
       },
       "backgroundImageAttachment": {
@@ -6161,15 +6650,15 @@
         }
       },
       "backgroundImageSize": {
-        "label": "Background image size",
+        "label": "Background size",
         "option": {
           "cover": {
             "label": "Cover",
-            "description": "Scales the image as small as possible to cover the entire window by cropping excessive space."
+            "description": "Scales the background as small as possible to cover the entire window by cropping excessive space."
           },
           "contain": {
             "label": "Contain",
-            "description": "Scales the image as large as possible within its container without cropping or stretching the image."
+            "description": "Scales the background as large as possible within its container without cropping or stretching it."
           }
         }
       },
@@ -6518,7 +7007,7 @@
             "header": {
               "title": "Header studio",
               "badge": "Personal",
-              "description": "Drag controls anywhere in the row. Left, Center, and Right stay fixed while controls shift around them.",
+              "description": "Configure controls with their buttons. Use the drag handles to reorder them within Left, Center, or Right.",
               "device": {
                 "desktop": "Desktop",
                 "mobile": "Mobile"
@@ -6531,7 +7020,7 @@
               "action": {
                 "hide": "Hide the header",
                 "show": "Show the header",
-                "configure": "Move or configure {item}",
+                "configure": "Configure {item}",
                 "remove": "Remove {item}",
                 "dropIntoZone": "Move into the {zone} section"
               },
@@ -6541,7 +7030,7 @@
               },
               "available": {
                 "title": "Available controls",
-                "description": "Add a control, then drag its full button into position above.",
+                "description": "Add a control, then use its drag handle to position it above.",
                 "requiredAlways": "This control is required, but you can move it anywhere in the header.",
                 "allAdded": "Every built-in control is already in your header.",
                 "add": "Add {item}",
@@ -6586,6 +7075,31 @@
               "search": "Search",
               "firstDayOfWeek": "First day of the week",
               "accessibility": "Accessibility",
+              "oauthConnections": {
+                "title": "OAuth connections",
+                "description": "These clients obtained API credentials for your account through OAuth. The credentials work with Homarr's HTTP API as well as MCP, do not expire automatically, and remain valid after you sign out.",
+                "revocationHint": "Revoking a connection removes its API credential. To reconnect, start authorization again from the client.",
+                "loading": "Loading OAuth connections",
+                "retry": "Reload connections",
+                "revoke": "Revoke connection",
+                "confirmRevoke": "Confirm revocation",
+                "empty": {
+                  "title": "No recorded OAuth connections",
+                  "description": "New OAuth connections appear here. Older credentials without recorded client details may need an administrator to revoke them in API Keys."
+                },
+                "loadError": {
+                  "title": "OAuth connections could not be loaded",
+                  "description": "Try loading the list again. This does not revoke any credentials."
+                },
+                "success": {
+                  "title": "Connection revoked",
+                  "description": "The saved API credential has been removed. Reconnect from the client to grant access again."
+                },
+                "error": {
+                  "title": "Connection could not be revoked",
+                  "description": "The credential may still be active. Try revoking it again."
+                }
+              },
               "onboardingTours": {
                 "title": "Onboarding Tours",
                 "description": "Reset the onboarding tours to see them again on your next visit to the management area or dashboard.",
@@ -6814,6 +7328,10 @@
             "signInOverlay": {
               "label": "Background overlay"
             },
+            "signInMarquee": {
+              "label": "Show background marquee",
+              "description": "Display floating application icons on authentication pages."
+            },
             "defaultRadius": {
               "label": "Corner style",
               "options": {
@@ -6979,6 +7497,7 @@
             "model": {
               "title": "Model",
               "description": "Select a discovered model or enter an exact endpoint model ID.",
+              "save": "Save model settings",
               "placeholder": "Model ID",
               "refresh": "Refresh models",
               "chooseModel": "Choose the model used for new conversations.",
@@ -7005,7 +7524,7 @@
             },
             "enabled": {
               "label": "Enable Assistant",
-              "description": "Shows the assistant to all signed-in users. Existing Homarr permissions still apply to every internal tool call."
+              "description": "Turn off to hide the Assistant for all users. Saved provider settings are kept for later."
             },
             "save": "Save assistant",
             "notification": {
@@ -7135,7 +7654,8 @@
               "label": "Authentication",
               "title": "API Keys",
               "button": {
-                "createApiToken": "Create API token"
+                "createApiToken": "Create API token",
+                "confirmDeletion": "Confirm deletion"
               },
               "modal": {
                 "delete": {
@@ -7146,7 +7666,43 @@
               "table": {
                 "header": {
                   "createdBy": "Created by",
+                  "source": "Source",
                   "actions": "Actions"
+                }
+              },
+              "provenance": {
+                "oauth": "OAuth",
+                "unattributed": "Manual or legacy API key",
+                "unnamedClient": "Client name not recorded",
+                "clientNameHint": "Client names are self-reported and are not verified.",
+                "details": "Connection details",
+                "credentialId": "Credential ID",
+                "clientId": "Client ID",
+                "callbackHost": "Callback host",
+                "callbackUrl": "Full callback URL",
+                "issuedAt": "Issued (UTC)",
+                "unknown": "Not recorded"
+              },
+              "empty": {
+                "title": "No API keys to show",
+                "description": "Create an API token or adjust the table filters to find existing keys."
+              },
+              "feedback": {
+                "createError": {
+                  "title": "API key could not be created",
+                  "description": "No new credential was received. Check the key list before trying again."
+                },
+                "deleteError": {
+                  "title": "API key could not be deleted",
+                  "description": "The credential may still be active. Try deleting it again."
+                },
+                "deleteSuccess": {
+                  "title": "API key deleted",
+                  "description": "The saved API credential has been removed."
+                },
+                "refreshError": {
+                  "title": "API key deleted, but the list could not be refreshed",
+                  "description": "Reload this page to see the current API keys."
                 }
               }
             },
@@ -7168,9 +7724,9 @@
                   "description": "Pass the ApiKey header with your full API key in the MCP client configuration."
                 },
                 "oauth": {
-                  "title": "OAuth (browser login)",
-                  "description": "Clients that support OAuth (such as Claude Code, opencode, or Cursor) can authenticate by opening a browser window. Run the auth command in your client, log in to Homarr in the browser, and you're connected — an API key is created automatically.",
-                  "hint": "OAuth tokens appear as regular API keys in the Authentication tab. You can revoke them at any time."
+                  "title": "OAuth (browser login and consent)",
+                  "description": "Start authorization in your OAuth client and sign in to Homarr if needed. Review the client, callback destination and account access, then choose Allow access only if you trust the client. An API credential is created only after approval and a successful code exchange.",
+                  "hint": "Revoke recorded OAuth connections in your own General settings. Administrators can also revoke credentials in the Authentication tab. These credentials work with Homarr's HTTP API and MCP, do not expire automatically, and remain valid after sign-out."
                 },
                 "permissions": "The API key determines the permissions available to the AI — it operates with the same access level as the key owner."
               },
@@ -8546,6 +9102,14 @@
     "conversationActions": "Conversation actions",
     "searchConversations": "Search conversations",
     "noMatchingConversations": "No matching conversations",
+    "historyError": {
+      "title": "Conversation history",
+      "load": "Conversations could not be loaded.",
+      "loadMessages": "This conversation's messages could not be loaded. Retry to restore them before sending.",
+      "saveMessages": "Recent messages could not be saved and may be missing after a reload.",
+      "switch": "This conversation could not be opened.",
+      "retry": "Retry"
+    },
     "moreActions": "More response actions",
     "renameConversation": {
       "action": "Rename",
@@ -8567,7 +9131,7 @@
     "suggestions": {
       "health": {
         "label": "Check service health",
-        "prompt": "Check my integrations and summarize anything that needs attention."
+        "prompt": "Check the health of the services and integrations I can access. Summarize any problems and suggest next steps."
       },
       "explore": {
         "label": "Explore my Homarr",
@@ -8583,7 +9147,7 @@
       },
       "designWidget": {
         "label": "Design a widget",
-        "prompt": "Create and install a Custom Widget for "
+        "prompt": "Help me design a Custom Widget. Ask what I want it to show and where to add it, then use my available integrations."
       }
     },
     "composerPlaceholder": "Ask Assistant…",
@@ -8665,6 +9229,9 @@
     },
     "mentions": {
       "menu": "Add Homarr context",
+      "back": "All categories",
+      "loading": "Loading available context…",
+      "empty": "No matching context found.",
       "context": "Context",
       "app": "Apps",
       "integration": "Integrations",
@@ -8679,11 +9246,13 @@
     },
     "commands": {
       "menu": "Assistant commands",
-      "health": "Prepare a service-health check",
-      "explore": "Prepare an overview of this Homarr instance",
-      "media": "Prepare a media search",
-      "style": "Prepare a board appearance or custom CSS change",
-      "designWidget": "Prepare a one-prompt Custom Widget build"
+      "hint": "Choose a starting point, or type / for commands and @ for context. Edit your prompt before sending.",
+      "empty": "No matching commands. Try /health, /explore, /media, /style or /design-widget.",
+      "health": "Find unhealthy services and suggested fixes",
+      "explore": "See your apps, boards and available actions",
+      "media": "Find a movie or series to request",
+      "style": "Improve a board's layout, appearance or CSS",
+      "designWidget": "Build a Custom Widget with your integrations"
     },
     "usage": {
       "tokens": "tokens",
@@ -8861,6 +9430,7 @@
     "approvalDescription": "Review this change before it runs.",
     "approveAndRun": "Approve and run",
     "deny": "Deny",
+    "approvalError": "Your response could not be recorded. Try again.",
     "autoApproval": {
       "label": "Automatic approvals",
       "composerLabel": "Approve for me",
